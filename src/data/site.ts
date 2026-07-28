@@ -1,0 +1,78 @@
+import type { TeamMember } from '@/types/artist'
+
+export const site = {
+  name: 'No Type',
+  fullName: 'No Type Management',
+  tagline: 'Artist management without a template.',
+  instagram: 'https://instagram.com/',
+  year: 2026,
+  contact: [
+    {
+      label: 'All booking inquiries',
+      email: 'bookings@notype.be',
+    },
+    {
+      label: 'Advancing & production',
+      email: 'production@notype.be',
+    },
+    {
+      label: 'Contracts & payments',
+      email: 'admin@notype.be',
+    },
+  ],
+  legal: {
+    company: 'No Type BV',
+    vat: 'BE 0000.000.000',
+    addressLines: ['Noordersingel 28/30', '2140 Antwerpen'],
+  },
+  about: [
+    'No Type was founded in 2024 as a sister brand of Kurious, built for artists who refuse a single lane.',
+    'We focus on crossover dance and pop talent across the Benelux — and beyond into Europe, the UK and Oceania.',
+    'From day-to-day guidance to long-term strategy, we offer full-service artist management with a sharp creative edge.',
+    'No templates. No copy-paste careers. Just clear ambition, strong taste, and the infrastructure to match.',
+  ],
+  photoCredits: 'Credits pictures: @notype',
+  legalLinks: [
+    { label: 'Terms & Conditions', href: '#terms' },
+    { label: 'Privacy Policy', href: '#privacy' },
+    { label: 'GDPR', href: '#gdpr' },
+  ],
+} as const
+
+export const team: TeamMember[] = [
+  {
+    id: 't1',
+    name: 'Alex Rivera',
+    role: 'Founder',
+    imageUrl:
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop&q=80',
+  },
+  {
+    id: 't2',
+    name: 'Sam Okoye',
+    role: 'Artist Manager',
+    imageUrl:
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&q=80',
+  },
+  {
+    id: 't3',
+    name: 'Jules Martens',
+    role: 'Bookings',
+    imageUrl:
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&q=80',
+  },
+  {
+    id: 't4',
+    name: 'Nora Veld',
+    role: 'Production',
+    imageUrl:
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&q=80',
+  },
+  {
+    id: 't5',
+    name: 'Kai Berg',
+    role: 'Press',
+    imageUrl:
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=400&fit=crop&q=80',
+  },
+]

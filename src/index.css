@@ -1,0 +1,221 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Logo lime */
+  --color-brand: #d8ff3e;
+  --color-brand-dim: #c2e638;
+  --color-more: #d8ff3e;
+
+  /* Themed surfaces — defaults = light */
+  --color-ink: #111111;
+  --color-ink-inverse: #f5f5f5;
+  --color-ink-deep: #0a0a0a;
+  --color-ink-muted: #6b6b6b;
+  --color-cream: #f5f3ef;
+  --color-cream-dark: #ebe8e2;
+  --color-card: #ffffff;
+  --color-secondary: #ffffff;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Archivo Black', 'Inter', ui-sans-serif, sans-serif;
+  --radius-card: 2rem;
+}
+
+/* Light — warm paper, white cards, lime accent */
+:root,
+[data-theme='light'] {
+  --color-ink: #111111;
+  --color-ink-inverse: #f5f5f5;
+  --color-ink-deep: #0a0a0a;
+  --color-ink-muted: #6b6b6b;
+  --color-cream: #f5f3ef;
+  --color-cream-dark: #ebe8e2;
+  --color-card: #ffffff;
+  --color-secondary: #ffffff;
+  --body-bg: #f5f3ef;
+  --menu-bg: rgb(245 243 239 / 0.94);
+  --nav-chip: rgb(17 17 17 / 0.06);
+  --nav-chip-hover: rgb(17 17 17 / 0.1);
+  --glow-purple: rgb(88 40 120 / 0.08);
+  --glow-purple-strong: rgb(88 40 120 / 0.12);
+}
+
+/* Dark — underground label */
+[data-theme='dark'] {
+  --color-ink: #f5f5f5;
+  --color-ink-inverse: #090909;
+  --color-ink-deep: #050505;
+  --color-ink-muted: #9a9a9a;
+  --color-cream: #090909;
+  --color-cream-dark: #151217;
+  --color-card: #151217;
+  --color-secondary: #151217;
+  --body-bg: #090909;
+  --menu-bg: rgb(9 9 9 / 0.94);
+  --nav-chip: rgb(245 245 245 / 0.08);
+  --nav-chip-hover: rgb(245 245 245 / 0.14);
+  --glow-purple: rgb(88 40 120 / 0.14);
+  --glow-purple-strong: rgb(88 40 120 / 0.2);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-optical-sizing: auto;
+    letter-spacing: -0.011em;
+    line-height: 1.5;
+    color: var(--color-ink);
+    background-color: var(--body-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.35s ease, color 0.25s ease;
+  }
+
+  #root {
+    min-height: 100svh;
+    position: relative;
+    z-index: 1;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-brand) 45%, transparent);
+    color: var(--color-ink);
+  }
+}
+
+@layer utilities {
+  /* Campaign display — Archivo Black, Nike / fashion scale */
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: normal;
+    font-synthesis: none;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    line-height: 0.88;
+  }
+
+  .type-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: normal;
+    font-synthesis: none;
+    text-transform: uppercase;
+    letter-spacing: -0.035em;
+    line-height: 0.86;
+  }
+
+  .type-headline {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: normal;
+    font-synthesis: none;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    line-height: 0.92;
+  }
+
+  /* Editorial / UI labels */
+  .type-label {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .type-ui {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .type-body {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: -0.011em;
+    line-height: 1.65;
+  }
+
+  /* Roster campaign crop — slight grade so mixed source photos read as one set */
+  .artist-card__img {
+    filter: brightness(0.96) contrast(1.05) saturate(0.94);
+  }
+}
+
+/* Superform-style flowing glow — outside Tailwind layers so it always ships */
+.artist-card__glow {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 55%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    45deg,
+    #d8ff3e,
+    #afe6ef,
+    #393aff,
+    #dcb8fe,
+    #f0bc06
+  );
+  background-size: 300% 100%;
+  -webkit-mask-image: linear-gradient(
+    to top,
+    #000 0%,
+    #000 38%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to top, #000 0%, #000 38%, transparent 100%);
+  transition: opacity 0.6s ease;
+}
+
+.artist-card:hover .artist-card__glow,
+.artist-card:focus-visible .artist-card__glow {
+  opacity: 0.9;
+  animation: artistCardGlowFlow 12s ease infinite;
+}
+
+@keyframes artistCardGlowFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .artist-card:hover .artist-card__glow,
+  .artist-card:focus-visible .artist-card__glow {
+    animation: none;
+  }
+}
