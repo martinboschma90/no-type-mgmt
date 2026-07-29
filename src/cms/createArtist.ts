@@ -68,6 +68,7 @@ export function createBlankArtist(
       visible: false,
     },
     sections: DEFAULT_ARTIST_SECTIONS.map((s) => ({ ...s })),
-    visible: true,
+    status: 'draft',
+    visible: false,
   }
 }

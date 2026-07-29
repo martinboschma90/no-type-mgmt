@@ -2,6 +2,7 @@ import type { ArtistRow, Database } from '@/lib/database.types'
 import type {
   Artist,
   ArtistSectionConfig,
+  ArtistStatus,
   SocialLink,
 } from '@/types/artist'
 import {
@@ -12,6 +13,7 @@ import {
   parseTracksColumn,
   serializeTracksColumn,
 } from '@/cms/artistMusic'
+import { getArtistStatus } from '@/cms/artistVisibility'
 import { withArtDirection } from '@/cms/imageFocus'
 
 type ArtistInsert = Database['public']['Tables']['artists']['Insert']
@@ -29,9 +31,15 @@ export function isArtistUuid(id: string) {
   return UUID_RE.test(id)
 }
 
+function parseStatus(value: unknown, visible: boolean): ArtistStatus {
+  if (value === 'draft' || value === 'published') return value
+  return visible ? 'published' : 'draft'
+}
+
 /** Map a Supabase artists row → app Artist type. */
 export function artistFromRow(row: ArtistRow): Artist {
   const { tracks, music } = parseTracksColumn(row.tracks)
+  const status = parseStatus(row.status, row.visible)
 
   const mapped: Artist = {
     id: row.id,
@@ -52,7 +60,9 @@ export function artistFromRow(row: ArtistRow): Artist {
     music,
     sections: asArray<ArtistSectionConfig>(row.sections),
     presskitUrl: row.presskit_url ?? undefined,
-    visible: row.visible,
+    status,
+    publishedAt: row.published_at ?? undefined,
+    visible: status === 'published',
   }
 
   return withArtDirection(mapped)
@@ -63,6 +73,7 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
   const sections = normalizeArtistSections(
     artist.sections?.length ? artist.sections : DEFAULT_ARTIST_SECTIONS,
   )
+  const status = getArtistStatus(artist)
 
   return {
     slug: artist.slug,
@@ -87,7 +98,9 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
     tracks: serializeTracksColumn(artist.tracks, artist.music),
     sections,
     presskit_url: artist.presskitUrl ?? null,
-    visible: artist.visible !== false,
+    status,
+    published_at: artist.publishedAt ?? null,
+    visible: status === 'published',
   }
 }
 

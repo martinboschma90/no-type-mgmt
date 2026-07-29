@@ -8,7 +8,8 @@ import { ART_DIRECTION_VERSION, resolveArtDirection } from '@/cms/imageFocus'
 import { MediaUrlField } from '@/cms/media/MediaUrlField'
 
 export function RosterEditor() {
-  const { content, setArtists } = useCms()
+  const { content, setArtists, publishArtist, unpublishArtist, saveArtist, isArtistDirty } =
+    useCms()
   const { artists } = content
 
   return (
@@ -22,10 +23,10 @@ export function RosterEditor() {
           description={
             isArtistVisible(artist)
               ? artist.genre || 'Artist on homepage roster'
-              : 'Verborgen op publieke site'
+              : 'Draft — verborgen op publieke site'
           }
           defaultOpen={index === 0}
-          badge={isArtistVisible(artist) ? 'Artist' : 'Hidden'}
+          badge={isArtistVisible(artist) ? 'Published' : 'Draft'}
           tabs={[
             {
               id: 'content',
@@ -35,11 +36,11 @@ export function RosterEditor() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <ArtistVisibilityToggle
                       visible={isArtistVisible(artist)}
-                      onChange={(visible) =>
-                        setArtists((list) =>
-                          list.map((a, i) => (i === index ? { ...a, visible } : a)),
-                        )
-                      }
+                      onChange={(visible) => {
+                        void (visible
+                          ? publishArtist(artist.slug)
+                          : unpublishArtist(artist.slug))
+                      }}
                     />
                     <Link
                       to={`/cms/artists/${artist.slug}`}
@@ -48,6 +49,15 @@ export function RosterEditor() {
                       Bewerk artiestenpagina →
                     </Link>
                   </div>
+                  {isArtistDirty(artist.id) ? (
+                    <button
+                      type="button"
+                      className="type-label w-full rounded-full border border-ink/15 px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/70 uppercase transition-colors hover:border-ink/30 hover:text-ink"
+                      onClick={() => void saveArtist(artist.slug)}
+                    >
+                      Save changes
+                    </button>
+                  ) : null}
                   <TextInput
                     label="Name"
                     value={artist.name}

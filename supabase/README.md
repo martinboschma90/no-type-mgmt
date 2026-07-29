@@ -35,6 +35,7 @@ so the CMS can insert/update/delete artists with the anon key **before** auth la
 
 1. Dashboard → Authentication → Users → **Add user** (email + password) for the admin.
 2. Open `/cms/login` and sign in.
-3. After login works, optionally run
+3. After login works, run
    `migrations/20260729120000_phase3_3_remove_temp_anon_artist_writes.sql`
    so only authenticated users can mutate artists.
+   **Applied on the linked project (Phase 3.3 cleanup).**

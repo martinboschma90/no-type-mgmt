@@ -33,6 +33,8 @@ export type Database = {
           sections: Json
           presskit_url: string | null
           visible: boolean
+          status: 'draft' | 'published'
+          published_at: string | null
           created_at: string
           updated_at: string
         }
@@ -55,6 +57,8 @@ export type Database = {
           sections?: Json
           presskit_url?: string | null
           visible?: boolean
+          status?: 'draft' | 'published'
+          published_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -77,6 +81,8 @@ export type Database = {
           sections?: Json
           presskit_url?: string | null
           visible?: boolean
+          status?: 'draft' | 'published'
+          published_at?: string | null
           created_at?: string
           updated_at?: string
         }

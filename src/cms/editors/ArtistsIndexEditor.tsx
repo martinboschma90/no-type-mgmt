@@ -49,7 +49,7 @@ function ArtistRow({
           <p className="type-headline truncate text-sm text-ink">{artist.name}</p>
           <p className="type-label mt-1 truncate text-[0.6rem] tracking-[0.12em] text-ink/40 uppercase">
             {artist.genre || 'No genre'} · /artists/{artist.slug}
-            {!visible ? ' · hidden' : ''}
+            {!visible ? ' · draft' : ' · published'}
           </p>
         </div>
         <span className="type-label shrink-0 text-[0.6rem] tracking-[0.12em] text-brand uppercase transition-opacity group-hover:opacity-80">
@@ -77,7 +77,8 @@ function ArtistRow({
 
 /** Overview of all artist pages — add, hide, open, or remove. */
 export function ArtistsIndexEditor() {
-  const { content, addArtist, removeArtist, updateArtist } = useCms()
+  const { content, addArtist, removeArtist, publishArtist, unpublishArtist } =
+    useCms()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [name, setName] = useState('')
@@ -160,7 +161,7 @@ export function ArtistsIndexEditor() {
 
       <p className="type-label text-[0.6rem] tracking-[0.12em] text-ink/40 uppercase">
         {filtered.length} / {content.artists.length} pagina&apos;s
-        {hiddenCount > 0 ? ` · ${hiddenCount} verborgen` : ''}
+        {hiddenCount > 0 ? ` · ${hiddenCount} draft` : ''}
       </p>
 
       <ul className="space-y-2">
@@ -168,9 +169,11 @@ export function ArtistsIndexEditor() {
           <li key={artist.id}>
             <ArtistRow
               artist={artist}
-              onVisibilityChange={(visible) =>
-                updateArtist(artist.slug, (a) => ({ ...a, visible }))
-              }
+              onVisibilityChange={(visible) => {
+                void (visible
+                  ? publishArtist(artist.slug)
+                  : unpublishArtist(artist.slug))
+              }}
               onRemove={() => {
                 if (
                   window.confirm(

@@ -45,7 +45,13 @@ export const CMS_STORAGE_KEY = 'notype-cms-content-v1'
 export function createDefaultContent(): CmsContent {
   const artists = defaultArtists.map((artist) => {
     const full = getArtistBySlug(artist.slug)
-    return withArtDirection(full ?? { ...artist })
+    const base = withArtDirection(full ?? { ...artist })
+    return {
+      ...base,
+      status: 'published' as const,
+      visible: true,
+      publishedAt: base.publishedAt ?? new Date().toISOString(),
+    }
   })
 
   return {

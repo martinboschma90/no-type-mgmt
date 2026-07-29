@@ -6,7 +6,9 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from 'react'
 import type { Artist, TeamMember } from '@/types/artist'
 import {
@@ -23,6 +25,7 @@ import {
   insertArtistInSupabase,
   updateArtistInSupabase,
 } from '@/cms/api/artists'
+import { applyArtistStatus } from '@/cms/artistVisibility'
 import { ART_DIRECTION_VERSION, withArtDirection } from '@/cms/imageFocus'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
@@ -31,26 +34,34 @@ type CmsContextValue = {
   savedAt: number | null
   /** Last artist ↔ Supabase sync error, if any. */
   artistSyncError: string | null
+  /** Artist ids with unsaved local edits. */
+  dirtyArtistIds: ReadonlySet<string>
+  artistSaving: boolean
   setSite: (updater: (site: SiteContent) => SiteContent) => void
   setTeam: (updater: (team: TeamMember[]) => TeamMember[]) => void
   setArtists: (updater: (artists: Artist[]) => Artist[]) => void
+  /** Local edit only — does not sync until saveArtist / publish. */
   updateArtist: (slug: string, updater: (artist: Artist) => Artist) => void
   addArtist: (name: string) => Artist
   removeArtist: (slug: string) => void
+  /** Persist current artist draft to Supabase (or localStorage fallback). */
+  saveArtist: (slug: string) => Promise<{ error: string | null }>
+  /** Save + set status published (public). */
+  publishArtist: (slug: string) => Promise<{ error: string | null }>
+  /** Save + set status draft (hidden from public). */
+  unpublishArtist: (slug: string) => Promise<{ error: string | null }>
   resetContent: () => void
   getArtistBySlug: (slug: string) => Artist | undefined
+  isArtistDirty: (id: string) => boolean
 }
 
 const CmsContext = createContext<CmsContextValue | null>(null)
-
-const ARTIST_SAVE_DEBOUNCE_MS = 450
 
 function initialContent(): CmsContent {
   const defaults = createDefaultContent()
   const stored = loadStoredContent()
   if (!stored) return defaults
 
-  // Prefer stored artists when present (local fallback); else seed
   const artists =
     stored.artists.length > 0
       ? stored.artists.map((artist) => withArtDirection(artist))
@@ -63,21 +74,46 @@ function initialContent(): CmsContent {
   }
 }
 
+function markDirty(
+  set: Dispatch<SetStateAction<Set<string>>>,
+  id: string,
+) {
+  set((prev) => {
+    if (prev.has(id)) return prev
+    const next = new Set(prev)
+    next.add(id)
+    return next
+  })
+}
+
+function clearDirty(
+  set: Dispatch<SetStateAction<Set<string>>>,
+  id: string,
+) {
+  set((prev) => {
+    if (!prev.has(id)) return prev
+    const next = new Set(prev)
+    next.delete(id)
+    return next
+  })
+}
+
 export function CmsProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<CmsContent>(initialContent)
   const [savedAt, setSavedAt] = useState<number | null>(() =>
     loadStoredContent() ? Date.now() : null,
   )
   const [artistSyncError, setArtistSyncError] = useState<string | null>(null)
+  const [dirtyArtistIds, setDirtyArtistIds] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const [artistSaving, setArtistSaving] = useState(false)
 
   const contentRef = useRef(content)
   contentRef.current = content
-
-  const debounceTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const artistsHydrated = useRef(false)
 
   const persistLocal = useCallback((next: CmsContent) => {
-    // Artists → Supabase when configured; otherwise keep localStorage fallback
     persistContent(next, { persistArtists: !isSupabaseConfigured })
     setSavedAt(Date.now())
   }, [])
@@ -98,47 +134,50 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       )
       if (idx === -1) return prev
       const current = prev.artists[idx]
-      // Only patch id (and slug if server won) when local still has legacy id
-      if (current.id === server.id && current.slug === server.slug) return prev
+      if (
+        current.id === server.id &&
+        current.slug === server.slug &&
+        current.status === server.status &&
+        current.publishedAt === server.publishedAt
+      ) {
+        return prev
+      }
       const artists = prev.artists.map((a, i) =>
-        i === idx ? { ...a, id: server.id } : a,
+        i === idx
+          ? {
+              ...a,
+              id: server.id,
+              slug: server.slug,
+              status: server.status,
+              publishedAt: server.publishedAt,
+              visible: server.visible,
+            }
+          : a,
       )
       return { ...prev, artists }
     })
   }, [])
 
   const persistArtistNow = useCallback(
-    async (artist: Artist) => {
-      if (!isSupabaseConfigured) return
+    async (artist: Artist): Promise<{ error: string | null; artist: Artist | null }> => {
+      if (!isSupabaseConfigured) {
+        persistLocal(contentRef.current)
+        clearDirty(setDirtyArtistIds, artist.id)
+        return { error: null, artist }
+      }
+
       const { artist: server, error } = await updateArtistInSupabase(artist)
       if (error) {
         reportArtistError(error)
-        return
+        return { error, artist: null }
       }
       clearArtistError()
       setSavedAt(Date.now())
-      if (server && server.id !== artist.id) {
-        adoptServerArtist(server)
-      }
+      clearDirty(setDirtyArtistIds, artist.id)
+      if (server) adoptServerArtist(server)
+      return { error: null, artist: server }
     },
-    [adoptServerArtist, clearArtistError, reportArtistError],
-  )
-
-  const scheduleArtistPersist = useCallback(
-    (artist: Artist) => {
-      if (!isSupabaseConfigured) return
-      const key = artist.id || artist.slug
-      const existing = debounceTimers.current.get(key)
-      if (existing) clearTimeout(existing)
-      debounceTimers.current.set(
-        key,
-        setTimeout(() => {
-          debounceTimers.current.delete(key)
-          void persistArtistNow(artist)
-        }, ARTIST_SAVE_DEBOUNCE_MS),
-      )
-    },
-    [persistArtistNow],
+    [adoptServerArtist, clearArtistError, persistLocal, reportArtistError],
   )
 
   // Site + team (+ artists when Supabase off) → localStorage
@@ -146,7 +185,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     persistLocal(content)
   }, [content, persistLocal])
 
-  // Hydrate CMS artists from Supabase when available (fallback keeps seed/local)
+  // Hydrate CMS artists from Supabase when available
   useEffect(() => {
     if (!isSupabaseConfigured || artistsHydrated.current) return
     let cancelled = false
@@ -158,6 +197,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         ...prev,
         artists: artists.map((artist) => withArtDirection(artist)),
       }))
+      setDirtyArtistIds(new Set())
       setSavedAt(Date.now())
     })
 
@@ -166,7 +206,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Re-apply campaign seeds when art-direction version bumps (HMR / code update)
+  // Re-apply campaign seeds when art-direction version bumps
   useEffect(() => {
     setContent((prev) => {
       const nextArtists = prev.artists.map((artist) => withArtDirection(artist))
@@ -181,19 +221,76 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     })
   }, [ART_DIRECTION_VERSION])
 
-  useEffect(() => {
-    const timers = debounceTimers.current
-    return () => {
-      for (const t of timers.values()) clearTimeout(t)
-      timers.clear()
-    }
-  }, [])
+  const findBySlug = useCallback(
+    (slug: string) => contentRef.current.artists.find((a) => a.slug === slug),
+    [],
+  )
+
+  const saveArtist = useCallback(
+    async (slug: string) => {
+      const artist = findBySlug(slug)
+      if (!artist) return { error: 'Artist not found' }
+      setArtistSaving(true)
+      const result = await persistArtistNow(artist)
+      setArtistSaving(false)
+      return { error: result.error }
+    },
+    [findBySlug, persistArtistNow],
+  )
+
+  const publishArtist = useCallback(
+    async (slug: string) => {
+      const current = findBySlug(slug)
+      if (!current) return { error: 'Artist not found' }
+
+      const published = applyArtistStatus(current, 'published', {
+        touchPublishedAt: true,
+      })
+
+      setContent((prev) => ({
+        ...prev,
+        artists: prev.artists.map((a) =>
+          a.slug === slug || a.id === current.id ? published : a,
+        ),
+      }))
+
+      setArtistSaving(true)
+      const result = await persistArtistNow(published)
+      setArtistSaving(false)
+      return { error: result.error }
+    },
+    [findBySlug, persistArtistNow],
+  )
+
+  const unpublishArtist = useCallback(
+    async (slug: string) => {
+      const current = findBySlug(slug)
+      if (!current) return { error: 'Artist not found' }
+
+      const draft = applyArtistStatus(current, 'draft')
+
+      setContent((prev) => ({
+        ...prev,
+        artists: prev.artists.map((a) =>
+          a.slug === slug || a.id === current.id ? draft : a,
+        ),
+      }))
+
+      setArtistSaving(true)
+      const result = await persistArtistNow(draft)
+      setArtistSaving(false)
+      return { error: result.error }
+    },
+    [findBySlug, persistArtistNow],
+  )
 
   const value = useMemo<CmsContextValue>(
     () => ({
       content,
       savedAt,
       artistSyncError,
+      dirtyArtistIds,
+      artistSaving,
       setSite: (updater) => {
         setContent((prev) => ({ ...prev, site: updater(prev.site) }))
       },
@@ -203,13 +300,11 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       setArtists: (updater) => {
         setContent((prev) => {
           const nextArtists = updater(prev.artists)
-          if (isSupabaseConfigured) {
-            const prevById = new Map(prev.artists.map((a) => [a.id, a]))
-            for (const artist of nextArtists) {
-              const before = prevById.get(artist.id)
-              if (!before || before !== artist) {
-                scheduleArtistPersist(artist)
-              }
+          const prevById = new Map(prev.artists.map((a) => [a.id, a]))
+          for (const artist of nextArtists) {
+            const before = prevById.get(artist.id)
+            if (!before || before !== artist) {
+              markDirty(setDirtyArtistIds, artist.id)
             }
           }
           return { ...prev, artists: nextArtists }
@@ -217,14 +312,15 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       },
       updateArtist: (slug, updater) => {
         setContent((prev) => {
-          let updated: Artist | null = null
+          let updatedId: string | null = null
           const nextArtists = prev.artists.map((artist) => {
             if (artist.slug !== slug) return artist
-            updated = updater(artist)
-            return updated
+            const next = updater(artist)
+            updatedId = next.id
+            return next
           })
-          if (updated && isSupabaseConfigured) {
-            scheduleArtistPersist(updated)
+          if (updatedId) {
+            markDirty(setDirtyArtistIds, updatedId)
           }
           return { ...prev, artists: nextArtists }
         })
@@ -246,10 +342,13 @@ export function CmsProvider({ children }: { children: ReactNode }) {
             }
             clearArtistError()
             setSavedAt(Date.now())
+            clearDirty(setDirtyArtistIds, created.id)
             if (artist && artist.id !== created.id) {
               adoptServerArtist(artist)
             }
           })
+        } else {
+          clearDirty(setDirtyArtistIds, created.id)
         }
         return created
       },
@@ -259,13 +358,10 @@ export function CmsProvider({ children }: { children: ReactNode }) {
           ...prev,
           artists: prev.artists.filter((artist) => artist.slug !== slug),
         }))
+        if (existing) {
+          clearDirty(setDirtyArtistIds, existing.id)
+        }
         if (existing && isSupabaseConfigured) {
-          const key = existing.id || existing.slug
-          const pending = debounceTimers.current.get(key)
-          if (pending) {
-            clearTimeout(pending)
-            debounceTimers.current.delete(key)
-          }
           void deleteArtistInSupabase(existing).then(({ error }) => {
             if (error) {
               reportArtistError(error)
@@ -276,13 +372,16 @@ export function CmsProvider({ children }: { children: ReactNode }) {
           })
         }
       },
+      saveArtist,
+      publishArtist,
+      unpublishArtist,
       resetContent: () => {
         const next = createDefaultContent()
         setContent(next)
         persistLocal(next)
+        setDirtyArtistIds(new Set())
         setSavedAt(Date.now())
         if (isSupabaseConfigured) {
-          // Non-destructive: upsert seed artists; do not wipe extra remote rows
           for (const artist of next.artists) {
             void updateArtistInSupabase(artist).then(({ error }) => {
               if (error) reportArtistError(error)
@@ -292,16 +391,21 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         }
       },
       getArtistBySlug: (slug) => content.artists.find((a) => a.slug === slug),
+      isArtistDirty: (id) => dirtyArtistIds.has(id),
     }),
     [
       content,
       savedAt,
       artistSyncError,
-      scheduleArtistPersist,
+      dirtyArtistIds,
+      artistSaving,
       persistLocal,
       reportArtistError,
       clearArtistError,
       adoptServerArtist,
+      saveArtist,
+      publishArtist,
+      unpublishArtist,
     ],
   )
 

@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useCms } from '@/cms/CmsProvider'
 import { artistSlugFromPath } from '@/cms/artistSlug'
 import { ArtistLayoutEditor } from '@/cms/editors/ArtistLayoutEditor'
-import { EditorSection, TextArea, TextInput } from '@/cms/fields'
+import { EditorSection, Field, TextArea, TextInput } from '@/cms/fields'
 import { ImageFocusField } from '@/cms/editors/ImageFocusField'
 import { ART_DIRECTION_VERSION, resolveArtDirection } from '@/cms/imageFocus'
 import { MediaUrlField } from '@/cms/media/MediaUrlField'
@@ -12,8 +13,8 @@ import {
   DEFAULT_ARTIST_MUSIC,
   MUSIC_PLATFORMS,
 } from '@/cms/artistMusic'
+import { ArtistPublishBar } from '@/cms/editors/ArtistPublishBar'
 import { isArtistVisible, sortArtistsByName } from '@/cms/artistVisibility'
-import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import type { MusicPlatform, SocialPlatform } from '@/types/artist'
 
 const PLATFORMS: SocialPlatform[] = [
@@ -26,24 +27,101 @@ const PLATFORMS: SocialPlatform[] = [
   'youtube',
 ]
 
+const slugControlClass =
+  'w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-brand/60'
+
+/** Soft sanitize while typing (keeps trailing hyphen for mid-edit). */
+function sanitizeSlugDraft(raw: string) {
+  return raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+}
+
+/** Final slug for save — no leading/trailing hyphens. */
+function finalizeSlug(raw: string) {
+  return sanitizeSlugDraft(raw).replace(/^-+|-+$/g, '')
+}
+
 export function ArtistEditor() {
   const { pathname } = useLocation()
-  const slug = artistSlugFromPath(pathname) ?? ''
+  const routeSlug = artistSlugFromPath(pathname) ?? ''
   const navigate = useNavigate()
-  const { content, updateArtist, getArtistBySlug, removeArtist } = useCms()
-  const artist = getArtistBySlug(slug)
+  const { content, updateArtist, getArtistBySlug, removeArtist, saveArtist, publishArtist, unpublishArtist, isArtistDirty, artistSaving } = useCms()
+
+  // Stable identity: route may lag briefly after a committed slug change
+  const artistFromRoute = getArtistBySlug(routeSlug)
+  const [artistId, setArtistId] = useState<string | null>(
+    () => artistFromRoute?.id ?? null,
+  )
+  const artist =
+    (artistId
+      ? content.artists.find((a) => a.id === artistId)
+      : undefined) ?? artistFromRoute
+
+  const [slugDraft, setSlugDraft] = useState(artist?.slug ?? routeSlug)
+  const [slugError, setSlugError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (artistFromRoute) {
+      setArtistId(artistFromRoute.id)
+      setSlugDraft(artistFromRoute.slug)
+      setSlugError(null)
+    }
+  }, [routeSlug, artistFromRoute?.id, artistFromRoute?.slug])
+
+  // Key for updateArtist: prefer current artist slug, else route
+  const updateKey = artist?.slug ?? routeSlug
 
   // Seed full social set when empty (e.g. fresh Supabase rows) so links are editable
   useEffect(() => {
     if (!artist) return
     if ((artist.socials ?? []).length > 0) return
-    updateArtist(slug, (a) => {
+    updateArtist(updateKey, (a) => {
       if ((a.socials ?? []).length > 0) return a
       return { ...a, socials: defaultArtistSocials(a.slug) }
     })
-    // Only re-seed when switching artist or when socials are still empty
     // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-running on every updateArtist identity change
-  }, [slug, artist?.id, artist?.socials?.length])
+  }, [artistId, artist?.socials?.length])
+
+  function commitSlug(): string | null {
+    if (!artist) return null
+    const cleaned = finalizeSlug(slugDraft)
+    if (!cleaned) {
+      setSlugError('Slug cannot be empty.')
+      setSlugDraft(artist.slug)
+      return null
+    }
+    if (cleaned.length < 2) {
+      setSlugError('Slug must be at least 2 characters.')
+      return null
+    }
+    const taken = content.artists.some(
+      (a) => a.slug === cleaned && a.id !== artist.id,
+    )
+    if (taken) {
+      setSlugError('This slug is already used by another artist.')
+      return null
+    }
+
+    setSlugError(null)
+    setSlugDraft(cleaned)
+
+    if (cleaned === artist.slug) {
+      if (cleaned !== routeSlug) {
+        navigate(`/cms/artists/${cleaned}`, { replace: true })
+      }
+      return cleaned
+    }
+
+    flushSync(() => {
+      updateArtist(artist.slug, (a) => ({ ...a, slug: cleaned }))
+    })
+    navigate(`/cms/artists/${cleaned}`, { replace: true })
+    return cleaned
+  }
 
   if (!artist) {
     return <Navigate to="/cms/artists" replace />
@@ -52,11 +130,23 @@ export function ArtistEditor() {
   const socials = artist.socials ?? []
   const tracks = artist.tracks ?? []
   const music = artist.music ?? DEFAULT_ARTIST_MUSIC
-  const visible = isArtistVisible(artist)
   const art = resolveArtDirection(artist)
+  const dirty = isArtistDirty(artist.id) || slugDraft !== artist.slug
+
+  async function handleSave() {
+    const slug = commitSlug()
+    if (!slug) return
+    await saveArtist(slug)
+  }
+
+  async function handlePublish() {
+    const slug = commitSlug()
+    if (!slug) return
+    await publishArtist(slug)
+  }
 
   const patchMusic = (patch: Partial<typeof music>) => {
-    updateArtist(slug, (a) => ({
+    updateArtist(updateKey, (a) => ({
       ...a,
       music: { ...(a.music ?? DEFAULT_ARTIST_MUSIC), ...patch },
     }))
@@ -64,6 +154,15 @@ export function ArtistEditor() {
 
   return (
     <>
+      <ArtistPublishBar
+        artist={artist}
+        dirty={dirty}
+        saving={artistSaving}
+        onSave={() => void handleSave()}
+        onPublish={() => void handlePublish()}
+        onUnpublish={() => void unpublishArtist(artist.slug)}
+      />
+
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/cms/artists"
@@ -72,12 +171,6 @@ export function ArtistEditor() {
           ← Alle artiesten
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <ArtistVisibilityToggle
-            visible={visible}
-            onChange={(next) =>
-              updateArtist(slug, (a) => ({ ...a, visible: next }))
-            }
-          />
           <a
             href={`/artists/${artist.slug}`}
             target="_blank"
@@ -105,10 +198,10 @@ export function ArtistEditor() {
         </div>
       </div>
 
-      {!visible ? (
+      {!isArtistVisible(artist) ? (
         <p className="rounded-xl border border-ink/10 bg-ink/5 px-3 py-2 type-body text-xs text-ink/50">
-          Deze artiest is verborgen: niet op de homepage-roster en niet bereikbaar via
-          /artists/{artist.slug}.
+          Draft — niet op de homepage-roster en niet bereikbaar via /artists/
+          {artist.slug} tot je publiceert.
         </p>
       ) : null}
 
@@ -118,12 +211,12 @@ export function ArtistEditor() {
         </span>
         <select
           className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none focus:border-brand/60"
-          value={slug}
+          value={artist.slug}
           onChange={(e) => navigate(`/cms/artists/${e.target.value}`)}
           aria-label="Select artist"
         >
           {sortArtistsByName(content.artists).map((a) => (
-            <option key={a.slug} value={a.slug}>
+            <option key={a.id} value={a.slug}>
               {a.name}
             </option>
           ))}
@@ -132,9 +225,9 @@ export function ArtistEditor() {
 
       <ArtistLayoutEditor
         artist={artist}
-        onChange={(sections) => updateArtist(slug, (a) => ({ ...a, sections }))}
+        onChange={(sections) => updateArtist(updateKey, (a) => ({ ...a, sections }))}
         onVideoChange={(videoUrl) =>
-          updateArtist(slug, (a) => ({
+          updateArtist(updateKey, (a) => ({
             ...a,
             videoUrl: videoUrl || undefined,
           }))
@@ -155,41 +248,67 @@ export function ArtistEditor() {
                 <TextInput
                   label="Artist name"
                   value={artist.name}
-                  onChange={(name) => updateArtist(slug, (a) => ({ ...a, name }))}
+                  onChange={(name) => updateArtist(updateKey, (a) => ({ ...a, name }))}
                 />
-                <TextInput
+                <Field
                   label="Slug (URL)"
-                  value={artist.slug}
-                  hint="Live URL: /artists/{slug} — change carefully."
-                  onChange={(nextSlug) => {
-                    const cleaned = nextSlug
-                      .toLowerCase()
-                      .replace(/[^a-z0-9-]+/g, '-')
-                      .replace(/-+/g, '-')
-                      .replace(/^-|-$/g, '')
-                    updateArtist(slug, (a) => ({ ...a, slug: cleaned || a.slug }))
-                    if (cleaned && cleaned !== slug) {
-                      navigate(`/cms/artists/${cleaned}`, { replace: true })
-                    }
-                  }}
-                />
+                  hint={
+                    slugError
+                      ? undefined
+                      : `Live URL: /artists/${artist.slug} — apply to save. Typing does not navigate.`
+                  }
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <input
+                      type="text"
+                      className={slugControlClass}
+                      value={slugDraft}
+                      spellCheck={false}
+                      autoComplete="off"
+                      aria-invalid={Boolean(slugError)}
+                      onChange={(e) => {
+                        setSlugError(null)
+                        setSlugDraft(sanitizeSlugDraft(e.target.value))
+                      }}
+                      onBlur={() => commitSlug()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          ;(e.target as HTMLInputElement).blur()
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="type-label shrink-0 rounded-full border border-ink/15 px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/70 uppercase transition-colors hover:border-ink/30 hover:text-ink"
+                      onClick={() => commitSlug()}
+                    >
+                      Apply slug
+                    </button>
+                  </div>
+                  {slugError ? (
+                    <span className="mt-1.5 block text-xs text-red-500" role="alert">
+                      {slugError}
+                    </span>
+                  ) : null}
+                </Field>
                 <TextInput
                   label="Genre"
                   value={artist.genre ?? ''}
                   placeholder="e.g. House, Techno"
-                  onChange={(genre) => updateArtist(slug, (a) => ({ ...a, genre }))}
+                  onChange={(genre) => updateArtist(updateKey, (a) => ({ ...a, genre }))}
                 />
                 <TextArea
                   label="Bio"
                   value={artist.bio ?? ''}
                   rows={6}
-                  onChange={(bio) => updateArtist(slug, (a) => ({ ...a, bio }))}
+                  onChange={(bio) => updateArtist(updateKey, (a) => ({ ...a, bio }))}
                 />
                 <TextInput
                   label="Image alt text"
                   value={artist.imageAlt}
                   onChange={(imageAlt) =>
-                    updateArtist(slug, (a) => ({ ...a, imageAlt }))
+                    updateArtist(updateKey, (a) => ({ ...a, imageAlt }))
                   }
                 />
                 <TextInput
@@ -197,7 +316,7 @@ export function ArtistEditor() {
                   value={artist.presskitUrl ?? ''}
                   placeholder="https://…"
                   onChange={(presskitUrl) =>
-                    updateArtist(slug, (a) => ({ ...a, presskitUrl }))
+                    updateArtist(updateKey, (a) => ({ ...a, presskitUrl }))
                   }
                 />
 
@@ -231,7 +350,7 @@ export function ArtistEditor() {
                           type="button"
                           className="type-label text-[0.6rem] tracking-[0.12em] text-ink/35 uppercase hover:text-ink"
                           onClick={() =>
-                            updateArtist(slug, (a) => ({
+                            updateArtist(updateKey, (a) => ({
                               ...a,
                               socials: (a.socials ?? []).filter((_, i) => i !== index),
                             }))
@@ -248,7 +367,7 @@ export function ArtistEditor() {
                           className="w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none focus:border-brand/60"
                           value={link.platform}
                           onChange={(e) =>
-                            updateArtist(slug, (a) => ({
+                            updateArtist(updateKey, (a) => ({
                               ...a,
                               socials: (a.socials ?? []).map((s, i) =>
                                 i === index
@@ -272,7 +391,7 @@ export function ArtistEditor() {
                         label="Label"
                         value={link.label}
                         onChange={(label) =>
-                          updateArtist(slug, (a) => ({
+                          updateArtist(updateKey, (a) => ({
                             ...a,
                             socials: (a.socials ?? []).map((s, i) =>
                               i === index ? { ...s, label } : s,
@@ -285,7 +404,7 @@ export function ArtistEditor() {
                         value={link.url}
                         placeholder="https://…"
                         onChange={(url) =>
-                          updateArtist(slug, (a) => ({
+                          updateArtist(updateKey, (a) => ({
                             ...a,
                             socials: (a.socials ?? []).map((s, i) =>
                               i === index ? { ...s, url } : s,
@@ -301,7 +420,7 @@ export function ArtistEditor() {
                       type="button"
                       className="type-ui flex-1 rounded-full border border-ink/15 px-4 py-2.5 text-[0.65rem] text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
                       onClick={() =>
-                        updateArtist(slug, (a) => ({
+                        updateArtist(updateKey, (a) => ({
                           ...a,
                           socials: [
                             ...(a.socials ?? []),
@@ -316,7 +435,7 @@ export function ArtistEditor() {
                       type="button"
                       className="type-ui flex-1 rounded-full border border-brand/35 bg-brand/10 px-4 py-2.5 text-[0.65rem] text-ink transition-colors hover:bg-brand/20"
                       onClick={() =>
-                        updateArtist(slug, (a) => {
+                        updateArtist(updateKey, (a) => {
                           const existing = a.socials ?? []
                           const have = new Set(existing.map((s) => s.platform))
                           const missing = defaultArtistSocials(a.slug).filter(
@@ -348,7 +467,7 @@ export function ArtistEditor() {
                   kind="image"
                   value={artist.imageUrl}
                   onChange={(imageUrl) =>
-                    updateArtist(slug, (a) => ({ ...a, imageUrl }))
+                    updateArtist(updateKey, (a) => ({ ...a, imageUrl }))
                   }
                 />
                 <ImageFocusField
@@ -358,7 +477,7 @@ export function ArtistEditor() {
                   y={art.y}
                   scale={art.scale}
                   onChange={({ x, y, scale }) =>
-                    updateArtist(slug, (a) => ({
+                    updateArtist(updateKey, (a) => ({
                       ...a,
                       imageFocusX: x,
                       imageFocusY: y,
@@ -373,7 +492,7 @@ export function ArtistEditor() {
                   kind="video"
                   value={artist.videoUrl ?? ''}
                   onChange={(videoUrl) =>
-                    updateArtist(slug, (a) => ({
+                    updateArtist(updateKey, (a) => ({
                       ...a,
                       videoUrl: videoUrl || undefined,
                     }))
@@ -410,7 +529,7 @@ export function ArtistEditor() {
                 >
                   <input
                     type="radio"
-                    name={`music-platform-${slug}`}
+                    name={`music-platform-${artist.id}`}
                     className="mt-1 accent-[var(--brand,#D8FF3E)]"
                     checked={selected}
                     onChange={() => {
@@ -506,7 +625,7 @@ export function ArtistEditor() {
                 type="button"
                 className="type-label text-[0.6rem] tracking-[0.12em] text-ink/35 uppercase hover:text-ink"
                 onClick={() =>
-                  updateArtist(slug, (a) => ({
+                  updateArtist(updateKey, (a) => ({
                     ...a,
                     tracks: (a.tracks ?? []).filter((_, i) => i !== index),
                   }))
@@ -519,7 +638,7 @@ export function ArtistEditor() {
               label="Title"
               value={track.title}
               onChange={(title) =>
-                updateArtist(slug, (a) => ({
+                updateArtist(updateKey, (a) => ({
                   ...a,
                   tracks: (a.tracks ?? []).map((t, i) =>
                     i === index ? { ...t, title } : t,
@@ -531,7 +650,7 @@ export function ArtistEditor() {
               label="Credit"
               value={track.credit ?? ''}
               onChange={(credit) =>
-                updateArtist(slug, (a) => ({
+                updateArtist(updateKey, (a) => ({
                   ...a,
                   tracks: (a.tracks ?? []).map((t, i) =>
                     i === index ? { ...t, credit } : t,
@@ -544,7 +663,7 @@ export function ArtistEditor() {
               value={track.duration}
               placeholder="3:24"
               onChange={(duration) =>
-                updateArtist(slug, (a) => ({
+                updateArtist(updateKey, (a) => ({
                   ...a,
                   tracks: (a.tracks ?? []).map((t, i) =>
                     i === index ? { ...t, duration } : t,
@@ -559,7 +678,7 @@ export function ArtistEditor() {
           type="button"
           className="type-ui w-full rounded-full border border-ink/15 px-4 py-2.5 text-[0.65rem] text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
           onClick={() =>
-            updateArtist(slug, (a) => ({
+            updateArtist(updateKey, (a) => ({
               ...a,
               tracks: [
                 ...(a.tracks ?? []),

@@ -40,6 +40,9 @@ export type ArtistSectionConfig = {
   visible: boolean
 }
 
+/** CMS publish workflow — public site only shows `published`. */
+export type ArtistStatus = 'draft' | 'published'
+
 export type Artist = {
   id: string
   name: string
@@ -75,8 +78,15 @@ export type Artist = {
   /** Page layout order + visibility — editable via CMS drag & drop. */
   sections?: ArtistSectionConfig[]
   /**
-   * Public visibility on roster + artist page.
-   * `undefined` / missing = visible (legacy). `false` = hidden from public site.
+   * Publish status. Prefer this over `visible`.
+   * Missing → inferred from `visible` for legacy content.
+   */
+  status?: ArtistStatus
+  /** First (or last) publish time — ISO string. */
+  publishedAt?: string
+  /**
+   * Legacy public visibility — kept in sync with `status` for RLS.
+   * `undefined` / missing = treated as published when status is also missing.
    */
   visible?: boolean
 }
