@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Hero } from '@/components/hero/Hero'
 import { ArtistRoster } from '@/components/artists/ArtistRoster'
-import { useCms } from '@/cms/CmsProvider'
-import { visibleArtists } from '@/cms/artistVisibility'
+import { usePublicArtists } from '@/cms/usePublicArtists'
 
 export function HomePage() {
-  const { content } = useCms()
+  const { artists } = usePublicArtists()
   const [navVariant, setNavVariant] = useState<'hero' | 'mark'>('hero')
-  const artists = visibleArtists(content.artists)
 
   useEffect(() => {
     const onScroll = () => {

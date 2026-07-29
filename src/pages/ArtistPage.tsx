@@ -2,18 +2,23 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { ArtistPageSections } from '@/components/artists/ArtistPageSections'
-import { useCms } from '@/cms/CmsProvider'
-import { isArtistVisible } from '@/cms/artistVisibility'
+import { usePublicArtist } from '@/cms/usePublicArtists'
 
 export function ArtistPage() {
   const { slug = '' } = useParams()
-  const { getArtistBySlug } = useCms()
-  const artist = getArtistBySlug(slug)
-  const publicArtist = artist && isArtistVisible(artist) ? artist : undefined
+  const { artist: publicArtist, checkingRemote } = usePublicArtist(slug)
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [slug])
+
+  if (!publicArtist && checkingRemote) {
+    return (
+      <AppShell navVariant="wordmark">
+        <div className="min-h-[60vh]" aria-busy="true" />
+      </AppShell>
+    )
+  }
 
   if (!publicArtist) {
     return (
