@@ -1,14 +1,29 @@
-import type { ArtistRow } from '@/lib/database.types'
+import type { ArtistRow, Database } from '@/lib/database.types'
 import type {
   Artist,
   ArtistSectionConfig,
   SocialLink,
   Track,
 } from '@/types/artist'
+import {
+  DEFAULT_ARTIST_SECTIONS,
+  normalizeArtistSections,
+} from '@/cms/artistSections'
 import { withArtDirection } from '@/cms/imageFocus'
+
+type ArtistInsert = Database['public']['Tables']['artists']['Insert']
+type ArtistUpdate = Database['public']['Tables']['artists']['Update']
 
 function asArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : []
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/** True when id is a real Postgres UUID (seed ids like "1" are not). */
+export function isArtistUuid(id: string) {
+  return UUID_RE.test(id)
 }
 
 /** Map a Supabase artists row → app Artist type. */
@@ -35,4 +50,46 @@ export function artistFromRow(row: ArtistRow): Artist {
   }
 
   return withArtDirection(mapped)
+}
+
+/** Shared column payload for insert / update / upsert. */
+export function artistToColumns(artist: Artist): ArtistUpdate {
+  const sections = normalizeArtistSections(
+    artist.sections?.length ? artist.sections : DEFAULT_ARTIST_SECTIONS,
+  )
+
+  return {
+    slug: artist.slug,
+    name: artist.name,
+    genre: artist.genre ?? null,
+    bio: artist.bio ?? null,
+    image_url: artist.imageUrl || null,
+    image_alt: artist.imageAlt || null,
+    image_focus: artist.imageFocus ?? null,
+    image_focus_x:
+      typeof artist.imageFocusX === 'number' ? artist.imageFocusX : null,
+    image_focus_y:
+      typeof artist.imageFocusY === 'number' ? artist.imageFocusY : null,
+    image_scale:
+      typeof artist.imageScale === 'number' ? artist.imageScale : null,
+    art_direction_version:
+      typeof artist.artDirectionVersion === 'number'
+        ? artist.artDirectionVersion
+        : null,
+    video_url: artist.videoUrl ?? null,
+    socials: artist.socials ?? [],
+    tracks: artist.tracks ?? [],
+    sections,
+    presskit_url: artist.presskitUrl ?? null,
+    visible: artist.visible !== false,
+  }
+}
+
+/** Insert payload — includes id only when it is a UUID. */
+export function artistToInsert(artist: Artist): ArtistInsert {
+  const columns = artistToColumns(artist)
+  if (isArtistUuid(artist.id)) {
+    return { ...columns, id: artist.id, slug: artist.slug, name: artist.name }
+  }
+  return { ...columns, slug: artist.slug, name: artist.name }
 }

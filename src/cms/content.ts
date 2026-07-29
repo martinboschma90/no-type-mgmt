@@ -89,9 +89,26 @@ export function loadStoredContent(): CmsContent | null {
   }
 }
 
-export function persistContent(content: CmsContent) {
+/**
+ * Persist CMS content to localStorage.
+ * Phase 3.1: when `persistArtists` is false, artists are omitted from the
+ * write (Supabase is source of truth). Site + team still persist locally.
+ */
+export function persistContent(
+  content: CmsContent,
+  options?: { persistArtists?: boolean },
+) {
+  const persistArtists = options?.persistArtists !== false
   try {
-    localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(content))
+    const payload: CmsContent = persistArtists
+      ? content
+      : {
+          site: content.site,
+          team: content.team,
+          // Empty array keeps schema valid; seed/Supabase hydrate artists on load
+          artists: [],
+        }
+    localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(payload))
   } catch {
     // Ignore quota / private-mode failures
   }

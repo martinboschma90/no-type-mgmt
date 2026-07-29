@@ -113,7 +113,7 @@ function formatSavedAt(ts: number | null) {
 /** Frame-inspired CMS shell: sidebar · editor · live preview. */
 export function CmsLayout() {
   const { pathname } = useLocation()
-  const { resetContent, savedAt, content } = useCms()
+  const { resetContent, savedAt, artistSyncError, content } = useCms()
   const { assets } = useMedia()
   const panels = useCmsPanels()
 
@@ -271,6 +271,15 @@ export function CmsLayout() {
               <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
                 {formatSavedAt(savedAt)}
               </span>
+              {artistSyncError ? (
+                <span
+                  className="type-body max-w-full text-[0.7rem] text-red-500"
+                  role="alert"
+                  title={artistSyncError}
+                >
+                  Artist sync: {artistSyncError}
+                </span>
+              ) : null}
               <span className="type-label hidden text-[0.55rem] tracking-[0.12em] text-ink/35 uppercase sm:inline">
                 {panels.subtitle}
               </span>
