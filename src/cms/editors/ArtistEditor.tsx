@@ -153,17 +153,20 @@ export function ArtistEditor() {
   }
 
   return (
-    <>
-      <ArtistPublishBar
-        artist={artist}
-        dirty={dirty}
-        saving={artistSaving}
-        onSave={() => void handleSave()}
-        onPublish={() => void handlePublish()}
-        onUnpublish={() => void unpublishArtist(artist.slug)}
-      />
+    <div className="space-y-3">
+      {/* Sticky so Save / Publish stay visible while scrolling the editor */}
+      <div className="sticky top-0 z-20 -mx-4 border-b border-ink/10 bg-[var(--body-bg)]/95 px-4 py-2 backdrop-blur-md sm:-mx-5 sm:px-5">
+        <ArtistPublishBar
+          artist={artist}
+          dirty={dirty}
+          saving={artistSaving}
+          onSave={() => void handleSave()}
+          onPublish={() => void handlePublish()}
+          onUnpublish={() => void unpublishArtist(artist.slug)}
+        />
+      </div>
 
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/cms/artists"
           className="type-label text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:text-ink"
@@ -205,7 +208,7 @@ export function ArtistEditor() {
         </p>
       ) : null}
 
-      <label className="mb-2 block">
+      <label className="block">
         <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
           Switch artist page
         </span>
@@ -695,6 +698,6 @@ export function ArtistEditor() {
           + Add track
         </button>
       </EditorSection>
-    </>
+    </div>
   )
 }
