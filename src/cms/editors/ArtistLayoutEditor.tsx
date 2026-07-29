@@ -6,20 +6,17 @@ import {
   type ArtistSectionConfig,
 } from '@/cms/artistSections'
 import { EditorSection } from '@/cms/fields'
-import { MediaUrlField } from '@/cms/media/MediaUrlField'
 import type { Artist } from '@/types/artist'
 
 type ArtistLayoutEditorProps = {
   artist: Artist
   onChange: (sections: ArtistSectionConfig[]) => void
-  onVideoChange: (videoUrl: string) => void
 }
 
 /** Drag-and-drop page layout for a single artist page. */
 export function ArtistLayoutEditor({
   artist,
   onChange,
-  onVideoChange,
 }: ArtistLayoutEditorProps) {
   const sections = normalizeArtistSections(artist.sections)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -28,7 +25,7 @@ export function ArtistLayoutEditor({
   return (
     <EditorSection
       title="Page layout"
-      description="Sleep blokken voor de volgorde. Video upload hoort bij de Video slide."
+      description="Sleep blokken voor de volgorde. Reels beheer je in Video reels hieronder."
       defaultOpen
       badge="Layout"
     >
@@ -87,7 +84,9 @@ export function ArtistLayoutEditor({
 
               <div className="min-w-0 flex-1">
                 <p className="type-headline text-sm text-ink">{meta.label}</p>
-                <p className="type-body mt-0.5 text-xs text-ink/40">{meta.description}</p>
+                <p className="type-body mt-0.5 text-xs text-ink/40">
+                  {meta.description}
+                </p>
               </div>
 
               <button
@@ -116,19 +115,6 @@ export function ArtistLayoutEditor({
           )
         })}
       </ul>
-
-      <div className="rounded-2xl border border-brand/25 bg-brand/5 p-3.5">
-        <p className="type-label mb-3 text-[0.65rem] tracking-[0.14em] text-ink/50 uppercase">
-          Video slide bestand
-        </p>
-        <MediaUrlField
-          label="Video (WebM)"
-          kind="video"
-          value={artist.videoUrl ?? ''}
-          onChange={onVideoChange}
-          hint="Zonder video zie je een lege slide. Upload hier of via Profile → Media."
-        />
-      </div>
 
       <button
         type="button"

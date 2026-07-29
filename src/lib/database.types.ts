@@ -28,6 +28,7 @@ export type Database = {
           image_scale: number | null
           art_direction_version: number | null
           video_url: string | null
+          videos: Json
           socials: Json
           tracks: Json
           sections: Json
@@ -52,6 +53,7 @@ export type Database = {
           image_scale?: number | null
           art_direction_version?: number | null
           video_url?: string | null
+          videos?: Json
           socials?: Json
           tracks?: Json
           sections?: Json
@@ -76,6 +78,7 @@ export type Database = {
           image_scale?: number | null
           art_direction_version?: number | null
           video_url?: string | null
+          videos?: Json
           socials?: Json
           tracks?: Json
           sections?: Json

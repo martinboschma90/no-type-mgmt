@@ -13,6 +13,10 @@ import {
   parseTracksColumn,
   serializeTracksColumn,
 } from '@/cms/artistMusic'
+import {
+  parseVideosColumn,
+  syncLegacyVideoUrl,
+} from '@/cms/artistVideos'
 import { getArtistStatus } from '@/cms/artistVisibility'
 import { withArtDirection } from '@/cms/imageFocus'
 
@@ -55,6 +59,7 @@ export function artistFromRow(row: ArtistRow): Artist {
     imageScale: row.image_scale ?? undefined,
     artDirectionVersion: row.art_direction_version ?? undefined,
     videoUrl: row.video_url ?? undefined,
+    videos: parseVideosColumn(row.videos),
     socials: asArray<SocialLink>(row.socials),
     tracks,
     music,
@@ -93,7 +98,16 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
       typeof artist.artDirectionVersion === 'number'
         ? artist.artDirectionVersion
         : null,
-    video_url: artist.videoUrl ?? null,
+    video_url: syncLegacyVideoUrl(artist.videos) ?? artist.videoUrl ?? null,
+    videos: (artist.videos ?? [])
+      .filter((v) => Boolean(v.videoUrl?.trim()))
+      .slice(0, 5)
+      .map((v) => ({
+        id: v.id,
+        videoUrl: v.videoUrl.trim(),
+        posterUrl: v.posterUrl?.trim() || '',
+        title: v.title?.trim() || '',
+      })),
     socials: artist.socials ?? [],
     tracks: serializeTracksColumn(artist.tracks, artist.music),
     sections,

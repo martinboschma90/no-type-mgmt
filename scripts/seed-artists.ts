@@ -112,6 +112,14 @@ function artistToRow(artist: Artist) {
         ? artist.artDirectionVersion
         : null,
     video_url: artist.videoUrl ?? null,
+    videos: (artist.videos ?? [])
+      .filter((v) => Boolean(v.videoUrl?.trim()))
+      .map((v) => ({
+        id: v.id,
+        videoUrl: v.videoUrl,
+        posterUrl: v.posterUrl ?? '',
+        title: v.title ?? '',
+      })),
     socials: artist.socials ?? [],
     tracks: artist.tracks ?? [],
     sections,

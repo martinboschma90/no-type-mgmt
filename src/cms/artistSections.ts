@@ -11,8 +11,8 @@ export const ARTIST_SECTION_META: Record<
     description: 'Portrait, naam, bio, booking & socials',
   },
   video: {
-    label: 'Video slide',
-    description: 'Gecentreerde video in het midden',
+    label: 'Video reels',
+    description: 'Vertical 9:16 carousel (3–5 clips)',
   },
   tracks: {
     label: 'Music',

@@ -31,7 +31,7 @@ export function ArtistPageSections({
                 key="video"
                 artist={artist}
                 previewMode={previewMode}
-                showEmptyState={previewMode || Boolean(!artist.videoUrl)}
+                showEmptyState={previewMode}
               />
             )
           case 'tracks':

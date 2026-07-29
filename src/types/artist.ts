@@ -40,6 +40,16 @@ export type ArtistSectionConfig = {
   visible: boolean
 }
 
+/** Vertical reel clip (9:16) on the artist page carousel. */
+export type ArtistVideo = {
+  id: string
+  /** Media ref (`media://…`) or absolute URL. */
+  videoUrl: string
+  /** Optional poster / thumbnail before playback. */
+  posterUrl?: string
+  title?: string
+}
+
 /** CMS publish workflow — public site only shows `published`. */
 export type ArtistStatus = 'draft' | 'published'
 
@@ -65,6 +75,11 @@ export type Artist = {
   artDirectionVersion?: number
   /** Optional centered video slide (WebM via CMS media library). */
   videoUrl?: string
+  /**
+   * Vertical reels (9:16) — 1–5 videos.
+   * Prefer this over legacy `videoUrl`. Empty → fall back to `videoUrl`.
+   */
+  videos?: ArtistVideo[]
   bio?: string
   socials?: SocialLink[]
   /** Legacy playlist rows — kept for compatibility. */

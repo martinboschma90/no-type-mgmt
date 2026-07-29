@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useCms } from '@/cms/CmsProvider'
 import { artistSlugFromPath } from '@/cms/artistSlug'
 import { ArtistLayoutEditor } from '@/cms/editors/ArtistLayoutEditor'
+import { ArtistVideosEditor, withSyncedVideos } from '@/cms/editors/ArtistVideosEditor'
 import { EditorSection, Field, TextArea, TextInput } from '@/cms/fields'
 import { ImageFocusField } from '@/cms/editors/ImageFocusField'
 import { ART_DIRECTION_VERSION, resolveArtDirection } from '@/cms/imageFocus'
@@ -14,6 +15,7 @@ import {
   MUSIC_PLATFORMS,
 } from '@/cms/artistMusic'
 import { ArtistPublishBar } from '@/cms/editors/ArtistPublishBar'
+import { normalizeArtistVideos } from '@/cms/artistVideos'
 import { isArtistVisible, sortArtistsByName } from '@/cms/artistVisibility'
 import type { MusicPlatform, SocialPlatform } from '@/types/artist'
 
@@ -132,6 +134,10 @@ export function ArtistEditor() {
   const music = artist.music ?? DEFAULT_ARTIST_MUSIC
   const art = resolveArtDirection(artist)
   const dirty = isArtistDirty(artist.id) || slugDraft !== artist.slug
+  const editableVideos =
+    artist.videos && artist.videos.length > 0
+      ? artist.videos
+      : normalizeArtistVideos(artist)
 
   async function handleSave() {
     const slug = commitSlug()
@@ -229,10 +235,14 @@ export function ArtistEditor() {
       <ArtistLayoutEditor
         artist={artist}
         onChange={(sections) => updateArtist(updateKey, (a) => ({ ...a, sections }))}
-        onVideoChange={(videoUrl) =>
+      />
+
+      <ArtistVideosEditor
+        videos={editableVideos}
+        onChange={(videos) =>
           updateArtist(updateKey, (a) => ({
             ...a,
-            videoUrl: videoUrl || undefined,
+            ...withSyncedVideos(videos),
           }))
         }
       />
@@ -490,18 +500,10 @@ export function ArtistEditor() {
                     }))
                   }
                 />
-                <MediaUrlField
-                  label="Video slide (midden van pagina)"
-                  kind="video"
-                  value={artist.videoUrl ?? ''}
-                  onChange={(videoUrl) =>
-                    updateArtist(updateKey, (a) => ({
-                      ...a,
-                      videoUrl: videoUrl || undefined,
-                    }))
-                  }
-                  hint="Verschijnt gecentreerd tussen hero en tracks. Upload → WebM."
-                />
+                <p className="type-body text-xs text-ink/40">
+                  Video reels are managed in the <span className="text-ink/70">Video reels</span>{' '}
+                  section above (9:16, up to 5 clips).
+                </p>
               </>
             ),
           },
