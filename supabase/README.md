@@ -31,4 +31,10 @@ Expected: 12 rows upserted; public site (Phase 2.1) reads them when present.
 Run `migrations/20260729103000_phase3_1_temp_anon_artist_writes.sql` in the SQL Editor
 so the CMS can insert/update/delete artists with the anon key **before** auth lands.
 
-Remove those policies in Phase 5 when `/cms` requires login.
+## Phase 3.3 — CMS auth
+
+1. Dashboard → Authentication → Users → **Add user** (email + password) for the admin.
+2. Open `/cms/login` and sign in.
+3. After login works, optionally run
+   `migrations/20260729120000_phase3_3_remove_temp_anon_artist_writes.sql`
+   so only authenticated users can mutate artists.

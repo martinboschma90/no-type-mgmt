@@ -1,4 +1,5 @@
-import { Navigate, NavLink, useLocation } from 'react-router-dom'
+import { Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/cms/auth/AuthProvider'
 import { useCms } from '@/cms/CmsProvider'
 import { artistSlugFromPath, isArtistsIndexPath } from '@/cms/artistSlug'
 import { sortArtistsByName } from '@/cms/artistVisibility'
@@ -113,7 +114,9 @@ function formatSavedAt(ts: number | null) {
 /** Frame-inspired CMS shell: sidebar · editor · live preview. */
 export function CmsLayout() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const { resetContent, savedAt, artistSyncError, content } = useCms()
+  const { user, authRequired, signOut } = useAuth()
   const { assets } = useMedia()
   const panels = useCmsPanels()
 
@@ -125,6 +128,11 @@ export function CmsLayout() {
   const mediaActive = pathname.startsWith('/cms/media')
   const pagesActive = !artistsActive && !mediaActive
 
+  async function handleLogout() {
+    await signOut()
+    navigate('/cms/login', { replace: true })
+  }
+
   return (
     <div className="flex h-svh overflow-hidden bg-[#ebe8e2] text-ink dark:bg-[#0c0b0d]">
       <aside className="hidden w-[210px] shrink-0 flex-col border-r border-ink/8 bg-[var(--body-bg)] md:flex">
@@ -133,7 +141,17 @@ export function CmsLayout() {
             No Type
           </p>
           <h1 className="type-display m-0 mt-1 text-[1.65rem] leading-none text-ink">CMS</h1>
-          <p className="type-body mt-2 text-[0.7rem] text-ink/40">Local · autosave</p>
+          <p className="type-body mt-2 text-[0.7rem] text-ink/40">
+            {authRequired ? 'Admin · autosave' : 'Local · autosave'}
+          </p>
+          {user?.email ? (
+            <p
+              className="type-body mt-2 truncate text-[0.65rem] text-ink/50"
+              title={user.email}
+            >
+              {user.email}
+            </p>
+          ) : null}
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="CMS">
@@ -181,6 +199,15 @@ export function CmsLayout() {
           >
             View site
           </a>
+          {authRequired ? (
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              className="type-label w-full rounded-xl border border-ink/12 px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:border-ink/25 hover:text-ink"
+            >
+              Log out
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => {
@@ -266,8 +293,16 @@ export function CmsLayout() {
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="type-label inline-flex items-center gap-1.5 rounded-full bg-brand/15 px-2.5 py-1 text-[0.55rem] tracking-[0.12em] text-ink uppercase">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-                Local
+                {authRequired ? 'Admin' : 'Local'}
               </span>
+              {user?.email ? (
+                <span
+                  className="type-body max-w-[10rem] truncate text-[0.7rem] text-ink/45 sm:max-w-[14rem]"
+                  title={user.email}
+                >
+                  {user.email}
+                </span>
+              ) : null}
               <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
                 {formatSavedAt(savedAt)}
               </span>
@@ -279,6 +314,15 @@ export function CmsLayout() {
                 >
                   Artist sync: {artistSyncError}
                 </span>
+              ) : null}
+              {authRequired ? (
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="type-label ml-auto text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink md:hidden"
+                >
+                  Log out
+                </button>
               ) : null}
               <span className="type-label hidden text-[0.55rem] tracking-[0.12em] text-ink/35 uppercase sm:inline">
                 {panels.subtitle}

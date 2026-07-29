@@ -2,8 +2,8 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import type { Session, User } from '@supabase/supabase-js'
 
 /**
- * Auth helpers for future CMS login (Phase 5).
- * No UI wiring in Phase 1 — local CMS stays open and local.
+ * Auth helpers for CMS login (Phase 3.3).
+ * Session is persisted by the Supabase client (storageKey: notype-supabase-auth).
  */
 
 export async function getSession(): Promise<Session | null> {

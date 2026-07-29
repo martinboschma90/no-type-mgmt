@@ -22,6 +22,17 @@ export type Track = {
   duration: string
 }
 
+/** Per-artist music embed (stored inside tracks jsonb, migration-safe). */
+export type MusicPlatform = 'soundcloud' | 'spotify' | 'custom'
+
+export type ArtistMusic = {
+  platform: MusicPlatform
+  /** Track/playlist URL or ready-made embed src. */
+  embedUrl: string
+  title: string
+  visible: boolean
+}
+
 export type ArtistSectionId = 'hero' | 'video' | 'tracks'
 
 export type ArtistSectionConfig = {
@@ -53,7 +64,13 @@ export type Artist = {
   videoUrl?: string
   bio?: string
   socials?: SocialLink[]
+  /** Legacy playlist rows — kept for compatibility. */
   tracks?: Track[]
+  /**
+   * Flexible music embed (SoundCloud / Spotify / custom).
+   * Persisted inside the `tracks` jsonb column alongside the track list.
+   */
+  music?: ArtistMusic
   presskitUrl?: string
   /** Page layout order + visibility — editable via CMS drag & drop. */
   sections?: ArtistSectionConfig[]

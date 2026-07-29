@@ -61,6 +61,12 @@ export function createBlankArtist(
     presskitUrl: '',
     socials: defaultArtistSocials(slug),
     tracks: [],
+    music: {
+      platform: 'soundcloud',
+      embedUrl: '',
+      title: 'Latest Mix',
+      visible: false,
+    },
     sections: DEFAULT_ARTIST_SECTIONS.map((s) => ({ ...s })),
     visible: true,
   }

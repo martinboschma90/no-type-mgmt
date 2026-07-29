@@ -3,12 +3,15 @@ import type {
   Artist,
   ArtistSectionConfig,
   SocialLink,
-  Track,
 } from '@/types/artist'
 import {
   DEFAULT_ARTIST_SECTIONS,
   normalizeArtistSections,
 } from '@/cms/artistSections'
+import {
+  parseTracksColumn,
+  serializeTracksColumn,
+} from '@/cms/artistMusic'
 import { withArtDirection } from '@/cms/imageFocus'
 
 type ArtistInsert = Database['public']['Tables']['artists']['Insert']
@@ -28,6 +31,8 @@ export function isArtistUuid(id: string) {
 
 /** Map a Supabase artists row → app Artist type. */
 export function artistFromRow(row: ArtistRow): Artist {
+  const { tracks, music } = parseTracksColumn(row.tracks)
+
   const mapped: Artist = {
     id: row.id,
     slug: row.slug,
@@ -43,7 +48,8 @@ export function artistFromRow(row: ArtistRow): Artist {
     artDirectionVersion: row.art_direction_version ?? undefined,
     videoUrl: row.video_url ?? undefined,
     socials: asArray<SocialLink>(row.socials),
-    tracks: asArray<Track>(row.tracks),
+    tracks,
+    music,
     sections: asArray<ArtistSectionConfig>(row.sections),
     presskitUrl: row.presskit_url ?? undefined,
     visible: row.visible,
@@ -78,7 +84,7 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
         : null,
     video_url: artist.videoUrl ?? null,
     socials: artist.socials ?? [],
-    tracks: artist.tracks ?? [],
+    tracks: serializeTracksColumn(artist.tracks, artist.music),
     sections,
     presskit_url: artist.presskitUrl ?? null,
     visible: artist.visible !== false,

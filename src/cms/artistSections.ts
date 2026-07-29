@@ -15,8 +15,8 @@ export const ARTIST_SECTION_META: Record<
     description: 'Gecentreerde video in het midden',
   },
   tracks: {
-    label: 'Tracks',
-    description: 'Music player / top tracks',
+    label: 'Music',
+    description: 'Platform embed (SoundCloud / Spotify / custom) of tracklijst',
   },
 }
 

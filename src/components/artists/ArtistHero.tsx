@@ -1,20 +1,10 @@
 import { motion } from 'framer-motion'
-import { PixelPlus } from '@/components/hero/PixelPlus'
 import { PillButton } from '@/components/ui/PillButton'
 import { SocialLinks } from '@/components/artists/SocialLinks'
 import type { Artist } from '@/types/artist'
 import { useCms } from '@/cms/CmsProvider'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
-
-const pluses = [
-  { color: '#D8FF3E', size: 16, className: 'left-[8%] top-0', delay: 0.1 },
-  { color: 'var(--color-ink)', size: 12, className: 'left-[22%] top-[8%]', delay: 0.3 },
-  { color: '#D8FF3E', size: 18, className: 'left-[35%] -top-1', delay: 0.2 },
-  { color: '#D8FF3E', size: 11, className: 'left-[48%] top-[10%]', delay: 0.45 },
-  { color: 'var(--color-ink)', size: 10, className: 'left-[58%] top-1', delay: 0.15 },
-  { color: '#D8FF3E', size: 14, className: 'left-[68%] top-[12%]', delay: 0.35 },
-]
 
 type ArtistHeroProps = {
   artist: Artist
@@ -59,18 +49,6 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
           )}
 
           <div className="relative pt-6 lg:pt-10">
-            <div className="relative mb-4 h-10 w-full max-w-md">
-              {pluses.map((p, i) => (
-                <PixelPlus
-                  key={i}
-                  color={p.color}
-                  size={p.size}
-                  className={p.className}
-                  delay={p.delay}
-                />
-              ))}
-            </div>
-
             <motion.h1
               className="type-display text-[clamp(2.75rem,8vw,5.75rem)] text-ink"
               initial={{ opacity: 0, y: 16 }}
