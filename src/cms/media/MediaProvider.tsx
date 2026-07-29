@@ -105,7 +105,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
           setUploading({
             fileName: file.name,
             stage: 'converting',
-            message: 'Converting to WebM…',
+            message: 'Preparing video…',
           })
           const { blob, width, height, duration } = await convertVideoToWebm(
             file,
@@ -117,12 +117,23 @@ export function MediaProvider({ children }: { children: ReactNode }) {
               })
             },
           )
+          const mimeType = blob.type || 'video/webm'
+          const ext =
+            mimeType.includes('webm')
+              ? 'webm'
+              : mimeType.includes('quicktime') || file.name.toLowerCase().endsWith('.mov')
+                ? 'mov'
+                : mimeType.includes('mp4') || mimeType.includes('m4v')
+                  ? 'mp4'
+                  : file.name.includes('.')
+                    ? (file.name.split('.').pop() ?? 'mp4')
+                    : 'mp4'
           const id = crypto.randomUUID()
           const meta = {
             id,
-            name: `${baseName(file.name)}.webm`,
+            name: `${baseName(file.name)}.${ext}`,
             kind: 'video' as const,
-            mimeType: 'video/webm' as const,
+            mimeType,
             size: blob.size,
             width,
             height,

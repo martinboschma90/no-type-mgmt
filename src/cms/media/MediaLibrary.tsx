@@ -90,7 +90,8 @@ export function MediaLibrary({ onSelect, selectKind = 'any' }: MediaLibraryProps
             Drop media here
           </p>
           <p className="type-body max-w-sm text-xs text-ink/45">
-            JPG, PNG, GIF, WebP, MP4, MOV, WebM — auto-converted to WebP / WebM on upload.
+            JPG, PNG, GIF, WebP, MP4, MOV, WebM — images become WebP; videos become WebM when
+            supported, otherwise the original file is kept for playback.
           </p>
           <span className="type-ui mt-2 rounded-full border border-ink/20 px-4 py-2 text-[0.65rem] text-ink/70">
             Browse files
@@ -181,7 +182,11 @@ export function MediaLibrary({ onSelect, selectKind = 'any' }: MediaLibraryProps
                       />
                     )}
                     <span className="absolute top-2 left-2 rounded-full bg-[#090909]/80 px-2 py-0.5 type-label text-[0.55rem] tracking-[0.12em] text-brand uppercase">
-                      {asset.kind === 'image' ? 'WebP' : 'WebM'}
+                      {asset.kind === 'image'
+                        ? 'WebP'
+                        : asset.mimeType.includes('webm')
+                          ? 'WebM'
+                          : 'Video'}
                     </span>
                   </button>
                   <div className="space-y-1.5 p-2.5">

@@ -7,6 +7,8 @@ type ArtistVideoSlideProps = {
   artist: Artist
   /** Show CMS empty-state when no video is linked yet */
   showEmptyState?: boolean
+  /** CMS live preview — normal <video> playback, no captureStream */
+  previewMode?: boolean
 }
 
 /**
@@ -16,6 +18,7 @@ type ArtistVideoSlideProps = {
 export function ArtistVideoSlide({
   artist,
   showEmptyState = false,
+  previewMode = false,
 }: ArtistVideoSlideProps) {
   const videoUrl = useResolvedMediaUrl(artist.videoUrl)
   const posterUrl = useResolvedMediaUrl(artist.imageUrl)
@@ -46,6 +49,10 @@ export function ArtistVideoSlide({
                 controls
                 playsInline
                 preload="metadata"
+                // CMS preview: autoplay muted loop. Public page: controls only.
+                {...(previewMode
+                  ? { autoPlay: true, muted: true, loop: true }
+                  : {})}
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#151217] px-6 text-center">

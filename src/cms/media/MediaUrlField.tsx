@@ -41,7 +41,7 @@ export function MediaUrlField({
       hint={
         hint ??
         (kind === 'video'
-          ? 'Upload converts to WebM. Stored in the media library.'
+          ? 'Upload stores the video for preview playback. WebM conversion is used when the browser supports it.'
           : 'Upload converts to WebP. Stored in the media library.')
       }
     >
@@ -51,7 +51,12 @@ export function MediaUrlField({
             <div className="min-w-0">
               <p className="truncate text-sm text-ink">{matched.name}</p>
               <p className="type-label mt-0.5 text-[0.55rem] text-ink/40 uppercase">
-                Library · {matched.mimeType === 'image/webp' ? 'WebP' : 'WebM'}
+                Library ·{' '}
+                {matched.mimeType === 'image/webp'
+                  ? 'WebP'
+                  : matched.mimeType.includes('webm')
+                    ? 'WebM'
+                    : 'Video'}
               </p>
             </div>
             <button
@@ -90,7 +95,11 @@ export function MediaUrlField({
           </button>
           {matched ? (
             <span className="type-label self-center text-[0.55rem] tracking-[0.12em] text-brand uppercase">
-              {matched.mimeType === 'image/webp' ? 'WebP' : 'WebM'}
+              {matched.mimeType === 'image/webp'
+                ? 'WebP'
+                : matched.mimeType.includes('webm')
+                  ? 'WebM'
+                  : 'Video'}
             </span>
           ) : null}
         </div>
@@ -104,8 +113,14 @@ export function MediaUrlField({
         ) : null}
         {previewUrl && kind === 'video' ? (
           <video
+            key={previewUrl}
             src={previewUrl}
             controls
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
             className="h-36 w-full rounded-lg bg-ink/10 object-cover"
           />
         ) : null}

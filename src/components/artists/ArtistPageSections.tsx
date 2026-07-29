@@ -30,6 +30,7 @@ export function ArtistPageSections({
               <ArtistVideoSlide
                 key="video"
                 artist={artist}
+                previewMode={previewMode}
                 showEmptyState={previewMode || Boolean(!artist.videoUrl)}
               />
             )

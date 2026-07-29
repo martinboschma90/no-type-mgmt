@@ -1,4 +1,4 @@
-/** Browser-side conversion: images → WebP, video → WebM. */
+/** Browser-side conversion: images → WebP, video → WebM when supported. */
 
 const MAX_IMAGE_EDGE = 2400
 
@@ -79,7 +79,7 @@ function waitForEvent<T extends EventTarget>(
   })
 }
 
-function pickWebmMime(): string {
+function pickWebmMime(): string | null {
   const candidates = [
     'video/webm;codecs=vp9,opus',
     'video/webm;codecs=vp8,opus',
@@ -87,49 +87,93 @@ function pickWebmMime(): string {
     'video/webm;codecs=vp8',
     'video/webm',
   ]
+  if (typeof MediaRecorder === 'undefined') return null
   for (const type of candidates) {
-    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) {
-      return type
-    }
+    if (MediaRecorder.isTypeSupported(type)) return type
   }
-  throw new Error('This browser cannot record WebM video')
+  return null
 }
 
-function getCaptureStream(video: HTMLVideoElement): MediaStream {
+/** Returns null when the browser cannot re-encode via captureStream (e.g. Safari). */
+function tryGetCaptureStream(video: HTMLVideoElement): MediaStream | null {
   const anyVideo = video as HTMLVideoElement & {
     captureStream?: (fps?: number) => MediaStream
     mozCaptureStream?: (fps?: number) => MediaStream
   }
-  const stream = anyVideo.captureStream?.(30) ?? anyVideo.mozCaptureStream?.(30)
-  if (!stream) {
-    throw new Error('Video captureStream is not supported in this browser')
+  try {
+    return anyVideo.captureStream?.(30) ?? anyVideo.mozCaptureStream?.(30) ?? null
+  } catch {
+    return null
   }
-  return stream
 }
 
+function guessVideoMime(file: File): string {
+  if (file.type) return file.type
+  const name = file.name.toLowerCase()
+  if (name.endsWith('.webm')) return 'video/webm'
+  if (name.endsWith('.mov')) return 'video/quicktime'
+  if (name.endsWith('.m4v')) return 'video/x-m4v'
+  if (name.endsWith('.mkv')) return 'video/x-matroska'
+  return 'video/mp4'
+}
+
+async function readVideoMeta(file: File): Promise<{
+  blob: Blob
+  width: number
+  height: number
+  duration: number
+}> {
+  const mime = guessVideoMime(file)
+  const url = URL.createObjectURL(file)
+  const video = document.createElement('video')
+  video.preload = 'metadata'
+  video.muted = true
+  video.playsInline = true
+  video.src = url
+
+  try {
+    await waitForEvent(video, 'loadedmetadata')
+  } catch {
+    URL.revokeObjectURL(url)
+    // Still store the file — preview <video> can try to play it
+    return {
+      blob: file.slice(0, file.size, mime),
+      width: 0,
+      height: 0,
+      duration: 0,
+    }
+  }
+
+  const meta = {
+    blob: file.slice(0, file.size, mime),
+    width: video.videoWidth,
+    height: video.videoHeight,
+    duration: Number.isFinite(video.duration) ? video.duration : 0,
+  }
+  URL.revokeObjectURL(url)
+  return meta
+}
+
+/**
+ * Prefer WebM re-encode when the browser supports captureStream + MediaRecorder.
+ * Otherwise keep the original file so CMS/public <video> can play it normally.
+ * Never throws for missing captureStream.
+ */
 export async function convertVideoToWebm(
   file: File,
   onProgress?: (ratio: number) => void,
 ): Promise<{ blob: Blob; width: number; height: number; duration: number }> {
-  // Already WebM — store as-is (normalize mime)
+  // Already WebM — store as-is
   if (file.type === 'video/webm' || file.name.toLowerCase().endsWith('.webm')) {
-    const url = URL.createObjectURL(file)
-    const video = document.createElement('video')
-    video.preload = 'metadata'
-    video.muted = true
-    video.src = url
-    await waitForEvent(video, 'loadedmetadata')
-    const meta = {
-      blob: file.slice(0, file.size, 'video/webm'),
-      width: video.videoWidth,
-      height: video.videoHeight,
-      duration: Number.isFinite(video.duration) ? video.duration : 0,
-    }
-    URL.revokeObjectURL(url)
-    return meta
+    return readVideoMeta(file)
   }
 
   const mimeType = pickWebmMime()
+  if (!mimeType) {
+    onProgress?.(1)
+    return readVideoMeta(file)
+  }
+
   const sourceUrl = URL.createObjectURL(file)
   const video = document.createElement('video')
   video.playsInline = true
@@ -137,78 +181,102 @@ export async function convertVideoToWebm(
   video.preload = 'auto'
   video.src = sourceUrl
 
-  await waitForEvent(video, 'loadedmetadata')
-  await waitForEvent(video, 'canplay')
+  try {
+    await waitForEvent(video, 'loadedmetadata')
+    await waitForEvent(video, 'canplay')
+  } catch {
+    URL.revokeObjectURL(sourceUrl)
+    onProgress?.(1)
+    return readVideoMeta(file)
+  }
 
   const width = video.videoWidth
   const height = video.videoHeight
   const duration = Number.isFinite(video.duration) ? video.duration : 0
   if (!width || !height) {
     URL.revokeObjectURL(sourceUrl)
-    throw new Error('Could not read video dimensions')
+    onProgress?.(1)
+    return readVideoMeta(file)
   }
 
-  const stream = getCaptureStream(video)
-  const chunks: BlobPart[] = []
-  const recorder = new MediaRecorder(stream, {
-    mimeType,
-    videoBitsPerSecond: 4_000_000,
-  })
-
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) chunks.push(e.data)
-  }
-
-  const stopped = new Promise<Blob>((resolve, reject) => {
-    recorder.onstop = () => {
-      resolve(new Blob(chunks, { type: 'video/webm' }))
-    }
-    recorder.onerror = () => reject(new Error('WebM recording failed'))
-  })
-
-  recorder.start(250)
-
-  // Play through for re-encode (playbackRate speeds conversion)
-  video.playbackRate = Math.min(4, Math.max(1, duration > 60 ? 4 : 2))
-  try {
-    await video.play()
-  } catch {
+  const stream = tryGetCaptureStream(video)
+  if (!stream) {
     URL.revokeObjectURL(sourceUrl)
-    stream.getTracks().forEach((t) => t.stop())
-    throw new Error('Could not play video for conversion')
+    onProgress?.(1)
+    return readVideoMeta(file)
   }
 
-  await new Promise<void>((resolve, reject) => {
-    const onTime = () => {
-      if (duration > 0) onProgress?.(Math.min(0.99, video.currentTime / duration))
-    }
-    const onEnded = () => {
-      cleanup()
-      resolve()
-    }
-    const onErr = () => {
-      cleanup()
-      reject(new Error('Video playback failed during conversion'))
-    }
-    const cleanup = () => {
-      video.removeEventListener('timeupdate', onTime)
-      video.removeEventListener('ended', onEnded)
-      video.removeEventListener('error', onErr)
-    }
-    video.addEventListener('timeupdate', onTime)
-    video.addEventListener('ended', onEnded)
-    video.addEventListener('error', onErr)
-  })
+  try {
+    const chunks: BlobPart[] = []
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: 4_000_000,
+    })
 
-  if (recorder.state !== 'inactive') recorder.stop()
-  stream.getTracks().forEach((t) => t.stop())
-  video.pause()
-  URL.revokeObjectURL(sourceUrl)
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data)
+    }
 
-  const blob = await stopped
-  onProgress?.(1)
-  if (blob.size < 64) throw new Error('Converted WebM was empty')
-  return { blob, width, height, duration }
+    const stopped = new Promise<Blob>((resolve, reject) => {
+      recorder.onstop = () => {
+        resolve(new Blob(chunks, { type: 'video/webm' }))
+      }
+      recorder.onerror = () => reject(new Error('WebM recording failed'))
+    })
+
+    recorder.start(250)
+
+    video.playbackRate = Math.min(4, Math.max(1, duration > 60 ? 4 : 2))
+    try {
+      await video.play()
+    } catch {
+      if (recorder.state !== 'inactive') recorder.stop()
+      stream.getTracks().forEach((t) => t.stop())
+      URL.revokeObjectURL(sourceUrl)
+      onProgress?.(1)
+      return readVideoMeta(file)
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const onTime = () => {
+        if (duration > 0) onProgress?.(Math.min(0.99, video.currentTime / duration))
+      }
+      const onEnded = () => {
+        cleanup()
+        resolve()
+      }
+      const onErr = () => {
+        cleanup()
+        reject(new Error('Video playback failed during conversion'))
+      }
+      const cleanup = () => {
+        video.removeEventListener('timeupdate', onTime)
+        video.removeEventListener('ended', onEnded)
+        video.removeEventListener('error', onErr)
+      }
+      video.addEventListener('timeupdate', onTime)
+      video.addEventListener('ended', onEnded)
+      video.addEventListener('error', onErr)
+    })
+
+    if (recorder.state !== 'inactive') recorder.stop()
+    stream.getTracks().forEach((t) => t.stop())
+    video.pause()
+    URL.revokeObjectURL(sourceUrl)
+
+    const blob = await stopped
+    onProgress?.(1)
+    if (blob.size < 64) {
+      return readVideoMeta(file)
+    }
+    return { blob, width, height, duration }
+  } catch {
+    stream.getTracks().forEach((t) => t.stop())
+    video.pause()
+    URL.revokeObjectURL(sourceUrl)
+    onProgress?.(1)
+    return readVideoMeta(file)
+  }
 }
 
 export function isImageFile(file: File) {

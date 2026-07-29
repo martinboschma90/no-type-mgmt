@@ -4,7 +4,8 @@ export type MediaAssetMeta = {
   id: string
   name: string
   kind: MediaKind
-  mimeType: 'image/webp' | 'video/webm'
+  /** WebP / WebM when converted; original video mime when captureStream is unavailable */
+  mimeType: string
   size: number
   width?: number
   height?: number
