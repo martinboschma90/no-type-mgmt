@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/cms/auth/AuthProvider'
+import { Logo } from '@/components/ui/Logo'
 
 const controlClass =
-  'w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-brand/60'
+  'w-full rounded-xl border border-white/12 bg-[#151217] px-3.5 py-3 type-body text-sm text-[#F5F5F5] outline-none transition-colors placeholder:text-white/30 focus:border-brand/60'
 
 /**
  * Admin login — Supabase Auth email/password.
- * Styled to match the existing CMS shell (no redesign).
+ * UI only; auth logic lives in AuthProvider / lib/auth.
  */
 export function CmsLoginPage() {
   const { ready, session, authRequired, signIn } = useAuth()
@@ -46,22 +47,19 @@ export function CmsLoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-[#ebe8e2] px-4 text-ink dark:bg-[#0c0b0d]">
-      <div className="w-full max-w-sm rounded-2xl border border-ink/10 bg-[var(--body-bg)] p-6 shadow-sm sm:p-8">
-        <p className="type-label text-[0.6rem] tracking-[0.18em] text-brand uppercase">
-          No Type
-        </p>
-        <h1 className="type-display m-0 mt-2 text-[1.85rem] leading-none text-ink">
-          CMS login
-        </h1>
-        <p className="type-body mt-3 text-xs text-ink/45">
-          Admin access only. Create the user in Supabase Dashboard → Authentication
-          → Users.
-        </p>
+    <div className="flex min-h-svh items-center justify-center bg-[#0c0b0d] px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#151217] p-7 sm:p-9">
+        <div className="flex justify-center">
+          <Logo
+            variant="wordmark"
+            className="h-9 w-auto sm:h-10"
+            title="No Type"
+          />
+        </div>
 
-        <form className="mt-6 space-y-3.5" onSubmit={onSubmit}>
+        <form className="mt-10 space-y-4" onSubmit={onSubmit}>
           <label className="block">
-            <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+            <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-white/45 uppercase">
               Email
             </span>
             <input
@@ -76,7 +74,7 @@ export function CmsLoginPage() {
           </label>
 
           <label className="block">
-            <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+            <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-white/45 uppercase">
               Password
             </span>
             <input
@@ -91,7 +89,7 @@ export function CmsLoginPage() {
           </label>
 
           {error ? (
-            <p className="type-body text-xs text-red-500" role="alert">
+            <p className="type-body text-xs text-red-400" role="alert">
               {error}
             </p>
           ) : null}
@@ -99,7 +97,7 @@ export function CmsLoginPage() {
           <button
             type="submit"
             disabled={loading || !email.trim() || !password}
-            className="type-label w-full rounded-full bg-ink px-4 py-3 text-[0.7rem] tracking-[0.14em] text-ink-inverse uppercase transition-opacity disabled:opacity-40"
+            className="type-label mt-1 w-full rounded-full bg-brand px-4 py-3 text-[0.7rem] tracking-[0.14em] text-[#111111] uppercase transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {loading ? 'Signing in…' : 'Log in'}
           </button>
@@ -107,7 +105,7 @@ export function CmsLoginPage() {
 
         <a
           href="/"
-          className="type-label mt-5 block text-center text-[0.65rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink"
+          className="type-label mt-6 block text-center text-[0.65rem] tracking-[0.12em] text-white/40 uppercase transition-colors hover:text-white/70"
         >
           ← Back to site
         </a>
