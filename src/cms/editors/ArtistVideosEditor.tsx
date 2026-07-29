@@ -37,8 +37,8 @@ export function ArtistVideosEditor({
 
   return (
     <EditorSection
-      title="Video reels"
-      description="Vertical 9:16 clips (1080×1920). 3–5 recommended. Swipeable on the public page."
+      title="Visuals"
+      description="Vertical 9:16 clips (1080×1920). 3–5 recommended. Cinematic carousel on the public page."
       defaultOpen
       badge={`${videos.length}/${MAX_ARTIST_VIDEOS}`}
     >
@@ -95,7 +95,7 @@ export function ArtistVideosEditor({
                   <span className="block h-0.5 w-3.5 rounded-full bg-current" />
                 </span>
                 <p className="type-label flex-1 text-[0.65rem] tracking-[0.12em] text-ink/50 uppercase">
-                  Reel {index + 1}
+                  Visual {index + 1}
                   <span className="ml-2 text-ink/30">9:16</span>
                 </p>
                 <button
@@ -134,7 +134,7 @@ export function ArtistVideosEditor({
 
       {videos.length === 0 ? (
         <p className="type-body text-sm text-ink/40">
-          No reels yet — add vertical clips for the carousel.
+          No visuals yet — add vertical clips for the carousel.
         </p>
       ) : null}
 

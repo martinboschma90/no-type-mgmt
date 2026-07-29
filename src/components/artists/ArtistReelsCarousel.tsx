@@ -1,28 +1,27 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, type PanInfo } from 'framer-motion'
 import type { Artist, ArtistVideo } from '@/types/artist'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 
-type ReelSlideProps = {
+/** Editorial cinematic ease — slow settle, no bounce. */
+const CINEMA_EASE = [0.22, 1, 0.36, 1] as const
+const CINEMA_DURATION = 0.85
+const DRAG_THRESHOLD = 64
+
+type VisualSlideProps = {
   video: ArtistVideo
   fallbackPoster?: string
   active: boolean
   near: boolean
 }
 
-function ReelSlide({
+function VisualSlide({
   video,
   fallbackPoster,
   active,
   near,
-}: ReelSlideProps) {
+}: VisualSlideProps) {
   const videoUrl = useResolvedMediaUrl(video.videoUrl)
   const posterUrl = useResolvedMediaUrl(video.posterUrl || fallbackPoster)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -58,13 +57,13 @@ function ReelSlide({
   }, [active, videoUrl])
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#090909]">
+    <div className="relative h-full w-full overflow-hidden bg-[#0a090c]">
       {posterUrl ? (
         <img
           src={posterUrl}
           alt=""
           className={[
-            'absolute inset-0 h-full w-full object-cover transition-opacity duration-500',
+            'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
             showPoster ? 'opacity-100' : 'opacity-0',
           ].join(' ')}
           draggable={false}
@@ -86,13 +85,23 @@ function ReelSlide({
         />
       ) : null}
 
+      {/* Soft vignette — editorial depth */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.45)_100%)]"
+        aria-hidden
+      />
+
       {video.title ? (
-        <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10 pb-4 type-label text-[0.65rem] tracking-[0.14em] text-white/80 uppercase">
+        <p className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent px-5 pt-14 pb-5 type-label text-[0.6rem] tracking-[0.18em] text-white/75 uppercase">
           {video.title}
         </p>
       ) : null}
     </div>
   )
+}
+
+function pad2(n: number) {
+  return String(n).padStart(2, '0')
 }
 
 type ArtistReelsCarouselProps = {
@@ -102,137 +111,64 @@ type ArtistReelsCarouselProps = {
   previewMode?: boolean
 }
 
-/** Premium 9:16 vertical reels carousel for artist pages. */
+/** Cinematic 9:16 Visuals stack — editorial, not social-feed. */
 export function ArtistReelsCarousel({
   artist,
   videos,
   showEmptyState = false,
 }: ArtistReelsCarouselProps) {
-  const scrollerRef = useRef<HTMLDivElement>(null)
   const [index, setIndex] = useState(0)
-  const dragRef = useRef<{
-    pointerId: number
-    startX: number
-    scrollLeft: number
-  } | null>(null)
-
+  const [hovered, setHovered] = useState(false)
   const count = videos.length
 
   const goTo = useCallback(
     (next: number) => {
-      const el = scrollerRef.current
-      if (!el || count === 0) return
-      const clamped = ((next % count) + count) % count
-      const slide = el.children[clamped] as HTMLElement | undefined
-      slide?.scrollIntoView({
-        behavior: 'smooth',
-        inline: 'center',
-        block: 'nearest',
-      })
-      setIndex(clamped)
+      if (count === 0) return
+      setIndex(Math.max(0, Math.min(count - 1, next)))
     },
     [count],
   )
 
-  useEffect(() => {
-    const el = scrollerRef.current
-    if (!el) return
-
-    const onScroll = () => {
-      const slides = Array.from(el.children) as HTMLElement[]
-      if (slides.length === 0) return
-      const center = el.scrollLeft + el.clientWidth / 2
-      let best = 0
-      let bestDist = Infinity
-      slides.forEach((slide, i) => {
-        const mid = slide.offsetLeft + slide.offsetWidth / 2
-        const dist = Math.abs(mid - center)
-        if (dist < bestDist) {
-          bestDist = dist
-          best = i
-        }
-      })
-      setIndex(best)
-    }
-
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [count])
-
-  function onPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
-    // Touch: native swipe + scroll-snap. Mouse/pen: drag-to-scroll.
-    if (e.pointerType === 'touch') return
-    const el = scrollerRef.current
-    if (!el) return
-    dragRef.current = {
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      scrollLeft: el.scrollLeft,
-    }
-    el.setPointerCapture(e.pointerId)
-  }
-
-  function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
-    const el = scrollerRef.current
-    const drag = dragRef.current
-    if (!el || !drag || drag.pointerId !== e.pointerId) return
-    el.scrollLeft = drag.scrollLeft - (e.clientX - drag.startX)
-  }
-
-  function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
-    const el = scrollerRef.current
-    const drag = dragRef.current
-    if (!el || !drag || drag.pointerId !== e.pointerId) return
-    dragRef.current = null
-    try {
-      el.releasePointerCapture(e.pointerId)
-    } catch {
-      /* already released */
-    }
-    const slides = Array.from(el.children) as HTMLElement[]
-    const center = el.scrollLeft + el.clientWidth / 2
-    let best = 0
-    let bestDist = Infinity
-    slides.forEach((slide, i) => {
-      const mid = slide.offsetLeft + slide.offsetWidth / 2
-      const dist = Math.abs(mid - center)
-      if (dist < bestDist) {
-        bestDist = dist
-        best = i
-      }
-    })
-    goTo(best)
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    const { offset, velocity } = info
+    const swipe =
+      Math.abs(offset.x) > DRAG_THRESHOLD || Math.abs(velocity.x) > 420
+    if (!swipe) return
+    if (offset.x < 0 || velocity.x < -420) goTo(index + 1)
+    else goTo(index - 1)
   }
 
   if (count === 0) {
     if (!showEmptyState) return null
     return (
       <section
-        className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8"
-        aria-label={`${artist.name} video`}
+        className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
+        aria-label={`${artist.name} visuals`}
       >
         <motion.div
-          className="mx-auto max-w-[420px]"
-          initial={{ opacity: 0, y: 20 }}
+          className="mx-auto max-w-[480px]"
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.7, ease: CINEMA_EASE }}
         >
-          <p className="type-label mb-4 text-center text-ink/40">Reels</p>
-          <div className="mx-auto aspect-[9/16] max-h-[min(72vh,640px)] w-full max-w-[360px] overflow-hidden rounded-[1.75rem] border border-ink/10 bg-[#151217]">
+          <p className="type-label mb-5 text-center text-[0.65rem] tracking-[0.22em] text-ink/40 uppercase">
+            Visuals
+          </p>
+          <div className="mx-auto aspect-[9/16] max-h-[min(70vh,620px)] w-full max-w-[340px] overflow-hidden rounded-[1.5rem] border border-white/8 bg-[#121014]">
             <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-              <p className="type-headline text-sm text-[#F5F5F5]/80">
-                Video reels
+              <p className="type-headline text-sm text-[#F5F5F5]/75">
+                Visuals
               </p>
-              <p className="type-body max-w-sm text-xs text-[#F5F5F5]/45">
-                Nog geen reels voor {artist.name}. Voeg 9:16 video&apos;s toe in
-                het CMS.
+              <p className="type-body max-w-sm text-xs text-[#F5F5F5]/40">
+                Nog geen visuals voor {artist.name}. Voeg 9:16 video&apos;s toe
+                in het CMS.
               </p>
               <Link
                 to={`/cms/artists/${artist.slug}`}
-                className="type-ui mt-1 rounded-full border border-[#D8FF3E]/40 bg-[#D8FF3E]/15 px-4 py-2 text-[0.65rem] text-[#D8FF3E]"
+                className="type-ui mt-1 rounded-full border border-[#D8FF3E]/35 bg-[#D8FF3E]/12 px-4 py-2 text-[0.65rem] text-[#D8FF3E] transition-opacity hover:opacity-80"
               >
-                Reels beheren →
+                Visuals beheren →
               </Link>
             </div>
           </div>
@@ -243,97 +179,167 @@ export function ArtistReelsCarousel({
 
   return (
     <section
-      className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8"
-      aria-label={`${artist.name} reels`}
+      className="px-4 py-12 sm:px-6 sm:py-16 lg:px-8"
+      aria-label={`${artist.name} visuals`}
     >
       <motion.div
-        className="mx-auto max-w-[520px]"
-        initial={{ opacity: 0, y: 20 }}
+        className="mx-auto max-w-[640px]"
+        initial={{ opacity: 0, y: 28 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.15 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        viewport={{ once: true, amount: 0.12 }}
+        transition={{ duration: 0.8, ease: CINEMA_EASE }}
       >
-        <p className="type-label mb-4 text-center text-ink/40">Reels</p>
-
-        <div className="relative mx-auto w-full max-w-[360px]">
-          <div className="aspect-[9/16] max-h-[min(72vh,640px)] overflow-hidden rounded-[1.75rem] bg-[#090909] shadow-[0_0_60px_rgba(88,40,120,0.12)]">
-            <div
-              ref={scrollerRef}
-              className="flex h-full w-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              style={{ WebkitOverflowScrolling: 'touch' }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              role="region"
-              aria-roledescription="carousel"
-              aria-label="Artist video reels"
+        <div className="mb-6 flex items-end justify-between gap-4 px-1 sm:mb-8">
+          <p className="type-label text-[0.65rem] tracking-[0.22em] text-ink/40 uppercase">
+            Visuals
+          </p>
+          {count > 1 ? (
+            <p
+              className="type-label text-[0.7rem] tracking-[0.2em] text-ink/55 tabular-nums uppercase"
+              aria-live="polite"
             >
-              {videos.map((video, i) => (
-                <div
+              <span className="text-ink">{pad2(index + 1)}</span>
+              <span className="text-ink/25"> / </span>
+              <span className="text-ink/40">{pad2(count)}</span>
+            </p>
+          ) : null}
+        </div>
+
+        <div
+          className="relative mx-auto w-full max-w-[420px] touch-pan-y"
+          style={{ perspective: 1400 }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {/* Stage — room for peeking neighbors */}
+          <div className="relative mx-auto aspect-[9/16] max-h-[min(72vh,680px)] w-[min(100%,340px)] sm:w-[min(100%,360px)]">
+            {videos.map((video, i) => {
+              const offset = i - index
+              const abs = Math.abs(offset)
+              if (abs > 2) return null
+
+              const isActive = offset === 0
+              const peekX = offset * (hovered ? 58 : 48)
+              const depthScale = isActive
+                ? hovered
+                  ? 1.045
+                  : 1.02
+                : abs === 1
+                  ? 0.86
+                  : 0.78
+              const depthOpacity = isActive ? 1 : abs === 1 ? 0.42 : 0.18
+              const rotateY = offset * -6
+              const yLift = isActive ? 0 : abs * 10
+
+              return (
+                <motion.div
                   key={video.id}
-                  className="h-full w-full min-w-full shrink-0 snap-center snap-always"
-                  aria-hidden={i !== index}
+                  className={[
+                    'absolute inset-0 origin-center overflow-hidden rounded-[1.5rem]',
+                    isActive
+                      ? 'cursor-grab active:cursor-grabbing'
+                      : 'pointer-events-none',
+                  ].join(' ')}
+                  style={{
+                    zIndex: 30 - abs,
+                    boxShadow: isActive
+                      ? '0 28px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)'
+                      : '0 16px 40px rgba(0,0,0,0.35)',
+                  }}
+                  initial={false}
+                  animate={{
+                    x: isActive ? 0 : peekX,
+                    scale: depthScale,
+                    opacity: depthOpacity,
+                    rotateY,
+                    y: yLift,
+                    filter: isActive
+                      ? 'brightness(1) saturate(1)'
+                      : 'brightness(0.55) saturate(0.85)',
+                  }}
+                  transition={{
+                    duration: CINEMA_DURATION,
+                    ease: CINEMA_EASE,
+                  }}
+                  drag={isActive && count > 1 ? 'x' : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.22}
+                  dragDirectionLock
+                  onDragEnd={onDragEnd}
+                  aria-hidden={!isActive}
                 >
-                  <ReelSlide
+                  <VisualSlide
                     video={video}
                     fallbackPoster={artist.imageUrl}
-                    active={i === index}
-                    near={Math.abs(i - index) === 1}
+                    active={isActive}
+                    near={abs === 1}
                   />
-                </div>
-              ))}
-            </div>
+                </motion.div>
+              )
+            })}
           </div>
 
           {count > 1 ? (
             <>
-              <button
-                type="button"
-                aria-label="Previous reel"
-                className="absolute top-1/2 left-0 z-10 hidden h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ink/15 bg-[var(--body-bg)]/90 text-ink shadow-lg backdrop-blur-sm md:flex"
+              <NavButton
+                dir="prev"
+                disabled={index === 0}
                 onClick={() => goTo(index - 1)}
-              >
-                <Chevron dir="left" />
-              </button>
-              <button
-                type="button"
-                aria-label="Next reel"
-                className="absolute top-1/2 right-0 z-10 hidden h-10 w-10 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ink/15 bg-[var(--body-bg)]/90 text-ink shadow-lg backdrop-blur-sm md:flex"
+                visible={hovered}
+              />
+              <NavButton
+                dir="next"
+                disabled={index === count - 1}
                 onClick={() => goTo(index + 1)}
-              >
-                <Chevron dir="right" />
-              </button>
+                visible={hovered}
+              />
             </>
           ) : null}
         </div>
 
         {count > 1 ? (
-          <div
-            className="mt-5 flex items-center justify-center gap-2"
-            role="tablist"
-            aria-label="Reel pagination"
-          >
-            {videos.map((video, i) => (
-              <button
-                key={video.id}
-                type="button"
-                role="tab"
-                aria-selected={i === index}
-                aria-label={`Reel ${i + 1}`}
-                className={[
-                  'h-1.5 rounded-full transition-all duration-300',
-                  i === index
-                    ? 'w-6 bg-brand'
-                    : 'w-1.5 bg-ink/25 hover:bg-ink/40',
-                ].join(' ')}
-                onClick={() => goTo(i)}
-              />
-            ))}
-          </div>
+          <p className="type-label mt-6 text-center text-[0.55rem] tracking-[0.16em] text-ink/30 uppercase md:hidden">
+            Swipe
+          </p>
         ) : null}
       </motion.div>
     </section>
+  )
+}
+
+function NavButton({
+  dir,
+  onClick,
+  disabled,
+  visible,
+}: {
+  dir: 'prev' | 'next'
+  onClick: () => void
+  disabled: boolean
+  visible: boolean
+}) {
+  return (
+    <motion.button
+      type="button"
+      aria-label={dir === 'prev' ? 'Previous visual' : 'Next visual'}
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        'absolute top-1/2 z-40 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[#0c0b0d]/75 text-ink backdrop-blur-md transition-colors md:flex',
+        dir === 'prev' ? 'left-0 -translate-x-1/2' : 'right-0 translate-x-1/2',
+        disabled ? 'opacity-0' : '',
+      ].join(' ')}
+      initial={false}
+      animate={{
+        opacity: disabled ? 0 : visible ? 1 : 0.35,
+        scale: visible && !disabled ? 1 : 0.94,
+      }}
+      whileHover={disabled ? undefined : { scale: 1.06, borderColor: 'rgba(216,255,62,0.35)' }}
+      whileTap={disabled ? undefined : { scale: 0.96 }}
+      transition={{ duration: 0.35, ease: CINEMA_EASE }}
+    >
+      <Chevron dir={dir === 'prev' ? 'left' : 'right'} />
+    </motion.button>
   )
 }
 
@@ -344,7 +350,7 @@ function Chevron({ dir }: { dir: 'left' | 'right' }) {
       className="h-4 w-4"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.6"
       aria-hidden
     >
       {dir === 'left' ? (

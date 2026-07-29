@@ -25,7 +25,7 @@ export function ArtistLayoutEditor({
   return (
     <EditorSection
       title="Page layout"
-      description="Sleep blokken voor de volgorde. Reels beheer je in Video reels hieronder."
+      description="Sleep blokken voor de volgorde. Visuals beheer je in de sectie hieronder."
       defaultOpen
       badge="Layout"
     >

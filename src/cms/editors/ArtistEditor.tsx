@@ -501,7 +501,7 @@ export function ArtistEditor() {
                   }
                 />
                 <p className="type-body text-xs text-ink/40">
-                  Video reels are managed in the <span className="text-ink/70">Video reels</span>{' '}
+                  Visuals are managed in the <span className="text-ink/70">Visuals</span>{' '}
                   section above (9:16, up to 5 clips).
                 </p>
               </>

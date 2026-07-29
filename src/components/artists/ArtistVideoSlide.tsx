@@ -14,7 +14,7 @@ type ArtistVideoSlideProps = {
 }
 
 /**
- * Artist page video section — vertical reels carousel (9:16).
+ * Artist page Visuals section — cinematic 9:16 stacked carousel.
  * Falls back to legacy `videoUrl` via normalizeArtistVideos.
  */
 export function ArtistVideoSlide({
