@@ -149,7 +149,10 @@ export function MediaUrlField({
             try {
               const created = await uploadFiles([file])
               const asset = created[0]
-              if (asset) onChange(toMediaRef(asset.id))
+              if (asset) {
+                // Prefer public Storage URL so artist pages work outside this browser
+                onChange(asset.publicUrl || toMediaRef(asset.id))
+              }
             } catch (err) {
               setError(err instanceof Error ? err.message : 'Upload failed')
             } finally {
@@ -163,7 +166,7 @@ export function MediaUrlField({
             <MediaLibrary
               selectKind={kind === 'any' ? 'any' : kind}
               onSelect={(asset) => {
-                onChange(toMediaRef(asset.id))
+                onChange(asset.publicUrl || toMediaRef(asset.id))
                 setPickerOpen(false)
               }}
             />

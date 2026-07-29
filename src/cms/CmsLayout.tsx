@@ -18,6 +18,7 @@ import { ArtistsIndexPreview } from '@/cms/previews/ArtistsIndexPreview'
 import { MediaLibrary } from '@/cms/media/MediaLibrary'
 import { MediaPreview } from '@/cms/previews/MediaPreview'
 import { useMedia } from '@/cms/media/MediaProvider'
+import { MediaArtistRepair } from '@/cms/media/MediaArtistRepair'
 
 const siteTabs = [
   { to: '/cms/home', label: 'Home' },
@@ -367,6 +368,7 @@ export function CmsLayout() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+            <MediaArtistRepair />
             <div className="space-y-3">{panels.editor}</div>
           </div>
         </section>

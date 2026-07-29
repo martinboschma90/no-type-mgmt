@@ -15,6 +15,7 @@ import {
   MUSIC_PLATFORMS,
 } from '@/cms/artistMusic'
 import { ArtistPublishBar } from '@/cms/editors/ArtistPublishBar'
+import { artistHasLocalMediaRefs } from '@/cms/artistLocalMedia'
 import { normalizeArtistVideos } from '@/cms/artistVideos'
 import { isArtistVisible, sortArtistsByName } from '@/cms/artistVisibility'
 import type { MusicPlatform, SocialPlatform } from '@/types/artist'
@@ -146,6 +147,7 @@ export function ArtistEditor() {
   }
 
   async function handlePublish() {
+    if (!artist || artistHasLocalMediaRefs(artist)) return
     const slug = commitSlug()
     if (!slug) return
     await publishArtist(slug)

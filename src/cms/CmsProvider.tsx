@@ -26,6 +26,10 @@ import {
   updateArtistInSupabase,
 } from '@/cms/api/artists'
 import { applyArtistStatus } from '@/cms/artistVisibility'
+import {
+  artistHasLocalMediaRefs,
+  LOCAL_MEDIA_PUBLISH_WARNING,
+} from '@/cms/artistLocalMedia'
 import { ART_DIRECTION_VERSION, withArtDirection } from '@/cms/imageFocus'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
@@ -243,6 +247,11 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       const current = findBySlug(slug)
       if (!current) return { error: 'Artist not found' }
 
+      if (artistHasLocalMediaRefs(current)) {
+        reportArtistError(LOCAL_MEDIA_PUBLISH_WARNING)
+        return { error: LOCAL_MEDIA_PUBLISH_WARNING }
+      }
+
       const published = applyArtistStatus(current, 'published', {
         touchPublishedAt: true,
       })
@@ -259,7 +268,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       setArtistSaving(false)
       return { error: result.error }
     },
-    [findBySlug, persistArtistNow],
+    [findBySlug, persistArtistNow, reportArtistError],
   )
 
   const unpublishArtist = useCallback(

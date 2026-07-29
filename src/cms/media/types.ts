@@ -17,6 +17,8 @@ export type MediaAsset = MediaAssetMeta & {
   blob: Blob
   /** Object URL for preview / site use — revoked on delete */
   url: string
+  /** Public Supabase Storage URL when synced — safe for public pages */
+  publicUrl?: string
 }
 
 export type MediaUploadProgress = {

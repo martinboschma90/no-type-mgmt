@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useCms } from '@/cms/CmsProvider'
+import {
+  artistHasLocalMediaRefs,
+  LOCAL_MEDIA_PUBLISH_WARNING,
+} from '@/cms/artistLocalMedia'
 import { isArtistVisible } from '@/cms/artistVisibility'
 import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { EditorSection, TextInput } from '@/cms/fields'
@@ -37,11 +41,20 @@ export function RosterEditor() {
                     <ArtistVisibilityToggle
                       visible={isArtistVisible(artist)}
                       onChange={(visible) => {
+                        if (visible && artistHasLocalMediaRefs(artist)) {
+                          window.alert(LOCAL_MEDIA_PUBLISH_WARNING)
+                          return
+                        }
                         void (visible
                           ? publishArtist(artist.slug)
                           : unpublishArtist(artist.slug))
                       }}
                     />
+                    {artistHasLocalMediaRefs(artist) ? (
+                      <p className="type-body w-full text-xs text-red-400">
+                        {LOCAL_MEDIA_PUBLISH_WARNING}
+                      </p>
+                    ) : null}
                     <Link
                       to={`/cms/artists/${artist.slug}`}
                       className="type-label text-[0.65rem] tracking-[0.12em] text-brand uppercase transition-opacity hover:opacity-70"

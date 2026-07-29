@@ -4,7 +4,7 @@ import { SocialLinks } from '@/components/artists/SocialLinks'
 import type { Artist } from '@/types/artist'
 import { useCms } from '@/cms/CmsProvider'
 import { portraitImageStyle } from '@/cms/imageFocus'
-import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 
 type ArtistHeroProps = {
   artist: Artist
@@ -13,7 +13,7 @@ type ArtistHeroProps = {
 export function ArtistHero({ artist }: ArtistHeroProps) {
   const { content } = useCms()
   const bookingMail = content.site.contact[0]?.email ?? 'bookings@notype.be'
-  const imageUrl = useResolvedMediaUrl(artist.imageUrl)
+  const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
 
   return (

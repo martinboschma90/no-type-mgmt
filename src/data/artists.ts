@@ -333,3 +333,13 @@ const roster: Artist[] = [
 ]
 
 export const artists: Artist[] = roster.slice(0, 12)
+
+/** Full catalog — used for public image fallbacks when CMS stored media:// refs. */
+export const allArtists: Artist[] = roster
+
+export function getRosterImageUrl(slug: string): string | undefined {
+  const hit = roster.find((a) => a.slug === slug)
+  const url = hit?.imageUrl?.trim()
+  return url && /^https?:\/\//i.test(url) ? url : undefined
+}
+

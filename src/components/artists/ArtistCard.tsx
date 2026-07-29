@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import type { Artist } from '@/types/artist'
 import { portraitImageStyle } from '@/cms/imageFocus'
-import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 
 type ArtistCardProps = {
   artist: Artist
@@ -14,7 +14,7 @@ type ArtistCardProps = {
  * readable name always on → hover glow + name lift + More → CTA.
  */
 export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
-  const imageUrl = useResolvedMediaUrl(artist.imageUrl)
+  const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
 
   return (

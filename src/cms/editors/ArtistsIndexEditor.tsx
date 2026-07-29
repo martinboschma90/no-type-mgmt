@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCms } from '@/cms/CmsProvider'
+import {
+  artistHasLocalMediaRefs,
+  LOCAL_MEDIA_PUBLISH_WARNING,
+} from '@/cms/artistLocalMedia'
 import { isArtistVisible, sortArtistsByName } from '@/cms/artistVisibility'
 import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { portraitImageStyle } from '@/cms/imageFocus'
-import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import type { Artist } from '@/types/artist'
 
 function ArtistRow({
@@ -16,7 +20,7 @@ function ArtistRow({
   onRemove: () => void
   onVisibilityChange: (visible: boolean) => void
 }) {
-  const imageUrl = useResolvedMediaUrl(artist.imageUrl)
+  const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
   const visible = isArtistVisible(artist)
 
@@ -40,8 +44,13 @@ function ArtistRow({
               style={frame}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center type-label text-[0.55rem] text-ink/25 uppercase">
-              No img
+            <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 bg-ink/5 px-1 text-center">
+              <span className="type-label text-[0.5rem] tracking-[0.1em] text-ink/35 uppercase">
+                No img
+              </span>
+              <span className="type-label text-[0.45rem] tracking-[0.08em] text-brand/80 uppercase">
+                Re-upload
+              </span>
             </div>
           )}
         </div>
@@ -170,6 +179,10 @@ export function ArtistsIndexEditor() {
             <ArtistRow
               artist={artist}
               onVisibilityChange={(visible) => {
+                if (visible && artistHasLocalMediaRefs(artist)) {
+                  window.alert(LOCAL_MEDIA_PUBLISH_WARNING)
+                  return
+                }
                 void (visible
                   ? publishArtist(artist.slug)
                   : unpublishArtist(artist.slug))

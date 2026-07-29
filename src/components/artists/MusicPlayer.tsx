@@ -6,7 +6,7 @@ import {
   resolveMusicEmbedSrc,
 } from '@/cms/artistMusic'
 import { portraitImageStyle } from '@/cms/imageFocus'
-import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 
 type MusicPlayerProps = {
   artist: Artist
@@ -82,7 +82,7 @@ function LegacyTrackList({
 }) {
   const [active, setActive] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const imageUrl = useResolvedMediaUrl(artist.imageUrl)
+  const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
 
   if (!tracks.length) return null
