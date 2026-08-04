@@ -50,7 +50,7 @@ export function FooterEditor() {
                 label="Custom logo"
                 kind="image"
                 value={site.logoUrl}
-                hint="Leave empty to keep the default No Type logo."
+                hint="Leave empty to keep the default NOTYP MGMT logo."
                 onChange={(logoUrl) => setSite((s) => ({ ...s, logoUrl }))}
               />
             ),
@@ -60,7 +60,7 @@ export function FooterEditor() {
 
       <EditorSection
         title="Contact"
-        description="Contact labels and emails in the footer."
+        description="Contact labels, emails, phone and office in the footer."
       >
         {site.contact.map((item, index) => (
           <div
@@ -122,6 +122,20 @@ export function FooterEditor() {
         >
           + Add contact
         </button>
+        <TextInput
+          label="Phone"
+          value={site.phoneNumber}
+          onChange={(phoneNumber) => setSite((s) => ({ ...s, phoneNumber }))}
+          hint="Shown in the footer Phone row."
+        />
+        <TextInput
+          label="WhatsApp"
+          value={site.whatsappNumber}
+          onChange={(whatsappNumber) =>
+            setSite((s) => ({ ...s, whatsappNumber }))
+          }
+          hint="Shown in the footer WhatsApp row."
+        />
       </EditorSection>
 
       <EditorSection title="Social media" description="Follow links in the footer.">
@@ -224,8 +238,8 @@ export function FooterEditor() {
       </EditorSection>
 
       <EditorSection
-        title="Legal block"
-        description="Company block in the footer Legal column."
+        title="Legal & office"
+        description="Office address and Legal links in the footer."
       >
         <TextInput
           label="Company"
@@ -243,18 +257,18 @@ export function FooterEditor() {
         />
         {(site.legal.addressLines.length
           ? site.legal.addressLines
-          : ['']
+          : ['', '']
         ).map((line, index) => (
           <TextInput
             key={`footer-address-${index}`}
-            label={`Address line ${index + 1}`}
+            label={`Office line ${index + 1}`}
             value={line}
             onChange={(value) =>
               setSite((s) => {
                 const lines =
                   s.legal.addressLines.length > 0
                     ? [...s.legal.addressLines]
-                    : ['']
+                    : ['', '']
                 lines[index] = value
                 return {
                   ...s,

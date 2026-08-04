@@ -1,11 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-
-const links = [
-  { label: 'Artists', to: '/' },
-  { label: 'About', to: '/about' },
-  { label: 'Contact', to: '/contact' },
-]
+import { useCms } from '@/cms/CmsProvider'
 
 type MenuOverlayProps = {
   open: boolean
@@ -14,6 +9,18 @@ type MenuOverlayProps = {
 
 export function MenuOverlay({ open, onClose }: MenuOverlayProps) {
   const { pathname } = useLocation()
+  const { content } = useCms()
+  const links = [
+    { label: 'Artists', to: '/' },
+    { label: 'About', to: '/about' },
+    ...(content.site.bookingVisible !== false
+      ? [{ label: 'Booking', to: '/booking' }]
+      : []),
+    ...(content.site.faqVisible !== false
+      ? [{ label: 'FAQ', to: '/faq' }]
+      : []),
+    { label: 'Contact', to: '/contact' },
+  ]
 
   return (
     <AnimatePresence>

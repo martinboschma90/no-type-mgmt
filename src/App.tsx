@@ -10,6 +10,8 @@ import { CmsLayout } from '@/cms/CmsLayout'
 import { HomePage } from '@/pages/HomePage'
 import { AboutPage } from '@/pages/AboutPage'
 import { ContactPage } from '@/pages/ContactPage'
+import { BookingPage } from '@/pages/BookingPage'
+import { FaqPage } from '@/pages/FaqPage'
 import { ArtistPage } from '@/pages/ArtistPage'
 import { CmsLoginPage } from '@/pages/CmsLoginPage'
 
@@ -34,6 +36,8 @@ function AppRoutes() {
         <Route path="/artists/:slug" element={<ArtistPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/booking" element={<BookingPage />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/cms/login" element={<CmsLoginPage />} />
         <Route
           path="/cms/*"

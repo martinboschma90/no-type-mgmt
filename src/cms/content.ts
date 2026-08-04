@@ -1,14 +1,18 @@
 import { artists as defaultArtists } from '@/data/artists'
 import { getArtistBySlug } from '@/data/artistDetails'
+import { cloneFaqCategories, createDefaultFaqCategories } from '@/data/faq'
 import { withArtDirection } from '@/cms/imageFocus'
+import { normalizeSiteContent } from '@/cms/mappers/site'
 import {
   DEFAULT_ROSTER_GLOW_CUSTOM,
   DEFAULT_ROSTER_GLOW_PRESET,
-  isRosterGlowPreset,
   type RosterGlowPreset,
 } from '@/cms/rosterGlow'
 import { site as defaultSite, team as defaultTeam } from '@/data/site'
+import { DEFAULT_WHATSAPP_NUMBER } from '@/data/whatsapp'
 import type { Artist, TeamMember } from '@/types/artist'
+
+const DEFAULT_PHONE_NUMBER = DEFAULT_WHATSAPP_NUMBER
 
 export type { RosterGlowPreset }
 
@@ -26,6 +30,20 @@ export type LegalInfo = {
 export type LegalLink = {
   label: string
   href: string
+}
+
+export type FaqItem = {
+  id: string
+  question: string
+  answer: string
+  visible: boolean
+}
+
+export type FaqCategory = {
+  id: string
+  title: string
+  visible: boolean
+  items: FaqItem[]
 }
 
 export type SiteContent = {
@@ -56,6 +74,24 @@ export type SiteContent = {
   rosterGlowPreset: RosterGlowPreset
   /** Hex used when `rosterGlowPreset` is `custom`. */
   rosterGlowCustom: string
+  /** Booking request page (`/booking`) headline. */
+  bookingTitle: string
+  /** Booking request page intro copy. */
+  bookingIntro: string
+  /** When false, `/booking` redirects home and the nav link is hidden. */
+  bookingVisible: boolean
+  /** Public phone number (footer + contact). */
+  phoneNumber: string
+  /** WhatsApp number for artist CTAs and footer (display or E.164). */
+  whatsappNumber: string
+  /** Promoter FAQ page (`/faq`) headline. */
+  faqTitle: string
+  /** Optional intro under the FAQ title. */
+  faqIntro: string
+  /** When false, `/faq` redirects home and FAQ nav links are omitted. */
+  faqVisible: boolean
+  /** Ordered FAQ categories (tabs) with questions. */
+  faqCategories: FaqCategory[]
 }
 
 export type CmsContent = {
@@ -104,6 +140,17 @@ export function createDefaultContent(): CmsContent {
       rosterDesktopColumns: 4,
       rosterGlowPreset: DEFAULT_ROSTER_GLOW_PRESET,
       rosterGlowCustom: DEFAULT_ROSTER_GLOW_CUSTOM,
+      bookingTitle: 'Booking Request',
+      bookingIntro:
+        "Send us your booking request and we'll get back to you.",
+      bookingVisible: true,
+      phoneNumber: DEFAULT_PHONE_NUMBER,
+      whatsappNumber: DEFAULT_WHATSAPP_NUMBER,
+      faqTitle: 'Promoter FAQ',
+      faqIntro:
+        'Answers for promoters, festivals, clubs, brands and event organisers.',
+      faqVisible: true,
+      faqCategories: createDefaultFaqCategories(),
     },
     team: defaultTeam.map((member) => ({ ...member })),
     artists,
@@ -118,51 +165,9 @@ export function loadStoredContent(): CmsContent | null {
     if (!parsed?.site || !Array.isArray(parsed.artists) || !Array.isArray(parsed.team)) {
       return null
     }
-    const defaults = createDefaultContent()
     return {
       ...parsed,
-      site: {
-        ...defaults.site,
-        ...parsed.site,
-        contact: Array.isArray(parsed.site.contact)
-          ? parsed.site.contact
-          : defaults.site.contact,
-        legal: {
-          ...defaults.site.legal,
-          ...(parsed.site.legal ?? {}),
-          addressLines: Array.isArray(parsed.site.legal?.addressLines)
-            ? parsed.site.legal.addressLines
-            : defaults.site.legal.addressLines,
-        },
-        about: Array.isArray(parsed.site.about)
-          ? parsed.site.about
-          : defaults.site.about,
-        aboutImages: Array.isArray(parsed.site.aboutImages)
-          ? parsed.site.aboutImages
-          : defaults.site.aboutImages,
-        legalLinks: Array.isArray(parsed.site.legalLinks)
-          ? parsed.site.legalLinks
-          : defaults.site.legalLinks,
-        aboutTitle: parsed.site.aboutTitle ?? defaults.site.aboutTitle,
-        logoUrl: parsed.site.logoUrl ?? defaults.site.logoUrl,
-        copyrightText: parsed.site.copyrightText ?? defaults.site.copyrightText,
-        teamVisible:
-          typeof parsed.site.teamVisible === 'boolean'
-            ? parsed.site.teamVisible
-            : defaults.site.teamVisible,
-        rosterDesktopColumns:
-          parsed.site.rosterDesktopColumns === 3 ||
-          parsed.site.rosterDesktopColumns === 4
-            ? parsed.site.rosterDesktopColumns
-            : defaults.site.rosterDesktopColumns,
-        rosterGlowPreset: isRosterGlowPreset(parsed.site.rosterGlowPreset)
-          ? parsed.site.rosterGlowPreset
-          : defaults.site.rosterGlowPreset,
-        rosterGlowCustom:
-          typeof parsed.site.rosterGlowCustom === 'string'
-            ? parsed.site.rosterGlowCustom
-            : defaults.site.rosterGlowCustom,
-      },
+      site: normalizeSiteContent(parsed.site),
       artists: parsed.artists.map((artist) => withArtDirection(artist)),
     }
   } catch {

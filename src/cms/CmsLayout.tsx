@@ -6,6 +6,8 @@ import { sortArtistsByName } from '@/cms/artistVisibility'
 import { HomeEditor } from '@/cms/editors/HomeEditor'
 import { AboutEditor } from '@/cms/editors/AboutEditor'
 import { ContactEditor } from '@/cms/editors/ContactEditor'
+import { BookingEditor } from '@/cms/editors/BookingEditor'
+import { FaqEditor } from '@/cms/editors/FaqEditor'
 import { FooterEditor } from '@/cms/editors/FooterEditor'
 import { RosterEditor } from '@/cms/editors/RosterEditor'
 import { ArtistEditor } from '@/cms/editors/ArtistEditor'
@@ -13,6 +15,8 @@ import { ArtistsIndexEditor } from '@/cms/editors/ArtistsIndexEditor'
 import { HomePreview } from '@/cms/previews/HomePreview'
 import { AboutPreview } from '@/cms/previews/AboutPreview'
 import { ContactPreview } from '@/cms/previews/ContactPreview'
+import { BookingPreview } from '@/cms/previews/BookingPreview'
+import { FaqPreview } from '@/cms/previews/FaqPreview'
 import { FooterPreview } from '@/cms/previews/FooterPreview'
 import { RosterPreview } from '@/cms/previews/RosterPreview'
 import { ArtistPreview } from '@/cms/previews/ArtistPreview'
@@ -26,6 +30,8 @@ const siteTabs = [
   { to: '/cms/home', label: 'Home' },
   { to: '/cms/about', label: 'About' },
   { to: '/cms/contact', label: 'Contact' },
+  { to: '/cms/booking', label: 'Booking' },
+  { to: '/cms/faq', label: 'FAQ' },
   { to: '/cms/footer', label: 'Footer' },
   { to: '/cms/roster', label: 'Roster' },
 ] as const
@@ -83,6 +89,26 @@ function useCmsPanels() {
       subtitle: 'Contact channels',
       editor: <ContactEditor />,
       preview: <ContactPreview />,
+    }
+  }
+
+  if (pathname.startsWith('/cms/booking')) {
+    return {
+      mode: 'pages' as const,
+      title: 'Booking',
+      subtitle: 'Booking request form',
+      editor: <BookingEditor />,
+      preview: <BookingPreview />,
+    }
+  }
+
+  if (pathname.startsWith('/cms/faq')) {
+    return {
+      mode: 'pages' as const,
+      title: 'FAQ',
+      subtitle: 'Promoter FAQ · /faq',
+      editor: <FaqEditor />,
+      preview: <FaqPreview />,
     }
   }
 

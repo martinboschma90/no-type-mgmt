@@ -64,6 +64,24 @@ export function ContactEditor() {
           onChange={(instagram) => setSite((s) => ({ ...s, instagram }))}
         />
       </EditorSection>
+
+      <EditorSection
+        title="Phone & WhatsApp"
+        description="Footer contact rows and artist-page WhatsApp CTAs."
+      >
+        <TextInput
+          label="Phone"
+          value={site.phoneNumber}
+          onChange={(phoneNumber) => setSite((s) => ({ ...s, phoneNumber }))}
+          hint="Example: +31 36 236 53232"
+        />
+        <TextInput
+          label="WhatsApp number"
+          value={site.whatsappNumber}
+          onChange={(whatsappNumber) => setSite((s) => ({ ...s, whatsappNumber }))}
+          hint="Example: +31 36 236 53232"
+        />
+      </EditorSection>
     </>
   )
 }
