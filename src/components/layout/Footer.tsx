@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Logo } from '@/components/ui/Logo'
 import { PillButton } from '@/components/ui/PillButton'
@@ -47,17 +46,22 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <div>
             <Logo variant="auto" height={40} />
+            <p className="type-label mt-5 whitespace-pre-line text-ink/50">
+              {site.tagline}
+            </p>
           </div>
 
           <div>
-            <h3 className="type-label mb-3 text-ink">Contact us</h3>
-            <ul className="type-body space-y-2 text-sm">
+            <h3 className="type-label mb-3 text-ink">Contact</h3>
+            <ul className="type-body space-y-3 text-sm">
               {site.contact.map((item) => (
                 <li key={item.email}>
-                  <span className="text-ink/65">{item.label}: </span>
+                  <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45">
+                    {item.label}
+                  </p>
                   <a
                     href={`mailto:${item.email}`}
-                    className="font-semibold text-ink underline-offset-2 hover:underline"
+                    className="mt-1 inline-block font-semibold text-ink underline-offset-2 hover:underline"
                   >
                     {item.email}
                   </a>
@@ -67,20 +71,16 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="type-label mb-3 text-ink">Newsletter</h3>
-            <div className="flex flex-col items-start gap-2.5">
-              {/* UI-only for now — no form backend */}
-              <Link
-                to="/contact"
-                className="type-ui inline-flex min-w-[9.5rem] items-center justify-center rounded-full bg-ink px-5 py-2.5 text-xs text-ink-inverse transition-colors hover:bg-ink/85"
-              >
-                Subscribe
-              </Link>
-              <PillButton href={site.instagram} target="_blank" rel="noreferrer" className="min-w-[9.5rem]">
-                <InstagramIcon />
-                Instagram
-              </PillButton>
-            </div>
+            <h3 className="type-label mb-3 text-ink">Follow</h3>
+            <PillButton
+              href={site.instagram}
+              target="_blank"
+              rel="noreferrer"
+              className="min-w-[9.5rem]"
+            >
+              <InstagramIcon />
+              Instagram
+            </PillButton>
           </div>
 
           <div>
@@ -97,7 +97,7 @@ export function Footer() {
 
         <div className="flex flex-col gap-3 border-t border-ink/10 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="type-label text-ink/40">
-            ©{site.year} {site.name}
+            ©{site.year} {site.fullName || site.name}
           </p>
           <nav className="type-label flex flex-wrap gap-x-5 gap-y-2 text-ink">
             {site.legalLinks.map((link) => (

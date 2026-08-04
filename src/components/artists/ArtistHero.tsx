@@ -12,7 +12,7 @@ type ArtistHeroProps = {
 
 export function ArtistHero({ artist }: ArtistHeroProps) {
   const { content } = useCms()
-  const bookingMail = content.site.contact[0]?.email ?? 'bookings@notype.be'
+  const bookingMail = content.site.contact[0]?.email ?? 'martin@notype-mgmt.com'
   const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
 

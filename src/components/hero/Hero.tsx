@@ -26,7 +26,7 @@ export function Hero() {
             />
           </h1>
           <motion.p
-            className="type-label mt-8 max-w-[18rem] text-ink/50 sm:mt-10"
+            className="type-label mt-8 max-w-[18rem] whitespace-pre-line text-ink/50 sm:mt-10"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.5 }}

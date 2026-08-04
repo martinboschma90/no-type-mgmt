@@ -3,27 +3,19 @@ import type { TeamMember } from '@/types/artist'
 export const site = {
   name: 'No Type',
   fullName: 'No Type Management',
-  tagline: 'Artist management without a template.',
-  instagram: 'https://instagram.com/',
+  tagline: 'Artist management\nBooking · Development · Creative',
+  instagram: 'https://www.instagram.com/notype/',
   year: 2026,
   contact: [
     {
-      label: 'All booking inquiries',
-      email: 'bookings@notype.be',
-    },
-    {
-      label: 'Advancing & production',
-      email: 'production@notype.be',
-    },
-    {
-      label: 'Contracts & payments',
-      email: 'admin@notype.be',
+      label: 'Bookings',
+      email: 'martin@notype-mgmt.com',
     },
   ],
   legal: {
-    company: 'No Type BV',
-    vat: 'BE 0000.000.000',
-    addressLines: ['Noordersingel 28/30', '2140 Antwerpen'],
+    company: 'No Type Management',
+    vat: 'notype-mgmt.com',
+    addressLines: [] as string[],
   },
   about: [
     'No Type was founded in 2024 as a sister brand of Kurious, built for artists who refuse a single lane.',
@@ -33,9 +25,8 @@ export const site = {
   ],
   photoCredits: 'Credits pictures: @notype',
   legalLinks: [
-    { label: 'Terms & Conditions', href: '#terms' },
-    { label: 'Privacy Policy', href: '#privacy' },
-    { label: 'GDPR', href: '#gdpr' },
+    { label: 'Privacy', href: '#privacy' },
+    { label: 'Terms', href: '#terms' },
   ],
 } as const
 

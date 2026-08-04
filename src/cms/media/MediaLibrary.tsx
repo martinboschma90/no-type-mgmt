@@ -50,7 +50,7 @@ export function MediaLibrary({ onSelect, selectKind = 'any' }: MediaLibraryProps
     <div className="space-y-7">
       <EditorSection
         title="Upload"
-        description="Photos become WebP. Videos become WebM. Stored in this browser (IndexedDB)."
+        description="Photos/videos sync to Supabase Storage when you are logged in. Use “Sync missing media to Storage” above to migrate old media:// refs."
       >
         <div
           role="button"

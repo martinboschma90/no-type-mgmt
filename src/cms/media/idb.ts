@@ -39,6 +39,19 @@ export async function idbListAssets(): Promise<StoredRow[]> {
   }
 }
 
+export async function idbGetAsset(id: string): Promise<StoredRow | undefined> {
+  const db = await openDb()
+  try {
+    const tx = db.transaction(STORE, 'readonly')
+    const row = await reqToPromise(
+      tx.objectStore(STORE).get(id) as IDBRequest<StoredRow | undefined>,
+    )
+    return row
+  } finally {
+    db.close()
+  }
+}
+
 export async function idbPutAsset(row: StoredRow): Promise<void> {
   const db = await openDb()
   try {
