@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import type { Artist } from '@/types/artist'
+import { useCms } from '@/cms/CmsProvider'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
+import { rosterGlowGradient } from '@/cms/rosterGlow'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
+import type { CSSProperties } from 'react'
 
 type ArtistCardProps = {
   artist: Artist
@@ -14,8 +18,16 @@ type ArtistCardProps = {
  * readable name always on → hover glow + name lift + More → CTA.
  */
 export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
+  const { content } = useCms()
   const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
+  const glowStyle = {
+    ['--artist-card-glow' as string]: rosterGlowGradient(
+      content.site.rosterGlowPreset,
+      content.site.rosterGlowCustom,
+    ),
+    aspectRatio: '3 / 4',
+  } as CSSProperties
 
   return (
     <motion.div
@@ -32,18 +44,22 @@ export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
       <Link
         to={`/artists/${artist.slug}`}
         className="artist-card group relative isolate block w-full overflow-hidden rounded-[1.5rem] bg-[#151217] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-        style={{ aspectRatio: '3 / 4' }}
+        style={glowStyle}
       >
         {/* Media */}
         {imageUrl ? (
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute inset-0 origin-center transition-transform duration-[600ms] ease-out will-change-transform group-hover:scale-[1.04]">
-              <img
+              <OptimizedImg
                 src={imageUrl}
                 alt={artist.imageAlt}
                 className="artist-card__img absolute"
                 style={frame}
+                size="card"
+                srcSetSizes={['card', 'hero']}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 loading="lazy"
+                fetchPriority="low"
                 decoding="async"
                 draggable={false}
               />

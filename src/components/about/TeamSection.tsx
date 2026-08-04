@@ -37,6 +37,10 @@ export function TeamSection({ members }: TeamSectionProps) {
                 alt={member.name}
                 className="h-full w-full object-cover"
                 loading="lazy"
+                fetchPriority="low"
+                size="team"
+                srcSetSizes={['team', 'card']}
+                sizes="(max-width: 640px) 42vw, 18vw"
               />
             </div>
             <p className="type-headline mt-2.5 text-sm text-ink">{member.name}</p>

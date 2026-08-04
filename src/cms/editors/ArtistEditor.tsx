@@ -5,6 +5,7 @@ import { useCms } from '@/cms/CmsProvider'
 import { artistSlugFromPath } from '@/cms/artistSlug'
 import { ArtistLayoutEditor } from '@/cms/editors/ArtistLayoutEditor'
 import { ArtistVideosEditor, withSyncedVideos } from '@/cms/editors/ArtistVideosEditor'
+import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { EditorSection, Field, TextArea, TextInput } from '@/cms/fields'
 import { ImageFocusField } from '@/cms/editors/ImageFocusField'
 import { ART_DIRECTION_VERSION, resolveArtDirection } from '@/cms/imageFocus'
@@ -14,6 +15,10 @@ import {
   DEFAULT_ARTIST_MUSIC,
   MUSIC_PLATFORMS,
 } from '@/cms/artistMusic'
+import {
+  isArtistSectionVisible,
+  setArtistSectionVisible,
+} from '@/cms/artistSections'
 import { ArtistPublishBar } from '@/cms/editors/ArtistPublishBar'
 import { artistHasLocalMediaRefs } from '@/cms/artistLocalMedia'
 import { normalizeArtistVideos } from '@/cms/artistVideos'
@@ -160,6 +165,27 @@ export function ArtistEditor() {
     }))
   }
 
+  const musicSectionVisible = isArtistSectionVisible(artist, 'tracks')
+  const contentSectionVisible = isArtistSectionVisible(artist, 'video')
+
+  const setMusicSectionVisible = (visible: boolean) => {
+    updateArtist(updateKey, (a) => ({
+      ...a,
+      sections: setArtistSectionVisible(a.sections, 'tracks', visible),
+      music: {
+        ...(a.music ?? DEFAULT_ARTIST_MUSIC),
+        visible,
+      },
+    }))
+  }
+
+  const setContentSectionVisible = (visible: boolean) => {
+    updateArtist(updateKey, (a) => ({
+      ...a,
+      sections: setArtistSectionVisible(a.sections, 'video', visible),
+    }))
+  }
+
   return (
     <div className="space-y-3">
       {/* Sticky so Save / Publish stay visible while scrolling the editor */}
@@ -234,13 +260,68 @@ export function ArtistEditor() {
         </select>
       </label>
 
+      <EditorSection
+        title="Section visibility"
+        description="Show or hide Music and Content on this artist page. Data stays saved when hidden."
+        defaultOpen
+        badge="Settings"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
+          <div>
+            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+              Music
+            </p>
+            <p className="type-body mt-1 text-xs text-ink/45">
+              {musicSectionVisible
+                ? 'Zichtbaar op de artiestenpagina'
+                : 'Verborgen — muziekdata blijft bewaard'}
+            </p>
+          </div>
+          <ArtistVisibilityToggle
+            visible={musicSectionVisible}
+            onChange={setMusicSectionVisible}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
+          <div>
+            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+              Content
+            </p>
+            <p className="type-body mt-1 text-xs text-ink/45">
+              {contentSectionVisible
+                ? 'Zichtbaar op de artiestenpagina'
+                : 'Verborgen — visuals blijven bewaard'}
+            </p>
+          </div>
+          <ArtistVisibilityToggle
+            visible={contentSectionVisible}
+            onChange={setContentSectionVisible}
+          />
+        </div>
+      </EditorSection>
+
       <ArtistLayoutEditor
         artist={artist}
-        onChange={(sections) => updateArtist(updateKey, (a) => ({ ...a, sections }))}
+        onChange={(sections) => {
+          updateArtist(updateKey, (a) => {
+            const tracks = sections.find((s) => s.id === 'tracks')
+            const musicVisible = tracks ? tracks.visible !== false : true
+            return {
+              ...a,
+              sections,
+              music: {
+                ...(a.music ?? DEFAULT_ARTIST_MUSIC),
+                visible: musicVisible,
+              },
+            }
+          })
+        }}
       />
 
       <ArtistVideosEditor
         videos={editableVideos}
+        sectionVisible={contentSectionVisible}
+        onSectionVisibleChange={setContentSectionVisible}
         onChange={(videos) =>
           updateArtist(updateKey, (a) => ({
             ...a,
@@ -517,6 +598,22 @@ export function ArtistEditor() {
         description="Choose a platform embed per artist. Legacy track list stays available below."
         defaultOpen
       >
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
+          <div>
+            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+              Music sectie
+            </p>
+            <p className="type-body mt-1 text-xs text-ink/45">
+              {musicSectionVisible
+                ? 'Zichtbaar op de artiestenpagina'
+                : 'Verborgen — data blijft bewaard'}
+            </p>
+          </div>
+          <ArtistVisibilityToggle
+            visible={musicSectionVisible}
+            onChange={setMusicSectionVisible}
+          />
+        </div>
         <fieldset className="space-y-2">
           <legend className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
             Platform
@@ -593,22 +690,6 @@ export function ArtistEditor() {
           onChange={(embedUrl) => patchMusic({ embedUrl })}
         />
 
-        <label className="flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-ink/[0.03] px-3.5 py-3">
-          <span>
-            <span className="type-headline block text-sm text-ink">
-              Show on artist page
-            </span>
-            <span className="type-body mt-0.5 block text-xs text-ink/40">
-              When on and URL is set, the embed replaces the legacy track list.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            className="h-4 w-4 accent-[var(--brand,#D8FF3E)]"
-            checked={music.visible !== false}
-            onChange={(e) => patchMusic({ visible: e.target.checked })}
-          />
-        </label>
       </EditorSection>
 
       <EditorSection

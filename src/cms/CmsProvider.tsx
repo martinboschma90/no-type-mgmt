@@ -25,6 +25,14 @@ import {
   insertArtistInSupabase,
   updateArtistInSupabase,
 } from '@/cms/api/artists'
+import {
+  fetchSiteSettingsFromSupabase,
+  upsertSiteSettingsInSupabase,
+} from '@/cms/api/site'
+import {
+  fetchTeamMembersFromSupabase,
+  replaceTeamMembersInSupabase,
+} from '@/cms/api/team'
 import { applyArtistStatus } from '@/cms/artistVisibility'
 import {
   artistHasLocalMediaRefs,
@@ -38,6 +46,8 @@ type CmsContextValue = {
   savedAt: number | null
   /** Last artist ↔ Supabase sync error, if any. */
   artistSyncError: string | null
+  /** Last site/team ↔ Supabase sync error, if any. */
+  siteSyncError: string | null
   /** Artist ids with unsaved local edits. */
   dirtyArtistIds: ReadonlySet<string>
   artistSaving: boolean
@@ -108,6 +118,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     loadStoredContent() ? Date.now() : null,
   )
   const [artistSyncError, setArtistSyncError] = useState<string | null>(null)
+  const [siteSyncError, setSiteSyncError] = useState<string | null>(null)
   const [dirtyArtistIds, setDirtyArtistIds] = useState<Set<string>>(
     () => new Set(),
   )
@@ -116,6 +127,8 @@ export function CmsProvider({ children }: { children: ReactNode }) {
   const contentRef = useRef(content)
   contentRef.current = content
   const artistsHydrated = useRef(false)
+  const siteHydrated = useRef(false)
+  const skipSiteRemoteSync = useRef(false)
 
   const persistLocal = useCallback((next: CmsContent) => {
     persistContent(next, { persistArtists: !isSupabaseConfigured })
@@ -129,6 +142,15 @@ export function CmsProvider({ children }: { children: ReactNode }) {
 
   const clearArtistError = useCallback(() => {
     setArtistSyncError(null)
+  }, [])
+
+  const reportSiteError = useCallback((message: string) => {
+    console.error('[cms] site sync:', message)
+    setSiteSyncError(message)
+  }, [])
+
+  const clearSiteError = useCallback(() => {
+    setSiteSyncError(null)
   }, [])
 
   const adoptServerArtist = useCallback((server: Artist) => {
@@ -209,6 +231,116 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [])
+
+  // Hydrate site + team from Supabase (source of truth when rows exist)
+  useEffect(() => {
+    if (!isSupabaseConfigured || siteHydrated.current) return
+    let cancelled = false
+
+    void Promise.all([
+      fetchSiteSettingsFromSupabase(),
+      fetchTeamMembersFromSupabase(),
+    ]).then(([siteResult, teamResult]) => {
+      if (cancelled) return
+      siteHydrated.current = true
+
+      if (!siteResult.fromSupabase && !teamResult.fromSupabase) {
+        const current = contentRef.current
+        void upsertSiteSettingsInSupabase(current.site).then(({ error }) => {
+          if (error) reportSiteError(error)
+          else clearSiteError()
+        })
+        void replaceTeamMembersInSupabase(current.team).then(
+          ({ team, error }) => {
+            if (error) {
+              reportSiteError(error)
+              return
+            }
+            clearSiteError()
+            if (team.length) {
+              skipSiteRemoteSync.current = true
+              setContent((prev) => ({ ...prev, team }))
+            }
+          },
+        )
+        return
+      }
+
+      skipSiteRemoteSync.current = true
+      setContent((prev) => ({
+        ...prev,
+        site: siteResult.site ?? prev.site,
+        team: teamResult.fromSupabase ? teamResult.team : prev.team,
+      }))
+      setSavedAt(Date.now())
+
+      if (siteResult.fromSupabase && !teamResult.fromSupabase) {
+        void replaceTeamMembersInSupabase(contentRef.current.team).then(
+          ({ team, error }) => {
+            if (error) {
+              reportSiteError(error)
+              return
+            }
+            clearSiteError()
+            if (team.length) {
+              skipSiteRemoteSync.current = true
+              setContent((prev) => ({ ...prev, team }))
+            }
+          },
+        )
+      }
+
+      if (!siteResult.fromSupabase && teamResult.fromSupabase) {
+        void upsertSiteSettingsInSupabase(contentRef.current.site).then(
+          ({ error }) => {
+            if (error) reportSiteError(error)
+            else clearSiteError()
+          },
+        )
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [clearSiteError, reportSiteError])
+
+  // Debounced site + team → Supabase
+  useEffect(() => {
+    if (!isSupabaseConfigured || !siteHydrated.current) return
+    if (skipSiteRemoteSync.current) {
+      skipSiteRemoteSync.current = false
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      const { site, team } = contentRef.current
+      void upsertSiteSettingsInSupabase(site).then(({ error }) => {
+        if (error) reportSiteError(error)
+        else {
+          clearSiteError()
+          setSavedAt(Date.now())
+        }
+      })
+      void replaceTeamMembersInSupabase(team).then(({ team: nextTeam, error }) => {
+        if (error) {
+          reportSiteError(error)
+          return
+        }
+        clearSiteError()
+        setSavedAt(Date.now())
+        const sameIds =
+          nextTeam.length === team.length &&
+          nextTeam.every((member, i) => member.id === team[i]?.id)
+        if (!sameIds) {
+          skipSiteRemoteSync.current = true
+          setContent((prev) => ({ ...prev, team: nextTeam }))
+        }
+      })
+    }, 700)
+
+    return () => window.clearTimeout(timer)
+  }, [content.site, content.team, clearSiteError, reportSiteError])
 
   // Re-apply campaign seeds when art-direction version bumps
   useEffect(() => {
@@ -298,6 +430,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       content,
       savedAt,
       artistSyncError,
+      siteSyncError,
       dirtyArtistIds,
       artistSaving,
       setSite: (updater) => {
@@ -386,6 +519,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       unpublishArtist,
       resetContent: () => {
         const next = createDefaultContent()
+        skipSiteRemoteSync.current = true
         setContent(next)
         persistLocal(next)
         setDirtyArtistIds(new Set())
@@ -397,6 +531,21 @@ export function CmsProvider({ children }: { children: ReactNode }) {
               else clearArtistError()
             })
           }
+          void upsertSiteSettingsInSupabase(next.site).then(({ error }) => {
+            if (error) reportSiteError(error)
+            else clearSiteError()
+          })
+          void replaceTeamMembersInSupabase(next.team).then(
+            ({ team, error }) => {
+              if (error) {
+                reportSiteError(error)
+                return
+              }
+              clearSiteError()
+              skipSiteRemoteSync.current = true
+              setContent((prev) => ({ ...prev, team }))
+            },
+          )
         }
       },
       getArtistBySlug: (slug) => content.artists.find((a) => a.slug === slug),
@@ -406,11 +555,14 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       content,
       savedAt,
       artistSyncError,
+      siteSyncError,
       dirtyArtistIds,
       artistSaving,
       persistLocal,
       reportArtistError,
       clearArtistError,
+      reportSiteError,
+      clearSiteError,
       adoptServerArtist,
       saveArtist,
       publishArtist,

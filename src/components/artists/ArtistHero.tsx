@@ -5,6 +5,7 @@ import type { Artist } from '@/types/artist'
 import { useCms } from '@/cms/CmsProvider'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 
 type ArtistHeroProps = {
   artist: Artist
@@ -30,11 +31,17 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
             style={{ aspectRatio: '3 / 4' }}
           >
             {imageUrl ? (
-              <img
+              <OptimizedImg
                 src={imageUrl}
                 alt={artist.imageAlt}
                 className="absolute object-cover"
                 style={frame}
+                size="hero"
+                srcSetSizes={['card', 'hero', 'full']}
+                sizes="(max-width: 1024px) 92vw, 42vw"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 draggable={false}
               />
             ) : null}

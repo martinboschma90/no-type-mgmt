@@ -6,12 +6,14 @@ import { sortArtistsByName } from '@/cms/artistVisibility'
 import { HomeEditor } from '@/cms/editors/HomeEditor'
 import { AboutEditor } from '@/cms/editors/AboutEditor'
 import { ContactEditor } from '@/cms/editors/ContactEditor'
+import { FooterEditor } from '@/cms/editors/FooterEditor'
 import { RosterEditor } from '@/cms/editors/RosterEditor'
 import { ArtistEditor } from '@/cms/editors/ArtistEditor'
 import { ArtistsIndexEditor } from '@/cms/editors/ArtistsIndexEditor'
 import { HomePreview } from '@/cms/previews/HomePreview'
 import { AboutPreview } from '@/cms/previews/AboutPreview'
 import { ContactPreview } from '@/cms/previews/ContactPreview'
+import { FooterPreview } from '@/cms/previews/FooterPreview'
 import { RosterPreview } from '@/cms/previews/RosterPreview'
 import { ArtistPreview } from '@/cms/previews/ArtistPreview'
 import { ArtistsIndexPreview } from '@/cms/previews/ArtistsIndexPreview'
@@ -24,6 +26,7 @@ const siteTabs = [
   { to: '/cms/home', label: 'Home' },
   { to: '/cms/about', label: 'About' },
   { to: '/cms/contact', label: 'Contact' },
+  { to: '/cms/footer', label: 'Footer' },
   { to: '/cms/roster', label: 'Roster' },
 ] as const
 
@@ -67,7 +70,7 @@ function useCmsPanels() {
     return {
       mode: 'pages' as const,
       title: 'About',
-      subtitle: 'About · legal · team',
+      subtitle: 'About · team · social',
       editor: <AboutEditor />,
       preview: <AboutPreview />,
     }
@@ -80,6 +83,16 @@ function useCmsPanels() {
       subtitle: 'Contact channels',
       editor: <ContactEditor />,
       preview: <ContactPreview />,
+    }
+  }
+
+  if (pathname.startsWith('/cms/footer')) {
+    return {
+      mode: 'pages' as const,
+      title: 'Footer',
+      subtitle: 'Global footer · all pages',
+      editor: <FooterEditor />,
+      preview: <FooterPreview />,
     }
   }
 
@@ -96,7 +109,7 @@ function useCmsPanels() {
   return {
     mode: 'pages' as const,
     title: 'Home',
-    subtitle: 'Hero · brand · footer',
+    subtitle: 'Hero · brand',
     editor: <HomeEditor />,
     preview: <HomePreview />,
   }
@@ -116,7 +129,8 @@ function formatSavedAt(ts: number | null) {
 export function CmsLayout() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { resetContent, savedAt, artistSyncError, content } = useCms()
+  const { resetContent, savedAt, artistSyncError, siteSyncError, content } =
+    useCms()
   const { user, authRequired, signOut } = useAuth()
   const { assets } = useMedia()
   const panels = useCmsPanels()
@@ -314,6 +328,15 @@ export function CmsLayout() {
                   title={artistSyncError}
                 >
                   Artist sync: {artistSyncError}
+                </span>
+              ) : null}
+              {siteSyncError ? (
+                <span
+                  className="type-body max-w-full text-[0.7rem] text-red-500"
+                  role="alert"
+                  title={siteSyncError}
+                >
+                  Site sync: {siteSyncError}
                 </span>
               ) : null}
               {authRequired ? (

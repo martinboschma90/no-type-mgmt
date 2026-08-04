@@ -14,25 +14,31 @@ type LogoProps = {
 const ASSETS = {
   wordmark: {
     svg: '/brand/notype-wordmark.svg',
+    webp: '/brand/notype-wordmark.webp',
     png: '/brand/notype-wordmark.png',
     ratio: 2.14,
   },
   'wordmark-ink': {
     svg: '/brand/notype-wordmark-ink.svg',
+    webp: '/brand/notype-wordmark-ink.webp',
     png: '/brand/notype-wordmark-ink.png',
     ratio: 2.14,
   },
   seal: {
     svg: '/brand/notype-seal.svg',
+    webp: '/brand/notype-seal.webp',
     png: '/brand/notype-seal.png',
     ratio: 1,
   },
   stacked: {
     svg: '/brand/notype-stacked.svg',
+    webp: '/brand/notype-stacked.webp',
     png: '/brand/notype-stacked.png',
     ratio: 0.68,
   },
 } as const
+
+type FallbackKind = 'svg' | 'webp' | 'png'
 
 /** Official No Type logo — preserves source proportions, no distortion. */
 export function Logo({
@@ -49,16 +55,18 @@ export function Logo({
         : 'wordmark-ink'
       : variant
   const asset = ASSETS[resolved]
-  const [usePng, setUsePng] = useState(false)
+  const [fallback, setFallback] = useState<FallbackKind>('svg')
   const width = height != null ? Math.round(height * asset.ratio) : undefined
+  const src =
+    fallback === 'svg' ? asset.svg : fallback === 'webp' ? asset.webp : asset.png
 
   useEffect(() => {
-    setUsePng(false)
+    setFallback('svg')
   }, [resolved])
 
   return (
     <img
-      src={usePng ? asset.png : asset.svg}
+      src={src}
       alt={title}
       width={width}
       height={height}
@@ -70,7 +78,11 @@ export function Logo({
       }
       draggable={false}
       decoding="async"
-      onError={() => setUsePng(true)}
+      onError={() =>
+        setFallback((current) =>
+          current === 'svg' ? 'webp' : current === 'webp' ? 'png' : 'png',
+        )
+      }
     />
   )
 }

@@ -5,6 +5,7 @@ import {
   reorderSections,
   type ArtistSectionConfig,
 } from '@/cms/artistSections'
+import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { EditorSection } from '@/cms/fields'
 import type { Artist } from '@/types/artist'
 
@@ -89,24 +90,17 @@ export function ArtistLayoutEditor({
                 </p>
               </div>
 
-              <button
-                type="button"
-                className={[
-                  'type-label shrink-0 rounded-full px-2.5 py-1 text-[0.55rem] tracking-[0.12em] uppercase transition-colors',
-                  section.visible
-                    ? 'bg-brand/20 text-ink'
-                    : 'bg-ink/8 text-ink/35',
-                ].join(' ')}
-                onClick={() => {
+              <ArtistVisibilityToggle
+                compact
+                visible={section.visible}
+                onChange={(visible) => {
                   onChange(
                     sections.map((s, i) =>
-                      i === index ? { ...s, visible: !s.visible } : s,
+                      i === index ? { ...s, visible } : s,
                     ),
                   )
                 }}
-              >
-                {section.visible ? 'Zichtbaar' : 'Verborgen'}
-              </button>
+              />
 
               <span className="type-label shrink-0 text-[0.55rem] tracking-[0.12em] text-ink/30 uppercase">
                 {index + 1}

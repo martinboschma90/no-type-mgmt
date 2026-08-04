@@ -19,7 +19,7 @@ export function AboutPreview() {
             animate={{ opacity: 1, y: 0 }}
           >
             <h1 className="m-0">
-              <span className="sr-only">About No Type</span>
+              <span className="sr-only">{site.aboutTitle || 'About No Type'}</span>
               <Logo variant="auto" className="h-[clamp(2.5rem,7vw,4.5rem)] w-auto" />
             </h1>
           </motion.div>
@@ -44,7 +44,7 @@ export function AboutPreview() {
           </SectionRow>
         </div>
       </div>
-      <TeamSection members={team} />
+      {site.teamVisible !== false ? <TeamSection members={team} /> : null}
     </PreviewFrame>
   )
 }

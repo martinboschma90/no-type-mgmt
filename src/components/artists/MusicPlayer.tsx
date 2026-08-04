@@ -7,6 +7,7 @@ import {
 } from '@/cms/artistMusic'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 
 type MusicPlayerProps = {
   artist: Artist
@@ -98,11 +99,15 @@ function LegacyTrackList({
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3 sm:px-5">
         {imageUrl ? (
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg">
-            <img
+            <OptimizedImg
               src={imageUrl}
               alt=""
               className="absolute object-cover"
               style={frame}
+              size="thumb"
+              loading="lazy"
+              fetchPriority="low"
+              decoding="async"
             />
           </div>
         ) : (

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { motion, type PanInfo } from 'framer-motion'
 import type { Artist, ArtistVideo } from '@/types/artist'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import { optimizeImageUrl } from '@/cms/media/optimizeImageUrl'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 
 /** Editorial cinematic ease — slow settle, no bounce. */
 const CINEMA_EASE = [0.22, 1, 0.36, 1] as const
@@ -26,7 +28,6 @@ function VisualSlide({
   const posterUrl = useResolvedMediaUrl(video.posterUrl || fallbackPoster)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [showPoster, setShowPoster] = useState(true)
-  const shouldLoad = active || near
 
   useEffect(() => {
     const el = videoRef.current
@@ -59,28 +60,34 @@ function VisualSlide({
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#0a090c]">
       {posterUrl ? (
-        <img
+        <OptimizedImg
           src={posterUrl}
           alt=""
           className={[
             'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
             showPoster ? 'opacity-100' : 'opacity-0',
           ].join(' ')}
+          size="poster"
+          loading={active || near ? 'eager' : 'lazy'}
+          fetchPriority={active ? 'high' : 'low'}
+          decoding="async"
           draggable={false}
         />
       ) : null}
 
-      {shouldLoad && videoUrl ? (
+      {active && videoUrl ? (
         <video
           ref={videoRef}
           key={videoUrl}
           src={videoUrl}
-          poster={posterUrl || undefined}
+          poster={
+            posterUrl ? optimizeImageUrl(posterUrl, 'poster') : undefined
+          }
           className="absolute inset-0 h-full w-full object-cover"
           muted
           loop
           playsInline
-          preload={active ? 'auto' : 'metadata'}
+          preload="auto"
           onPlaying={() => setShowPoster(false)}
         />
       ) : null}

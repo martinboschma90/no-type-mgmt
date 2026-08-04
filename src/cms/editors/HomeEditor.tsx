@@ -40,22 +40,6 @@ export function HomeEditor() {
         ]}
       />
 
-      <EditorSection
-        title="Footer"
-        description="Copyright year in the site footer."
-        badge="Settings"
-      >
-        <TextInput
-          label="Year"
-          value={String(site.year)}
-          onChange={(value) => {
-            const year = Number.parseInt(value, 10)
-            if (!Number.isNaN(year)) {
-              setSite((s) => ({ ...s, year }))
-            }
-          }}
-        />
-      </EditorSection>
     </>
   )
 }

@@ -1,4 +1,8 @@
-import type { ArtistSectionConfig, ArtistSectionId } from '@/types/artist'
+import type {
+  Artist,
+  ArtistSectionConfig,
+  ArtistSectionId,
+} from '@/types/artist'
 
 export type { ArtistSectionConfig, ArtistSectionId }
 
@@ -11,8 +15,8 @@ export const ARTIST_SECTION_META: Record<
     description: 'Portrait, naam, bio, booking & socials',
   },
   video: {
-    label: 'Visuals',
-    description: 'Vertical 9:16 cinematic carousel',
+    label: 'Content',
+    description: 'Visuals / vertical 9:16 cinematic carousel',
   },
   tracks: {
     label: 'Music',
@@ -71,4 +75,22 @@ export function reorderSections(
   const [item] = next.splice(fromIndex, 1)
   next.splice(toIndex, 0, item)
   return next
+}
+
+export function isArtistSectionVisible(
+  artist: Pick<Artist, 'sections'> | null | undefined,
+  id: ArtistSectionId,
+): boolean {
+  const section = normalizeArtistSections(artist?.sections).find((s) => s.id === id)
+  return section?.visible !== false
+}
+
+export function setArtistSectionVisible(
+  sections: ArtistSectionConfig[] | null | undefined,
+  id: ArtistSectionId,
+  visible: boolean,
+): ArtistSectionConfig[] {
+  return normalizeArtistSections(sections).map((section) =>
+    section.id === id ? { ...section, visible } : section,
+  )
 }

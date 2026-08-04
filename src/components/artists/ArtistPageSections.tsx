@@ -1,6 +1,9 @@
 import { ArtistHero } from '@/components/artists/ArtistHero'
 import { ArtistVideoSlide } from '@/components/artists/ArtistVideoSlide'
 import { MusicPlayer } from '@/components/artists/MusicPlayer'
+import {
+  isMusicEmbedActive,
+} from '@/cms/artistMusic'
 import { normalizeArtistSections } from '@/cms/artistSections'
 import type { Artist } from '@/types/artist'
 
@@ -8,6 +11,11 @@ type ArtistPageSectionsProps = {
   artist: Artist
   /** In CMS preview, show empty video slot so layout is obvious */
   previewMode?: boolean
+}
+
+function hasMusicToShow(artist: Artist) {
+  if (isMusicEmbedActive(artist.music)) return true
+  return Boolean(artist.tracks?.length)
 }
 
 /** Renders artist page blocks in CMS-defined order. */
@@ -34,7 +42,8 @@ export function ArtistPageSections({
                 showEmptyState={previewMode}
               />
             )
-          case 'tracks':
+          case 'tracks': {
+            if (!previewMode && !hasMusicToShow(artist)) return null
             return (
               <div
                 key="tracks"
@@ -45,6 +54,7 @@ export function ArtistPageSections({
                 </div>
               </div>
             )
+          }
           default:
             return null
         }

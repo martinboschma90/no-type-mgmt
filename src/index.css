@@ -167,7 +167,8 @@
   }
 }
 
-/* Superform-style flowing glow — outside Tailwind layers so it always ships */
+/* Superform-style flowing glow — outside Tailwind layers so it always ships.
+   Color stops come from CMS via --artist-card-glow (inline on the card). */
 .artist-card__glow {
   position: absolute;
   inset-inline: 0;
@@ -176,13 +177,9 @@
   z-index: 1;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(
-    45deg,
-    #d8ff3e,
-    #afe6ef,
-    #393aff,
-    #dcb8fe,
-    #f0bc06
+  background: var(
+    --artist-card-glow,
+    linear-gradient(45deg, #d8ff3e, #afe6ef, #393aff, #dcb8fe, #f0bc06)
   );
   background-size: 300% 100%;
   -webkit-mask-image: linear-gradient(

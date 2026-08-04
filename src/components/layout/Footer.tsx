@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Logo } from '@/components/ui/Logo'
 import { PillButton } from '@/components/ui/PillButton'
 import { useCms } from '@/cms/CmsProvider'
+import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 
 function InstagramIcon() {
   return (
@@ -14,6 +15,10 @@ function InstagramIcon() {
 export function Footer() {
   const { content } = useCms()
   const { site } = content
+  const customLogoUrl = useResolvedMediaUrl(site.logoUrl)
+  const copyright =
+    site.copyrightText.trim() ||
+    `©${site.year} ${site.fullName || site.name}`
 
   const scrollTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -45,7 +50,18 @@ export function Footer() {
 
         <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <div>
-            <Logo variant="auto" height={40} />
+            {customLogoUrl ? (
+              <img
+                src={customLogoUrl}
+                alt={site.name}
+                height={40}
+                className="block h-10 w-auto max-w-full object-contain"
+                decoding="async"
+                draggable={false}
+              />
+            ) : (
+              <Logo variant="auto" height={40} />
+            )}
             <p className="type-label mt-5 whitespace-pre-line text-ink/50">
               {site.tagline}
             </p>
@@ -96,9 +112,7 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col gap-3 border-t border-ink/10 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="type-label text-ink/40">
-            ©{site.year} {site.fullName || site.name}
-          </p>
+          <p className="type-label text-ink/40">{copyright}</p>
           <nav className="type-label flex flex-wrap gap-x-5 gap-y-2 text-ink">
             {site.legalLinks.map((link) => (
               <a key={link.href} href={link.href} className="hover:opacity-60">

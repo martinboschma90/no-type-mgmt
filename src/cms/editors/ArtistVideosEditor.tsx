@@ -5,6 +5,7 @@ import {
   reorderArtistVideos,
   syncLegacyVideoUrl,
 } from '@/cms/artistVideos'
+import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { EditorSection, TextInput } from '@/cms/fields'
 import { MediaUrlField } from '@/cms/media/MediaUrlField'
 import type { ArtistVideo } from '@/types/artist'
@@ -12,12 +13,16 @@ import type { ArtistVideo } from '@/types/artist'
 type ArtistVideosEditorProps = {
   videos: ArtistVideo[]
   onChange: (videos: ArtistVideo[]) => void
+  sectionVisible?: boolean
+  onSectionVisibleChange?: (visible: boolean) => void
 }
 
 /** CMS collection editor — add / remove / reorder / poster for reels. */
 export function ArtistVideosEditor({
   videos,
   onChange,
+  sectionVisible = true,
+  onSectionVisibleChange,
 }: ArtistVideosEditorProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
@@ -37,11 +42,29 @@ export function ArtistVideosEditor({
 
   return (
     <EditorSection
-      title="Visuals"
-      description="Vertical 9:16 clips (1080×1920). 3–5 recommended. Cinematic carousel on the public page."
+      title="Content"
+      description="Visuals — vertical 9:16 clips (1080×1920). 3–5 recommended. Cinematic carousel on the public page."
       defaultOpen
       badge={`${videos.length}/${MAX_ARTIST_VIDEOS}`}
     >
+      {onSectionVisibleChange ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
+          <div>
+            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+              Content sectie
+            </p>
+            <p className="type-body mt-1 text-xs text-ink/45">
+              {sectionVisible
+                ? 'Zichtbaar op de artiestenpagina'
+                : 'Verborgen — visuals blijven bewaard'}
+            </p>
+          </div>
+          <ArtistVisibilityToggle
+            visible={sectionVisible}
+            onChange={onSectionVisibleChange}
+          />
+        </div>
+      ) : null}
       <ul className="space-y-3">
         {videos.map((video, index) => {
           const isDragging = dragIndex === index

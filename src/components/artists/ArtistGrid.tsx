@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { ArtistCard } from '@/components/artists/ArtistCard'
+import { useCms } from '@/cms/CmsProvider'
 import type { Artist } from '@/types/artist'
 
 type ArtistGridProps = {
@@ -7,9 +8,15 @@ type ArtistGridProps = {
 }
 
 export function ArtistGrid({ artists }: ArtistGridProps) {
+  const { content } = useCms()
+  const desktopColumns = content.site.rosterDesktopColumns === 3 ? 3 : 4
+
   return (
     <motion.div
-      className="grid grid-cols-2 items-start gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4"
+      className={[
+        'grid grid-cols-2 items-start gap-3 sm:gap-4 md:grid-cols-3',
+        desktopColumns === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4',
+      ].join(' ')}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
