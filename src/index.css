@@ -1,10 +1,14 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Logo lime */
+  /* Yellow — visual brand highlight / artist glow */
   --color-brand: #d8ff3e;
   --color-brand-dim: #c2e638;
   --color-more: #d8ff3e;
+
+  /* Deep purple-rose / magenta — interaction & hover feedback */
+  --color-accent: #a8487a;
+  --color-accent-dim: #86355f;
 
   /* Themed surfaces — defaults = light */
   --color-ink: #111111;
@@ -97,10 +101,11 @@
   a {
     color: inherit;
     text-decoration: none;
+    transition: color 0.25s ease;
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-brand) 45%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 45%, transparent);
     color: var(--color-ink);
   }
 }
@@ -179,7 +184,7 @@
   opacity: 0;
   background: var(
     --artist-card-glow,
-    linear-gradient(45deg, #d8ff3e, #afe6ef, #393aff, #dcb8fe, #f0bc06)
+    linear-gradient(45deg, #d8ff3e, #d4a0c8, #a8487a, #c47a9e, #f0bc06)
   );
   background-size: 300% 100%;
   -webkit-mask-image: linear-gradient(

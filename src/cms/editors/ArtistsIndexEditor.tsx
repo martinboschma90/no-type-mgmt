@@ -130,7 +130,7 @@ export function ArtistsIndexEditor() {
       </div>
 
       <form
-        className="space-y-2 rounded-2xl border border-brand/25 bg-brand/5 p-3.5"
+        className="space-y-2 rounded-2xl border border-accent/25 bg-accent/5 p-3.5"
         onSubmit={(e) => {
           e.preventDefault()
           handleAdd()
@@ -148,7 +148,7 @@ export function ArtistsIndexEditor() {
               if (error) setError(null)
             }}
             placeholder="Naam, bv. Alber-K"
-            className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-brand/60"
+            className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-accent/60"
           />
           <button
             type="submit"
@@ -165,7 +165,7 @@ export function ArtistsIndexEditor() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Zoek artiest…"
-        className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-brand/60"
+        className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-accent/60"
       />
 
       <p className="type-label text-[0.6rem] tracking-[0.12em] text-ink/40 uppercase">

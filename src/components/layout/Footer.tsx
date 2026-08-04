@@ -100,7 +100,7 @@ export function Footer() {
                 >
                   <a
                     href={`mailto:${item.email}`}
-                    className="underline-offset-2 hover:underline"
+                    className="underline-offset-2 hover:text-accent hover:underline"
                   >
                     {item.email}
                   </a>
@@ -111,7 +111,7 @@ export function Footer() {
                 <ContactBlock label="Phone">
                   <a
                     href={phoneDigits ? `tel:+${phoneDigits}` : undefined}
-                    className="underline-offset-2 hover:underline"
+                    className="underline-offset-2 hover:text-accent hover:underline"
                   >
                     {phone}
                   </a>
@@ -165,7 +165,7 @@ export function Footer() {
                   <a
                     key={`${link.label}-${link.href}`}
                     href={link.href}
-                    className="underline-offset-2 hover:text-ink hover:underline"
+                    className="underline-offset-2 hover:text-accent hover:underline"
                   >
                     {link.label}
                   </a>
@@ -179,12 +179,15 @@ export function Footer() {
           <p className="type-label text-ink/40">{copyright}</p>
           <nav className="type-label flex flex-wrap gap-x-5 gap-y-2 text-ink">
             {site.faqVisible !== false ? (
-              <Link to="/faq" className="hover:opacity-60">
+              <Link to="/faq" className="transition-colors hover:text-accent">
                 FAQ
               </Link>
             ) : null}
             {privacyLink ? (
-              <a href={privacyLink.href} className="hover:opacity-60">
+              <a
+                href={privacyLink.href}
+                className="transition-colors hover:text-accent"
+              >
                 Privacy
               </a>
             ) : null}

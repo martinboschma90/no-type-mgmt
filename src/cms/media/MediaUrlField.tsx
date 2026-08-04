@@ -70,7 +70,7 @@ export function MediaUrlField({
         ) : (
           <input
             type="text"
-            className="w-full rounded-lg border border-ink/12 bg-cream-dark/40 px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-brand/60 focus:bg-cream-dark/70"
+            className="w-full rounded-lg border border-ink/12 bg-cream-dark/40 px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-accent/60 focus:bg-cream-dark/70"
             value={value}
             placeholder="https://… or upload"
             onChange={(e) => onChange(e.target.value)}

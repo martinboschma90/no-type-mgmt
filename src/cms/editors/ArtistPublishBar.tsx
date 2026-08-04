@@ -44,14 +44,14 @@ export function ArtistPublishBar({
           className={[
             'type-label inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.6rem] tracking-[0.12em] uppercase',
             published
-              ? 'bg-brand/25 text-ink'
+              ? 'bg-accent/25 text-ink'
               : 'bg-ink/10 text-ink/70',
           ].join(' ')}
         >
           <span
             className={[
               'h-1.5 w-1.5 rounded-full',
-              published ? 'bg-brand' : 'bg-ink/40',
+              published ? 'bg-accent' : 'bg-ink/40',
             ].join(' ')}
           />
           {published ? 'Published' : 'Draft'}

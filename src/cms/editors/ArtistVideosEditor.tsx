@@ -102,9 +102,9 @@ export function ArtistVideosEditor({
               className={[
                 'space-y-3 rounded-2xl border p-3.5 transition-colors',
                 isDragging
-                  ? 'border-brand/50 opacity-45'
+                  ? 'border-accent/50 opacity-45'
                   : isOver
-                    ? 'border-brand bg-brand/10'
+                    ? 'border-accent bg-accent/10'
                     : 'border-ink/10 bg-ink/[0.03]',
               ].join(' ')}
             >

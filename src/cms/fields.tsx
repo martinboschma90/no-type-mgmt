@@ -19,7 +19,7 @@ export function Field({ label, hint, children }: FieldProps) {
 }
 
 const controlClass =
-  'w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-brand/60'
+  'w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-accent/60'
 
 type TextInputProps = {
   label: string
@@ -145,7 +145,7 @@ export function EditorSection({
                     'type-label rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.12em] uppercase transition-colors',
                     tab.id === (activeTab?.id ?? tabId)
                       ? 'bg-ink text-ink-inverse'
-                      : 'text-ink/45 hover:bg-ink/5 hover:text-ink',
+                      : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
                   ].join(' ')}
                 >
                   {tab.label}

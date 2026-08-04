@@ -32,24 +32,18 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
             className={[
               'type-ui relative min-w-[5.5rem] rounded-full px-5 py-2.5 text-[0.7rem] tracking-[0.08em] transition-colors',
               active
-                ? 'bg-ink text-ink-inverse'
-                : 'border border-ink/70 bg-transparent text-ink hover:bg-ink hover:text-ink-inverse',
+                ? 'bg-accent text-[#f5f5f5]'
+                : 'border border-ink/70 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink',
             ].join(' ')}
           >
             {active ? (
               <motion.span
                 layoutId="view-toggle-fill"
-                className="absolute inset-0 rounded-full bg-ink"
+                className="absolute inset-0 rounded-full bg-accent"
                 transition={{ type: 'spring', stiffness: 420, damping: 34 }}
               />
             ) : null}
             <span className="relative z-10">{option.label}</span>
-            {active ? (
-              <span
-                className="absolute inset-x-3 -bottom-px z-10 h-0.5 rounded-full bg-brand"
-                aria-hidden
-              />
-            ) : null}
           </motion.button>
         )
       })}

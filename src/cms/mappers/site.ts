@@ -8,7 +8,7 @@ import {
   type SiteContent,
 } from '@/cms/content'
 import { cloneFaqCategories } from '@/data/faq'
-import { isRosterGlowPreset } from '@/cms/rosterGlow'
+import { normalizeRosterGlowPreset } from '@/cms/rosterGlow'
 import type { Json } from '@/lib/database.types'
 
 function asString(value: unknown, fallback = ''): string {
@@ -229,9 +229,10 @@ export function normalizeSiteContent(raw: unknown): SiteContent {
       row.rosterDesktopColumns,
       defaults.rosterDesktopColumns,
     ),
-    rosterGlowPreset: isRosterGlowPreset(row.rosterGlowPreset)
-      ? row.rosterGlowPreset
-      : defaults.rosterGlowPreset,
+    rosterGlowPreset: normalizeRosterGlowPreset(
+      row.rosterGlowPreset,
+      defaults.rosterGlowPreset,
+    ),
     rosterGlowCustom: asString(row.rosterGlowCustom, defaults.rosterGlowCustom),
     bookingTitle: asString(row.bookingTitle, defaults.bookingTitle),
     bookingIntro: asString(row.bookingIntro, defaults.bookingIntro),

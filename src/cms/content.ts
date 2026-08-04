@@ -1,6 +1,6 @@
 import { artists as defaultArtists } from '@/data/artists'
 import { getArtistBySlug } from '@/data/artistDetails'
-import { cloneFaqCategories, createDefaultFaqCategories } from '@/data/faq'
+import { createDefaultFaqCategories } from '@/data/faq'
 import { withArtDirection } from '@/cms/imageFocus'
 import { normalizeSiteContent } from '@/cms/mappers/site'
 import {

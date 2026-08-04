@@ -112,8 +112,8 @@ export function FaqHub({ title, intro, categories }: FaqHubProps) {
               onClick={() => setActiveId(tab.id)}
               className={`type-ui rounded-full px-5 py-2.5 text-xs transition-colors ${
                 selected
-                  ? 'bg-ink text-ink-inverse'
-                  : 'border border-ink/80 bg-transparent text-ink hover:bg-ink hover:text-ink-inverse'
+                  ? 'border border-accent bg-accent text-[#f5f5f5]'
+                  : 'border border-ink/80 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink'
               }`}
             >
               {tab.title}

@@ -32,7 +32,7 @@ export function BookingField({
 }
 
 const inputClass =
-  'w-full rounded-full border border-ink/12 bg-transparent px-3.5 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-ink/35'
+  'w-full rounded-full border border-ink/12 bg-transparent px-3.5 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-accent/70'
 
 export function BookingInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputClass} ${props.className ?? ''}`} />
@@ -80,8 +80,8 @@ export function BookingButton({
 
   const styles =
     variant === 'solid'
-      ? 'bg-ink text-ink-inverse hover:bg-ink/85'
-      : 'border border-ink/80 bg-transparent text-ink hover:bg-ink hover:text-ink-inverse'
+      ? 'bg-ink text-ink-inverse hover:bg-accent hover:text-[#f5f5f5]'
+      : 'border border-ink/80 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink'
 
   return (
     <button type="button" className={`${base} ${styles} ${className}`} {...props}>
@@ -105,8 +105,8 @@ export function ArtistSelectChip({
       onClick={onClick}
       className={`type-ui rounded-full px-5 py-2.5 text-xs transition-colors ${
         active
-          ? 'bg-ink text-ink-inverse'
-          : 'border border-ink/80 bg-transparent text-ink hover:bg-ink hover:text-ink-inverse'
+          ? 'border border-accent bg-accent text-[#f5f5f5]'
+          : 'border border-ink/80 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink'
       }`}
     >
       {children}

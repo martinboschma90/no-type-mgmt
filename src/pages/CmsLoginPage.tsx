@@ -4,7 +4,7 @@ import { useAuth } from '@/cms/auth/AuthProvider'
 import { Logo } from '@/components/ui/Logo'
 
 const controlClass =
-  'w-full rounded-xl border border-white/12 bg-[#151217] px-3.5 py-3 type-body text-sm text-[#F5F5F5] outline-none transition-colors placeholder:text-white/30 focus:border-brand/60'
+  'w-full rounded-xl border border-white/12 bg-[#151217] px-3.5 py-3 type-body text-sm text-[#F5F5F5] outline-none transition-colors placeholder:text-white/30 focus:border-accent/60'
 
 /**
  * Admin login — Supabase Auth email/password.

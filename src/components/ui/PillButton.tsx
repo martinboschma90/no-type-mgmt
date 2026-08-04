@@ -15,8 +15,8 @@ export function PillButton({
 
   const styles =
     variant === 'solid'
-      ? 'bg-ink text-ink-inverse hover:bg-ink/85'
-      : 'border border-ink/80 bg-transparent text-ink hover:bg-ink hover:text-ink-inverse'
+      ? 'bg-ink text-ink-inverse hover:bg-accent hover:text-[#f5f5f5]'
+      : 'border border-ink/80 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink'
 
   return (
     <motion.a

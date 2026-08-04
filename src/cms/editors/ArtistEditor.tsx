@@ -36,7 +36,7 @@ const PLATFORMS: SocialPlatform[] = [
 ]
 
 const slugControlClass =
-  'w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-brand/60'
+  'w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-accent/60'
 
 /** Soft sanitize while typing (keeps trailing hyphen for mid-edit). */
 function sanitizeSlugDraft(raw: string) {
@@ -247,7 +247,7 @@ export function ArtistEditor() {
           Switch artist page
         </span>
         <select
-          className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none focus:border-brand/60"
+          className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none focus:border-accent/60"
           value={artist.slug}
           onChange={(e) => navigate(`/cms/artists/${e.target.value}`)}
           aria-label="Select artist"
@@ -460,7 +460,7 @@ export function ArtistEditor() {
                           Platform
                         </span>
                         <select
-                          className="w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none focus:border-brand/60"
+                          className="w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none focus:border-accent/60"
                           value={link.platform}
                           onChange={(e) =>
                             updateArtist(updateKey, (a) => ({
@@ -529,7 +529,7 @@ export function ArtistEditor() {
                     </button>
                     <button
                       type="button"
-                      className="type-ui flex-1 rounded-full border border-brand/35 bg-brand/10 px-4 py-2.5 text-[0.65rem] text-ink transition-colors hover:bg-brand/20"
+                      className="type-ui flex-1 rounded-full border border-accent/35 bg-accent/10 px-4 py-2.5 text-[0.65rem] text-ink transition-colors hover:bg-accent/20"
                       onClick={() =>
                         updateArtist(updateKey, (a) => {
                           const existing = a.socials ?? []
@@ -627,14 +627,14 @@ export function ArtistEditor() {
                   className={[
                     'flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors',
                     selected
-                      ? 'border-brand/50 bg-brand/10'
+                      ? 'border-accent/50 bg-accent/10'
                       : 'border-ink/10 bg-ink/[0.03] hover:border-ink/20',
                   ].join(' ')}
                 >
                   <input
                     type="radio"
                     name={`music-platform-${artist.id}`}
-                    className="mt-1 accent-[var(--brand,#D8FF3E)]"
+                    className="mt-1 accent-accent"
                     checked={selected}
                     onChange={() => {
                       const defaults: Record<MusicPlatform, string> = {

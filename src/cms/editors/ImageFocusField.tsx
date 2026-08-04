@@ -222,7 +222,7 @@ export function ImageFocusField({
                 value={verticalSlider}
                 disabled={!resolved}
                 onChange={(e) => setVerticalSlider(Number(e.target.value))}
-                className="h-1.5 w-full accent-[var(--brand)] disabled:opacity-40"
+                className="h-1.5 w-full accent-accent disabled:opacity-40"
                 aria-label="Positie omhoog of omlaag"
               />
               <button
@@ -271,7 +271,7 @@ export function ImageFocusField({
                 value={100 - x}
                 disabled={!resolved}
                 onChange={(e) => patch({ x: 100 - Number(e.target.value) })}
-                className="h-1.5 w-full accent-[var(--brand)] disabled:opacity-40"
+                className="h-1.5 w-full accent-accent disabled:opacity-40"
                 aria-label="Positie links of rechts"
               />
               <button
@@ -319,7 +319,7 @@ export function ImageFocusField({
                 value={scale}
                 disabled={!resolved}
                 onChange={(e) => patch({ scale: Number(e.target.value) })}
-                className="h-1.5 w-full accent-[var(--brand)] disabled:opacity-40"
+                className="h-1.5 w-full accent-accent disabled:opacity-40"
               />
             </label>
             <button

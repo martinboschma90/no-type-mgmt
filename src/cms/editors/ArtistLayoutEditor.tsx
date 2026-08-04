@@ -68,9 +68,9 @@ export function ArtistLayoutEditor({
               className={[
                 'flex cursor-grab items-center gap-3 rounded-2xl border bg-[var(--body-bg)] px-3 py-3 transition-colors active:cursor-grabbing',
                 isDragging
-                  ? 'border-brand/50 opacity-45'
+                  ? 'border-accent/50 opacity-45'
                   : isOver
-                    ? 'border-brand bg-brand/10'
+                    ? 'border-accent bg-accent/10'
                     : 'border-ink/10 hover:border-ink/25',
               ].join(' ')}
             >

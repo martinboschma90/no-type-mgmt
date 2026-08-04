@@ -201,8 +201,8 @@ export function CmsLayout() {
             className={[
               'type-label rounded-xl px-3 py-2.5 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
               pagesActive
-                ? 'bg-ink text-ink-inverse'
-                : 'text-ink/50 hover:bg-ink/5 hover:text-ink',
+                ? 'bg-accent text-[#f5f5f5]'
+                : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
             ].join(' ')}
           >
             Pagina&apos;s
@@ -212,8 +212,8 @@ export function CmsLayout() {
             className={[
               'type-label rounded-xl px-3 py-2.5 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
               artistsActive
-                ? 'bg-ink text-ink-inverse'
-                : 'text-ink/50 hover:bg-ink/5 hover:text-ink',
+                ? 'bg-accent text-[#f5f5f5]'
+                : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
             ].join(' ')}
           >
             Artiesten
@@ -224,8 +224,8 @@ export function CmsLayout() {
             className={[
               'type-label rounded-xl px-3 py-2.5 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
               mediaActive
-                ? 'bg-ink text-ink-inverse'
-                : 'text-ink/50 hover:bg-ink/5 hover:text-ink',
+                ? 'bg-accent text-[#f5f5f5]'
+                : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
             ].join(' ')}
           >
             Media
@@ -236,7 +236,7 @@ export function CmsLayout() {
         <div className="space-y-2 border-t border-ink/8 p-4">
           <a
             href="/"
-            className="type-label block rounded-xl border border-brand/35 bg-brand/10 px-3 py-2.5 text-center text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors hover:bg-brand/20"
+            className="type-label block rounded-xl border border-accent/35 bg-accent/10 px-3 py-2.5 text-center text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors hover:bg-accent/20"
           >
             View site
           </a>
@@ -281,8 +281,8 @@ export function CmsLayout() {
                       className={[
                         'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
                         active
-                          ? 'bg-ink text-ink-inverse'
-                          : 'text-ink/45 hover:bg-ink/5 hover:text-ink',
+                          ? 'bg-accent text-[#f5f5f5]'
+                          : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
                       ].join(' ')}
                     >
                       {tab.label}
@@ -301,8 +301,8 @@ export function CmsLayout() {
                     [
                       'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
                       isActive || pathname === '/cms/artists/'
-                        ? 'bg-ink text-ink-inverse'
-                        : 'text-ink/45 hover:bg-ink/5 hover:text-ink',
+                        ? 'bg-accent text-[#f5f5f5]'
+                        : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
                     ].join(' ')
                   }
                 >
@@ -316,8 +316,8 @@ export function CmsLayout() {
                       [
                         'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.1em] uppercase transition-colors',
                         isActive
-                          ? 'bg-brand text-[#111111]'
-                          : 'text-ink/45 hover:bg-ink/5 hover:text-ink',
+                          ? 'bg-accent text-[#f5f5f5]'
+                          : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
                       ].join(' ')
                     }
                   >
@@ -386,7 +386,9 @@ export function CmsLayout() {
               className={() =>
                 [
                   'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
-                  pagesActive ? 'bg-ink text-ink-inverse' : 'bg-ink/5 text-ink/50',
+                  pagesActive
+                    ? 'bg-accent text-[#f5f5f5]'
+                    : 'bg-ink/5 text-ink/50',
                 ].join(' ')
               }
             >
@@ -397,7 +399,9 @@ export function CmsLayout() {
               className={() =>
                 [
                   'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
-                  artistsActive ? 'bg-ink text-ink-inverse' : 'bg-ink/5 text-ink/50',
+                  artistsActive
+                    ? 'bg-accent text-[#f5f5f5]'
+                    : 'bg-ink/5 text-ink/50',
                 ].join(' ')
               }
             >
@@ -408,7 +412,9 @@ export function CmsLayout() {
               className={() =>
                 [
                   'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
-                  mediaActive ? 'bg-ink text-ink-inverse' : 'bg-ink/5 text-ink/50',
+                  mediaActive
+                    ? 'bg-accent text-[#f5f5f5]'
+                    : 'bg-ink/5 text-ink/50',
                 ].join(' ')
               }
             >

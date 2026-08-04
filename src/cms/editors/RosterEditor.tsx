@@ -52,7 +52,7 @@ export function RosterEditor() {
               className={[
                 layoutBtnClass,
                 desktopColumns === 3
-                  ? 'border-brand/45 bg-brand/15 text-ink'
+                  ? 'border-accent/45 bg-accent/15 text-ink'
                   : 'border-ink/12 text-ink/45 hover:border-ink/25 hover:text-ink',
               ].join(' ')}
               aria-pressed={desktopColumns === 3}
@@ -67,7 +67,7 @@ export function RosterEditor() {
               className={[
                 layoutBtnClass,
                 desktopColumns === 4
-                  ? 'border-brand/45 bg-brand/15 text-ink'
+                  ? 'border-accent/45 bg-accent/15 text-ink'
                   : 'border-ink/12 text-ink/45 hover:border-ink/25 hover:text-ink',
               ].join(' ')}
               aria-pressed={desktopColumns === 4}
@@ -117,7 +117,7 @@ export function RosterEditor() {
                   className={[
                     'flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 transition-colors',
                     selected
-                      ? 'border-brand/45 bg-brand/15'
+                      ? 'border-accent/45 bg-accent/15'
                       : 'border-ink/12 hover:border-ink/25',
                   ].join(' ')}
                 >

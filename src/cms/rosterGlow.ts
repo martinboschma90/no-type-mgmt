@@ -4,7 +4,7 @@ export type RosterGlowPreset =
   | 'yellow'
   | 'white'
   | 'purple'
-  | 'blue'
+  | 'rose'
   | 'red'
   | 'custom'
 
@@ -17,17 +17,17 @@ export const ROSTER_GLOW_PRESETS: {
   { id: 'yellow', label: 'Geel', swatch: '#d8ff3e' },
   { id: 'white', label: 'Wit', swatch: '#f5f5f5' },
   { id: 'purple', label: 'Paars', swatch: '#a855f7' },
-  { id: 'blue', label: 'Blauw', swatch: '#393aff' },
+  { id: 'rose', label: 'Rose', swatch: '#a8487a' },
   { id: 'red', label: 'Rood', swatch: '#ef4444' },
   { id: 'custom', label: 'Custom', swatch: '#d8ff3e' },
 ]
 
-/** Exact current shipped glow stops — default "Geel". */
+/** Shipped glow stops — default "Geel" (yellow + deep purple-rose). */
 export const DEFAULT_ROSTER_GLOW_STOPS = [
   '#d8ff3e',
-  '#afe6ef',
-  '#393aff',
-  '#dcb8fe',
+  '#d4a0c8',
+  '#a8487a',
+  '#c47a9e',
   '#f0bc06',
 ] as const
 
@@ -35,7 +35,7 @@ const PRESET_STOPS: Record<Exclude<RosterGlowPreset, 'custom'>, string[]> = {
   yellow: [...DEFAULT_ROSTER_GLOW_STOPS],
   white: ['#ffffff', '#f3f3f3', '#dcdcdc', '#fafafa', '#e8e8e8'],
   purple: ['#e9d5ff', '#dcb8fe', '#a855f7', '#7c3aed', '#c084fc'],
-  blue: ['#afe6ef', '#93c5fd', '#393aff', '#60a5fa', '#3b82f6'],
+  rose: ['#d4a0c8', '#c47a9e', '#a8487a', '#86355f', '#b86a92'],
   red: ['#fecaca', '#f87171', '#ef4444', '#dc2626', '#fb7185'],
 }
 
@@ -47,10 +47,20 @@ export function isRosterGlowPreset(value: unknown): value is RosterGlowPreset {
     value === 'yellow' ||
     value === 'white' ||
     value === 'purple' ||
-    value === 'blue' ||
+    value === 'rose' ||
     value === 'red' ||
     value === 'custom'
   )
+}
+
+/** Normalize stored CMS values (maps legacy `blue` → `rose`). */
+export function normalizeRosterGlowPreset(
+  value: unknown,
+  fallback: RosterGlowPreset = DEFAULT_ROSTER_GLOW_PRESET,
+): RosterGlowPreset {
+  if (value === 'blue') return 'rose'
+  if (isRosterGlowPreset(value)) return value
+  return fallback
 }
 
 function clampByte(n: number) {
@@ -112,11 +122,12 @@ export function resolveRosterGlowStops(
   preset: RosterGlowPreset | undefined,
   customHex?: string,
 ): string[] {
-  if (preset === 'custom') {
+  const resolved = normalizeRosterGlowPreset(preset)
+  if (resolved === 'custom') {
     return customGlowStops(customHex?.trim() || DEFAULT_ROSTER_GLOW_CUSTOM)
   }
-  if (preset && preset !== 'custom' && PRESET_STOPS[preset]) {
-    return PRESET_STOPS[preset]
+  if (PRESET_STOPS[resolved]) {
+    return PRESET_STOPS[resolved]
   }
   return [...DEFAULT_ROSTER_GLOW_STOPS]
 }

@@ -49,7 +49,7 @@ export function MenuOverlay({ open, onClose }: MenuOverlayProps) {
                     onClick={onClose}
                     aria-current={active ? 'page' : undefined}
                     className={`type-display text-[clamp(2.75rem,8vw,5rem)] transition-opacity ${
-                      active ? 'text-ink' : 'text-ink/35 hover:text-ink'
+                      active ? 'text-ink' : 'text-ink/35 hover:text-accent'
                     }`}
                   >
                     {link.label}

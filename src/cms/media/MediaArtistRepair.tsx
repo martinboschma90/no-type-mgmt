@@ -127,7 +127,7 @@ export function MediaArtistRepair() {
       className={[
         'mb-3 space-y-3 rounded-2xl border px-3.5 py-3',
         orphanCount > 0
-          ? 'border-brand/30 bg-brand/10'
+          ? 'border-accent/30 bg-accent/10'
           : 'border-ink/10 bg-ink/[0.03]',
       ].join(' ')}
       role="status"

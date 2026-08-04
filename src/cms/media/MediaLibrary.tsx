@@ -82,7 +82,7 @@ export function MediaLibrary({ onSelect, selectKind = 'any' }: MediaLibraryProps
           className={[
             'flex min-h-[160px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-10 text-center transition-colors',
             dragOver
-              ? 'border-brand bg-brand/10'
+              ? 'border-accent bg-accent/10'
               : 'border-ink/20 bg-cream-dark/20 hover:border-ink/35 hover:bg-cream-dark/35',
           ].join(' ')}
         >

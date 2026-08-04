@@ -21,12 +21,12 @@ export function ThemeToggle() {
         {!isDark && (
           <motion.span
             layoutId="theme-toggle-pill"
-            className="absolute inset-0 rounded-full bg-ink"
+            className="absolute inset-0 rounded-full bg-accent"
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
           />
         )}
         <span
-          className={`relative z-10 ${!isDark ? 'text-ink-inverse' : 'text-ink/55'}`}
+          className={`relative z-10 ${!isDark ? 'text-[#f5f5f5]' : 'text-ink/55'}`}
         >
           Light
         </span>
@@ -40,12 +40,12 @@ export function ThemeToggle() {
         {isDark && (
           <motion.span
             layoutId="theme-toggle-pill"
-            className="absolute inset-0 rounded-full bg-ink"
+            className="absolute inset-0 rounded-full bg-accent"
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
           />
         )}
         <span
-          className={`relative z-10 ${isDark ? 'text-ink-inverse' : 'text-ink/55'}`}
+          className={`relative z-10 ${isDark ? 'text-[#f5f5f5]' : 'text-ink/55'}`}
         >
           Dark
         </span>

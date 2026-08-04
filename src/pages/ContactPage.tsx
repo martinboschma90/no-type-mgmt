@@ -37,7 +37,7 @@ export function ContactPage() {
                   <span className="text-ink/70">{item.label}: </span>
                   <a
                     href={`mailto:${item.email}`}
-                    className="font-semibold text-ink underline-offset-2 hover:underline"
+                    className="font-semibold text-ink underline-offset-2 transition-colors hover:text-accent hover:underline"
                   >
                     {item.email}
                   </a>

@@ -24,14 +24,14 @@ export function ArtistVisibilityToggle({
         'inline-flex items-center gap-2 rounded-full border transition-colors',
         compact ? 'px-2.5 py-1.5' : 'px-3 py-2',
         visible
-          ? 'border-brand/40 bg-brand/15 text-ink'
+          ? 'border-accent/40 bg-accent/15 text-ink'
           : 'border-ink/15 bg-ink/5 text-ink/45',
       ].join(' ')}
     >
       <span
         className={[
           'relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors',
-          visible ? 'bg-brand' : 'bg-ink/20',
+          visible ? 'bg-accent' : 'bg-ink/20',
         ].join(' ')}
         aria-hidden
       >
