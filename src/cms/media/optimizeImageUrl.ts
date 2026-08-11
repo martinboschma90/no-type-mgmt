@@ -14,20 +14,20 @@ export type ImageDeliverySize =
 
 const WIDTH: Record<ImageDeliverySize, number> = {
   thumb: 96,
-  card: 640,
-  team: 480,
-  hero: 1200,
-  poster: 720,
-  full: 1600,
+  card: 560,
+  team: 400,
+  hero: 1100,
+  poster: 640,
+  full: 1440,
 }
 
 const QUALITY: Record<ImageDeliverySize, number> = {
-  thumb: 78,
-  card: 82,
-  team: 82,
-  hero: 85,
-  poster: 80,
-  full: 85,
+  thumb: 76,
+  card: 80,
+  team: 80,
+  hero: 84,
+  poster: 78,
+  full: 84,
 }
 
 const OBJECT_PUBLIC =
@@ -61,7 +61,17 @@ function supabaseRenderUrl(
   const quality = QUALITY[size]
   // `resize=contain` scales the full frame — no server-side crop.
   // CSS object-fit/object-position remain the only framing controls.
-  return `${origin}/storage/v1/render/image/public/${path}?width=${width}&quality=${quality}&resize=contain`
+  // WebP keeps bytes down without changing framing.
+  return `${origin}/storage/v1/render/image/public/${path}?width=${width}&quality=${quality}&resize=contain&format=webp`
+}
+
+/** Intrinsic pixel size for CLS hints (3:4 portrait delivery). */
+export function imageDeliveryDimensions(size: ImageDeliverySize): {
+  width: number
+  height: number
+} {
+  const width = WIDTH[size]
+  return { width, height: Math.round((width * 4) / 3) }
 }
 
 /**

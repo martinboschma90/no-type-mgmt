@@ -233,7 +233,15 @@ export function normalizeSiteContent(raw: unknown): SiteContent {
       row.rosterGlowPreset,
       defaults.rosterGlowPreset,
     ),
+    rosterGlowSecondary: normalizeRosterGlowPreset(
+      row.rosterGlowSecondary,
+      defaults.rosterGlowSecondary,
+    ),
     rosterGlowCustom: asString(row.rosterGlowCustom, defaults.rosterGlowCustom),
+    rosterGlowCustomSecondary: asString(
+      row.rosterGlowCustomSecondary,
+      defaults.rosterGlowCustomSecondary,
+    ),
     bookingTitle: asString(row.bookingTitle, defaults.bookingTitle),
     bookingIntro: asString(row.bookingIntro, defaults.bookingIntro),
     bookingVisible: asBoolean(row.bookingVisible, defaults.bookingVisible),

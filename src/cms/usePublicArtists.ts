@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
+import { fetchArtistBySlugFromSupabase } from '@/cms/api/artists'
 import {
-  fetchArtistBySlugFromSupabase,
-  fetchArtistsFromSupabase,
-} from '@/cms/api/artists'
+  fetchPublicArtistsFromSupabaseCached,
+  prefetchPublicArtists,
+  readStoredPublicArtists,
+  writeStoredPublicArtists,
+} from '@/cms/api/artistsCache'
 import { useCms } from '@/cms/CmsProvider'
 import { isArtistVisible, visibleArtists } from '@/cms/artistVisibility'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import type { Artist } from '@/types/artist'
 
 /**
- * Public roster: Supabase when it has artists, otherwise local CMS/seed.
- * Does not write to Supabase. CMS providers stay on localStorage.
+ * Public roster: use last Supabase snapshot instantly when present, then refresh.
+ * Never flash seed/localStorage CMS artists while waiting on the network.
  */
 export function usePublicArtists() {
   const { content } = useCms()
@@ -18,34 +22,60 @@ export function usePublicArtists() {
     [content.artists],
   )
 
-  const [remoteArtists, setRemoteArtists] = useState<Artist[] | null>(null)
+  const [remoteArtists, setRemoteArtists] = useState<Artist[] | null>(() =>
+    isSupabaseConfigured ? readStoredPublicArtists() : null,
+  )
+  const [ready, setReady] = useState(
+    () => !isSupabaseConfigured || readStoredPublicArtists() !== null,
+  )
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setReady(true)
+      return
+    }
+
+    prefetchPublicArtists()
     let cancelled = false
 
-    void fetchArtistsFromSupabase().then(({ artists, fromSupabase }) => {
-      if (cancelled) return
-      if (fromSupabase) {
-        setRemoteArtists(visibleArtists(artists))
-      } else {
-        setRemoteArtists(null)
-      }
-    })
+    void fetchPublicArtistsFromSupabaseCached().then(
+      ({ artists, fromSupabase }) => {
+        if (cancelled) return
+        if (fromSupabase) {
+          const visible = visibleArtists(artists)
+          setRemoteArtists(visible)
+          writeStoredPublicArtists(visible)
+        } else if (remoteArtists === null) {
+          setRemoteArtists(null)
+        }
+        setReady(true)
+      },
+    )
 
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only refresh
   }, [])
 
+  const waitingForRemote =
+    isSupabaseConfigured && !ready && remoteArtists === null
+
   return {
-    artists: remoteArtists ?? localArtists,
-    source: remoteArtists ? ('supabase' as const) : ('local' as const),
+    artists: waitingForRemote
+      ? []
+      : remoteArtists !== null
+        ? remoteArtists
+        : localArtists,
+    ready: !waitingForRemote,
+    source:
+      remoteArtists !== null ? ('supabase' as const) : ('local' as const),
   }
 }
 
 /**
- * Public artist detail: prefer Supabase row when present & visible,
- * else local CMS artist.
+ * Public artist detail: prefer Supabase when configured.
+ * Does not flash a local/seed artist while the remote check is in flight.
  */
 export function usePublicArtist(slug: string) {
   const { getArtistBySlug } = useCms()
@@ -61,6 +91,11 @@ export function usePublicArtist(slug: string) {
     let cancelled = false
     setRemoteArtist(undefined)
 
+    if (!isSupabaseConfigured) {
+      setRemoteArtist(null)
+      return
+    }
+
     void fetchArtistBySlugFromSupabase(slug).then((artist) => {
       if (cancelled) return
       if (artist && isArtistVisible(artist)) {
@@ -75,11 +110,9 @@ export function usePublicArtist(slug: string) {
     }
   }, [slug])
 
-  // undefined = still probing supabase; null = no remote; Artist = use remote
-  const artist =
-    remoteArtist === undefined
-      ? localPublic
-      : remoteArtist ?? localPublic
+  const checkingRemote = isSupabaseConfigured && remoteArtist === undefined
+
+  const artist = checkingRemote ? undefined : remoteArtist ?? localPublic
 
   return {
     artist,
@@ -87,7 +120,6 @@ export function usePublicArtist(slug: string) {
       remoteArtist && remoteArtist.slug === slug
         ? ('supabase' as const)
         : ('local' as const),
-    /** True while first Supabase request for this slug is in flight. */
-    checkingRemote: remoteArtist === undefined,
+    checkingRemote,
   }
 }

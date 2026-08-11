@@ -6,6 +6,7 @@ import { normalizeSiteContent } from '@/cms/mappers/site'
 import {
   DEFAULT_ROSTER_GLOW_CUSTOM,
   DEFAULT_ROSTER_GLOW_PRESET,
+  DEFAULT_ROSTER_GLOW_SECONDARY,
   type RosterGlowPreset,
 } from '@/cms/rosterGlow'
 import { site as defaultSite, team as defaultTeam } from '@/data/site'
@@ -70,10 +71,14 @@ export type SiteContent = {
   teamVisible: boolean
   /** Desktop (lg+) artist cards per row on the homepage roster. */
   rosterDesktopColumns: 3 | 4
-  /** Hover glow color preset on roster artist cards. */
+  /** Primary hover glow color on roster artist cards. */
   rosterGlowPreset: RosterGlowPreset
-  /** Hex used when `rosterGlowPreset` is `custom`. */
+  /** Secondary hover glow color — blends with primary. */
+  rosterGlowSecondary: RosterGlowPreset
+  /** Hex used when primary glow is `custom`. */
   rosterGlowCustom: string
+  /** Hex used when secondary glow is `custom`. */
+  rosterGlowCustomSecondary: string
   /** Booking request page (`/booking`) headline. */
   bookingTitle: string
   /** Booking request page intro copy. */
@@ -139,7 +144,9 @@ export function createDefaultContent(): CmsContent {
       teamVisible: true,
       rosterDesktopColumns: 4,
       rosterGlowPreset: DEFAULT_ROSTER_GLOW_PRESET,
+      rosterGlowSecondary: DEFAULT_ROSTER_GLOW_SECONDARY,
       rosterGlowCustom: DEFAULT_ROSTER_GLOW_CUSTOM,
+      rosterGlowCustomSecondary: '#a8487a',
       bookingTitle: 'Booking Request',
       bookingIntro:
         "Send us your booking request and we'll get back to you.",

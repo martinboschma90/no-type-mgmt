@@ -73,6 +73,47 @@ export function artistFromRow(row: ArtistRow): Artist {
   return withArtDirection(mapped)
 }
 
+/** Slim row shape for public roster cards (skips heavy jsonb). */
+export type ArtistRosterRow = Pick<
+  ArtistRow,
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'genre'
+  | 'image_url'
+  | 'image_alt'
+  | 'image_focus'
+  | 'image_focus_x'
+  | 'image_focus_y'
+  | 'image_scale'
+  | 'art_direction_version'
+  | 'status'
+  | 'published_at'
+  | 'visible'
+>
+
+/** Map roster columns → Artist (card fields only). */
+export function artistFromRosterRow(row: ArtistRosterRow): Artist {
+  const status = parseStatus(row.status, row.visible)
+  const mapped: Artist = {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    genre: row.genre ?? undefined,
+    imageUrl: row.image_url ?? '',
+    imageAlt: row.image_alt ?? `${row.name} portrait`,
+    imageFocus: row.image_focus ?? undefined,
+    imageFocusX: row.image_focus_x ?? undefined,
+    imageFocusY: row.image_focus_y ?? undefined,
+    imageScale: row.image_scale ?? undefined,
+    artDirectionVersion: row.art_direction_version ?? undefined,
+    status,
+    publishedAt: row.published_at ?? undefined,
+    visible: status === 'published',
+  }
+  return withArtDirection(mapped)
+}
+
 /** Shared column payload for insert / update / upsert. */
 export function artistToColumns(artist: Artist): ArtistUpdate {
   const sections = normalizeArtistSections(

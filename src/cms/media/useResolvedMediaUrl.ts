@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react'
-import { useMedia } from '@/cms/media/MediaProvider'
+import { useContext, useEffect, useState } from 'react'
+import { MediaContext } from '@/cms/media/MediaProvider'
 import { parseMediaRef } from '@/cms/media/refs'
 import { resolveMediaFromSupabase } from '@/cms/media/publicMedia'
 
 /**
  * Resolve `media://id` refs to a playable URL.
- * Order: IndexedDB library → Supabase Storage public URL → optional fallback (seed http).
+ * Order: IndexedDB library (CMS only) → Supabase Storage public URL → fallback.
  * Plain http(s)/blob/path values pass through unchanged.
+ * Safe on public pages without MediaProvider (skips IndexedDB).
  */
 export function useResolvedMediaUrl(
   value: string | undefined | null,
   fallback?: string | null,
 ): string {
-  const { getAssetUrl, ready } = useMedia()
+  const media = useContext(MediaContext)
   const id = value ? parseMediaRef(value) : null
-  const localUrl = id ? getAssetUrl(id) : undefined
+  const localUrl = id && media ? media.getAssetUrl(id) : undefined
+  const ready = media?.ready ?? true
   const [remoteUrl, setRemoteUrl] = useState<string>('')
 
   useEffect(() => {

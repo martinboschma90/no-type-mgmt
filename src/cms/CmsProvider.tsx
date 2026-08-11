@@ -21,10 +21,13 @@ import {
 import { createBlankArtist } from '@/cms/createArtist'
 import {
   deleteArtistInSupabase,
-  fetchArtistsFromSupabase,
   insertArtistInSupabase,
   updateArtistInSupabase,
 } from '@/cms/api/artists'
+import {
+  fetchArtistsFromSupabaseCached,
+  invalidateArtistsCache,
+} from '@/cms/api/artistsCache'
 import {
   fetchSiteSettingsFromSupabase,
   upsertSiteSettingsInSupabase,
@@ -197,6 +200,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         reportArtistError(error)
         return { error, artist: null }
       }
+      invalidateArtistsCache()
       clearArtistError()
       setSavedAt(Date.now())
       clearDirty(setDirtyArtistIds, artist.id)
@@ -216,7 +220,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured || artistsHydrated.current) return
     let cancelled = false
 
-    void fetchArtistsFromSupabase().then(({ artists, fromSupabase }) => {
+    void fetchArtistsFromSupabaseCached().then(({ artists, fromSupabase }) => {
       if (cancelled || !fromSupabase) return
       artistsHydrated.current = true
       setContent((prev) => ({
@@ -482,6 +486,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
               reportArtistError(error)
               return
             }
+            invalidateArtistsCache()
             clearArtistError()
             setSavedAt(Date.now())
             clearDirty(setDirtyArtistIds, created.id)
@@ -509,6 +514,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
               reportArtistError(error)
               return
             }
+            invalidateArtistsCache()
             clearArtistError()
             setSavedAt(Date.now())
           })

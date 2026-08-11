@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type ImgHTMLAttributes } from 'react'
 import {
+  imageDeliveryDimensions,
   optimizeImageUrl,
   optimizedImageSrcSet,
   originalStorageUrl,
@@ -34,6 +35,8 @@ export function OptimizedImg({
   loading = 'lazy',
   fetchPriority,
   decoding = 'async',
+  width,
+  height,
   onError,
   ...rest
 }: OptimizedImgProps) {
@@ -45,6 +48,7 @@ export function OptimizedImg({
     !failed && srcSetSizes?.length
       ? optimizedImageSrcSet(src, srcSetSizes)
       : undefined
+  const intrinsic = imageDeliveryDimensions(size)
 
   return (
     <img
@@ -53,6 +57,8 @@ export function OptimizedImg({
       srcSet={srcSet}
       sizes={srcSet ? sizes : undefined}
       alt={alt}
+      width={width ?? intrinsic.width}
+      height={height ?? intrinsic.height}
       loading={loading}
       decoding={decoding}
       fetchPriority={fetchPriority}

@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useCms } from '@/cms/CmsProvider'
+import { prefetchRoute } from '@/lib/prefetchRoute'
 
 type MenuOverlayProps = {
   open: boolean
@@ -10,6 +11,7 @@ type MenuOverlayProps = {
 export function MenuOverlay({ open, onClose }: MenuOverlayProps) {
   const { pathname } = useLocation()
   const { content } = useCms()
+  const reduceMotion = useReducedMotion()
   const links = [
     { label: 'Artists', to: '/' },
     { label: 'About', to: '/about' },
@@ -39,14 +41,19 @@ export function MenuOverlay({ open, onClose }: MenuOverlayProps) {
               return (
                 <motion.div
                   key={link.to}
-                  initial={{ opacity: 0, y: 24 }}
+                  initial={reduceMotion ? false : { opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 12 }}
-                  transition={{ delay: 0.05 * i, duration: 0.35 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: 12 }}
+                  transition={{
+                    delay: reduceMotion ? 0 : 0.05 * i,
+                    duration: reduceMotion ? 0.15 : 0.35,
+                  }}
                 >
                   <Link
                     to={link.to}
                     onClick={onClose}
+                    onFocus={() => prefetchRoute(link.to)}
+                    onMouseEnter={() => prefetchRoute(link.to)}
                     aria-current={active ? 'page' : undefined}
                     className={`type-display text-[clamp(2.75rem,8vw,5rem)] transition-opacity ${
                       active ? 'text-ink' : 'text-ink/35 hover:text-accent'

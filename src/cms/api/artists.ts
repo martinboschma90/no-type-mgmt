@@ -1,11 +1,16 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import {
   artistFromRow,
+  artistFromRosterRow,
   artistToColumns,
   artistToInsert,
   isArtistUuid,
+  type ArtistRosterRow,
 } from '@/cms/mappers/artist'
 import type { Artist } from '@/types/artist'
+
+const ROSTER_COLUMNS =
+  'id,slug,name,genre,image_url,image_alt,image_focus,image_focus_x,image_focus_y,image_scale,art_direction_version,status,published_at,visible' as const
 
 export type ArtistsReadResult = {
   artists: Artist[]
@@ -44,6 +49,39 @@ export async function fetchArtistsFromSupabase(): Promise<ArtistsReadResult> {
 
   return {
     artists: data.map(artistFromRow),
+    fromSupabase: true,
+  }
+}
+
+/**
+ * Public homepage roster — published only, slim columns (no bio/videos/tracks).
+ */
+export async function fetchPublicArtistsFromSupabase(): Promise<ArtistsReadResult> {
+  if (!isSupabaseConfigured || !supabase) {
+    return { artists: [], fromSupabase: false }
+  }
+
+  const { data, error } = await supabase
+    .from('artists')
+    .select(ROSTER_COLUMNS)
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.warn('[supabase] fetchPublicArtists:', error.message)
+    return { artists: [], fromSupabase: false }
+  }
+
+  if (!data?.length) {
+    return { artists: [], fromSupabase: false }
+  }
+
+  // Filter published client-side (legacy rows may use visible without status).
+  const artists = (data as ArtistRosterRow[])
+    .map(artistFromRosterRow)
+    .filter((a) => a.status === 'published')
+
+  return {
+    artists,
     fromSupabase: true,
   }
 }

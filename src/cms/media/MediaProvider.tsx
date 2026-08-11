@@ -33,7 +33,7 @@ type MediaContextValue = {
   getPublicUrl: (id: string) => string | undefined
 }
 
-const MediaContext = createContext<MediaContextValue | null>(null)
+export const MediaContext = createContext<MediaContextValue | null>(null)
 
 function baseName(fileName: string) {
   return fileName.replace(/\.[^.]+$/, '')

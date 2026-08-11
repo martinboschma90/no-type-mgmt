@@ -8,6 +8,13 @@ export type RosterGlowPreset =
   | 'red'
   | 'custom'
 
+export type RosterGlowPair = {
+  primary: RosterGlowPreset
+  secondary: RosterGlowPreset
+  customPrimary?: string
+  customSecondary?: string
+}
+
 export const ROSTER_GLOW_PRESETS: {
   id: RosterGlowPreset
   label: string
@@ -22,17 +29,9 @@ export const ROSTER_GLOW_PRESETS: {
   { id: 'custom', label: 'Custom', swatch: '#d8ff3e' },
 ]
 
-/** Shipped glow stops — default "Geel" (yellow + deep purple-rose). */
-export const DEFAULT_ROSTER_GLOW_STOPS = [
-  '#d8ff3e',
-  '#d4a0c8',
-  '#a8487a',
-  '#c47a9e',
-  '#f0bc06',
-] as const
-
+/** Single-hue stop families — dual glow blends primary + secondary. */
 const PRESET_STOPS: Record<Exclude<RosterGlowPreset, 'custom'>, string[]> = {
-  yellow: [...DEFAULT_ROSTER_GLOW_STOPS],
+  yellow: ['#eaff8a', '#d8ff3e', '#c2e638', '#f0bc06', '#b8e62a'],
   white: ['#ffffff', '#f3f3f3', '#dcdcdc', '#fafafa', '#e8e8e8'],
   purple: ['#e9d5ff', '#dcb8fe', '#a855f7', '#7c3aed', '#c084fc'],
   rose: ['#d4a0c8', '#c47a9e', '#a8487a', '#86355f', '#b86a92'],
@@ -40,7 +39,14 @@ const PRESET_STOPS: Record<Exclude<RosterGlowPreset, 'custom'>, string[]> = {
 }
 
 export const DEFAULT_ROSTER_GLOW_PRESET: RosterGlowPreset = 'yellow'
+export const DEFAULT_ROSTER_GLOW_SECONDARY: RosterGlowPreset = 'rose'
 export const DEFAULT_ROSTER_GLOW_CUSTOM = '#d8ff3e'
+
+/** Shipped dual-glow fallback (yellow + rose). */
+export const DEFAULT_ROSTER_GLOW_STOPS = blendStopsFromBases(
+  '#d8ff3e',
+  '#a8487a',
+)
 
 export function isRosterGlowPreset(value: unknown): value is RosterGlowPreset {
   return (
@@ -104,6 +110,23 @@ function mix(
   }
 }
 
+function blendStopsFromBases(primaryHex: string, secondaryHex: string): string[] {
+  const primary =
+    parseHexColor(primaryHex) ?? parseHexColor(DEFAULT_ROSTER_GLOW_CUSTOM)!
+  const secondary =
+    parseHexColor(secondaryHex) ?? parseHexColor(DEFAULT_ROSTER_GLOW_CUSTOM)!
+  const white = { r: 255, g: 255, b: 255 }
+  const black = { r: 20, g: 16, b: 28 }
+
+  return [
+    toHex(mix(primary, white, 0.28)),
+    toHex(primary),
+    toHex(mix(primary, secondary, 0.5)),
+    toHex(secondary),
+    toHex(mix(secondary, black, 0.12)),
+  ]
+}
+
 /** Build flowing stops from one custom hex (same intensity character as presets). */
 export function customGlowStops(hex: string): string[] {
   const base = parseHexColor(hex) ?? parseHexColor(DEFAULT_ROSTER_GLOW_CUSTOM)!
@@ -118,24 +141,66 @@ export function customGlowStops(hex: string): string[] {
   ]
 }
 
-export function resolveRosterGlowStops(
-  preset: RosterGlowPreset | undefined,
+export function glowPresetBaseHex(
+  preset: RosterGlowPreset,
   customHex?: string,
+): string {
+  if (preset === 'custom') {
+    const hex = customHex?.trim()
+    return hex && parseHexColor(hex) ? hex : DEFAULT_ROSTER_GLOW_CUSTOM
+  }
+  return (
+    ROSTER_GLOW_PRESETS.find((p) => p.id === preset)?.swatch ??
+    DEFAULT_ROSTER_GLOW_CUSTOM
+  )
+}
+
+export function resolveRosterGlowStops(
+  primary: RosterGlowPreset | undefined,
+  customPrimary?: string,
+  secondary?: RosterGlowPreset,
+  customSecondary?: string,
 ): string[] {
-  const resolved = normalizeRosterGlowPreset(preset)
-  if (resolved === 'custom') {
-    return customGlowStops(customHex?.trim() || DEFAULT_ROSTER_GLOW_CUSTOM)
+  const a = normalizeRosterGlowPreset(primary, DEFAULT_ROSTER_GLOW_PRESET)
+  const b = normalizeRosterGlowPreset(
+    secondary,
+    DEFAULT_ROSTER_GLOW_SECONDARY,
+  )
+
+  // Same hue twice → single-family glow (keeps intensity character).
+  if (a === b) {
+    if (a === 'custom') {
+      return customGlowStops(customPrimary?.trim() || DEFAULT_ROSTER_GLOW_CUSTOM)
+    }
+    return [...PRESET_STOPS[a]]
   }
-  if (PRESET_STOPS[resolved]) {
-    return PRESET_STOPS[resolved]
-  }
-  return [...DEFAULT_ROSTER_GLOW_STOPS]
+
+  return blendStopsFromBases(
+    glowPresetBaseHex(a, customPrimary),
+    glowPresetBaseHex(b, customSecondary),
+  )
 }
 
 export function rosterGlowGradient(
-  preset: RosterGlowPreset | undefined,
-  customHex?: string,
+  primary: RosterGlowPreset | undefined,
+  customPrimary?: string,
+  secondary?: RosterGlowPreset,
+  customSecondary?: string,
 ): string {
-  const stops = resolveRosterGlowStops(preset, customHex)
+  const stops = resolveRosterGlowStops(
+    primary,
+    customPrimary,
+    secondary,
+    customSecondary,
+  )
   return `linear-gradient(45deg, ${stops.join(', ')})`
+}
+
+export function rosterGlowGradientFromPair(pair: RosterGlowPair): string {
+  return rosterGlowGradient(
+    pair.primary,
+    pair.customPrimary,
+    pair.secondary,
+    pair.customSecondary,
+  )
 }

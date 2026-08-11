@@ -1,54 +1,61 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
-import { BrandLoader } from '@/components/ui/BrandLoader'
 import { AuthProvider } from '@/cms/auth/AuthProvider'
-import { CmsAuthGate } from '@/cms/auth/CmsAuthGate'
 import { CmsProvider } from '@/cms/CmsProvider'
-import { MediaProvider } from '@/cms/media/MediaProvider'
-import { CmsLayout } from '@/cms/CmsLayout'
 import { HomePage } from '@/pages/HomePage'
-import { AboutPage } from '@/pages/AboutPage'
-import { ContactPage } from '@/pages/ContactPage'
-import { BookingPage } from '@/pages/BookingPage'
-import { FaqPage } from '@/pages/FaqPage'
-import { ArtistPage } from '@/pages/ArtistPage'
-import { CmsLoginPage } from '@/pages/CmsLoginPage'
+
+const AboutPage = lazy(() =>
+  import('@/pages/AboutPage').then((m) => ({ default: m.AboutPage })),
+)
+const ContactPage = lazy(() =>
+  import('@/pages/ContactPage').then((m) => ({ default: m.ContactPage })),
+)
+const BookingPage = lazy(() =>
+  import('@/pages/BookingPage').then((m) => ({ default: m.BookingPage })),
+)
+const FaqPage = lazy(() =>
+  import('@/pages/FaqPage').then((m) => ({ default: m.FaqPage })),
+)
+const ArtistPage = lazy(() =>
+  import('@/pages/ArtistPage').then((m) => ({ default: m.ArtistPage })),
+)
+const CmsLoginPage = lazy(() =>
+  import('@/pages/CmsLoginPage').then((m) => ({ default: m.CmsLoginPage })),
+)
+const CmsShell = lazy(() =>
+  import('@/cms/CmsShell').then((m) => ({ default: m.CmsShell })),
+)
+
+/** Minimal route fallback — avoid heavy BrandLoader + framer-motion on navigations. */
+function RouteFallback() {
+  return (
+    <div
+      className="min-h-svh bg-[var(--body-bg,#090909)]"
+      aria-busy="true"
+      aria-label="Loading"
+    />
+  )
+}
 
 function AppRoutes() {
-  const [booting, setBooting] = useState(
-    () => !window.location.pathname.startsWith('/cms'),
-  )
-
-  useEffect(() => {
-    if (!booting) return
-    const t = window.setTimeout(() => setBooting(false), 900)
-    return () => window.clearTimeout(t)
-  }, [booting])
-
   return (
     <>
       <ScrollToTop />
-      {booting && <BrandLoader />}
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/artists" element={<Navigate to="/" replace />} />
-        <Route path="/artists/:slug" element={<ArtistPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/booking" element={<BookingPage />} />
-        <Route path="/faq" element={<FaqPage />} />
-        <Route path="/cms/login" element={<CmsLoginPage />} />
-        <Route
-          path="/cms/*"
-          element={
-            <CmsAuthGate>
-              <CmsLayout />
-            </CmsAuthGate>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/artists" element={<Navigate to="/" replace />} />
+          <Route path="/artists/:slug" element={<ArtistPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/booking" element={<BookingPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/cms/login" element={<CmsLoginPage />} />
+          <Route path="/cms/*" element={<CmsShell />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </>
   )
 }
@@ -58,9 +65,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <CmsProvider>
-          <MediaProvider>
-            <AppRoutes />
-          </MediaProvider>
+          <AppRoutes />
         </CmsProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -184,7 +184,7 @@
   opacity: 0;
   background: var(
     --artist-card-glow,
-    linear-gradient(45deg, #d8ff3e, #d4a0c8, #a8487a, #c47a9e, #f0bc06)
+    linear-gradient(45deg, #eaff8a, #d8ff3e, #c4a06a, #a8487a, #86355f)
   );
   background-size: 300% 100%;
   -webkit-mask-image: linear-gradient(

@@ -11,13 +11,103 @@ import { ImageFocusField } from '@/cms/editors/ImageFocusField'
 import { ART_DIRECTION_VERSION, resolveArtDirection } from '@/cms/imageFocus'
 import { MediaUrlField } from '@/cms/media/MediaUrlField'
 import {
+  DEFAULT_ROSTER_GLOW_CUSTOM,
+  DEFAULT_ROSTER_GLOW_PRESET,
+  DEFAULT_ROSTER_GLOW_SECONDARY,
   ROSTER_GLOW_PRESETS,
+  glowPresetBaseHex,
   rosterGlowGradient,
   type RosterGlowPreset,
 } from '@/cms/rosterGlow'
 
 const layoutBtnClass =
   'type-label flex-1 rounded-xl border px-3 py-3 text-center text-[0.65rem] tracking-[0.12em] uppercase transition-colors'
+
+function GlowSwatchPicker({
+  label,
+  badge,
+  selected,
+  customHex,
+  onSelect,
+  onCustomHex,
+}: {
+  label: string
+  badge: '1' | '2'
+  selected: RosterGlowPreset
+  customHex: string
+  onSelect: (preset: RosterGlowPreset) => void
+  onCustomHex: (hex: string) => void
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[0.6rem] font-semibold text-ink-inverse">
+          {badge}
+        </span>
+        <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+          {label}
+        </p>
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {ROSTER_GLOW_PRESETS.map((preset) => {
+          const active = selected === preset.id
+          const swatch =
+            preset.id === 'custom'
+              ? customHex || preset.swatch
+              : preset.swatch
+          return (
+            <button
+              key={`${badge}-${preset.id}`}
+              type="button"
+              aria-pressed={active}
+              aria-label={`${label}: ${preset.label}`}
+              onClick={() => onSelect(preset.id)}
+              className={[
+                'relative flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 transition-colors',
+                active
+                  ? 'border-accent/45 bg-accent/15'
+                  : 'border-ink/12 hover:border-ink/25',
+              ].join(' ')}
+            >
+              {active ? (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[0.55rem] font-semibold text-[#111111]">
+                  {badge}
+                </span>
+              ) : null}
+              <span
+                className="h-7 w-7 rounded-full border border-ink/15 shadow-inner"
+                style={{ background: swatch }}
+                aria-hidden
+              />
+              <span className="type-label text-[0.55rem] tracking-[0.1em] text-ink/55 uppercase">
+                {preset.label}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      {selected === 'custom' ? (
+        <div className="mt-3 flex items-center gap-3">
+          <input
+            type="color"
+            aria-label={`${label} custom color`}
+            className="h-10 w-12 cursor-pointer rounded-lg border border-ink/12 bg-transparent p-1"
+            value={
+              /^#[0-9a-f]{6}$/i.test(customHex) ? customHex : '#d8ff3e'
+            }
+            onChange={(e) => onCustomHex(e.target.value)}
+          />
+          <TextInput
+            label="Hex"
+            value={customHex}
+            placeholder="#d8ff3e"
+            onChange={onCustomHex}
+          />
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 export function RosterEditor() {
   const {
@@ -31,8 +121,20 @@ export function RosterEditor() {
   } = useCms()
   const { artists, site } = content
   const desktopColumns = site.rosterDesktopColumns === 3 ? 3 : 4
-  const glowPreset = site.rosterGlowPreset ?? 'yellow'
-  const glowPreview = rosterGlowGradient(glowPreset, site.rosterGlowCustom)
+  const glowPrimary = site.rosterGlowPreset ?? DEFAULT_ROSTER_GLOW_PRESET
+  const glowSecondary =
+    site.rosterGlowSecondary ?? DEFAULT_ROSTER_GLOW_SECONDARY
+  const glowCustomPrimary =
+    site.rosterGlowCustom || DEFAULT_ROSTER_GLOW_CUSTOM
+  const glowCustomSecondary =
+    site.rosterGlowCustomSecondary ||
+    glowPresetBaseHex(DEFAULT_ROSTER_GLOW_SECONDARY)
+  const glowPreview = rosterGlowGradient(
+    glowPrimary,
+    glowCustomPrimary,
+    glowSecondary,
+    glowCustomSecondary,
+  )
 
   return (
     <>
@@ -88,87 +190,51 @@ export function RosterEditor() {
 
       <EditorSection
         title="Appearance"
-        description="Hover glow on roster artist cards. Intensity and motion stay the same."
+        description="Dual hover glow on roster cards. Pick a primary and secondary color — intensity and motion stay the same."
         defaultOpen
         badge="Settings"
       >
-        <div>
-          <p className="type-label mb-2 text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-            Glow kleur
-          </p>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {ROSTER_GLOW_PRESETS.map((preset) => {
-              const selected = glowPreset === preset.id
-              const swatch =
-                preset.id === 'custom'
-                  ? site.rosterGlowCustom || preset.swatch
-                  : preset.swatch
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() =>
-                    setSite((s) => ({
-                      ...s,
-                      rosterGlowPreset: preset.id as RosterGlowPreset,
-                    }))
-                  }
-                  className={[
-                    'flex flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 transition-colors',
-                    selected
-                      ? 'border-accent/45 bg-accent/15'
-                      : 'border-ink/12 hover:border-ink/25',
-                  ].join(' ')}
-                >
-                  <span
-                    className="h-7 w-7 rounded-full border border-ink/15 shadow-inner"
-                    style={{ background: swatch }}
-                    aria-hidden
-                  />
-                  <span className="type-label text-[0.55rem] tracking-[0.1em] text-ink/55 uppercase">
-                    {preset.label}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          {glowPreset === 'custom' ? (
-            <div className="mt-3 flex items-center gap-3">
-              <input
-                type="color"
-                aria-label="Custom glow color"
-                className="h-10 w-12 cursor-pointer rounded-lg border border-ink/12 bg-transparent p-1"
-                value={
-                  /^#[0-9a-f]{6}$/i.test(site.rosterGlowCustom)
-                    ? site.rosterGlowCustom
-                    : '#d8ff3e'
-                }
-                onChange={(e) =>
-                  setSite((s) => ({ ...s, rosterGlowCustom: e.target.value }))
-                }
-              />
-              <TextInput
-                label="Hex"
-                value={site.rosterGlowCustom}
-                placeholder="#d8ff3e"
-                onChange={(rosterGlowCustom) =>
-                  setSite((s) => ({ ...s, rosterGlowCustom }))
-                }
-              />
-            </div>
-          ) : null}
-          <div
-            className="mt-3 h-10 overflow-hidden rounded-xl border border-ink/10"
-            style={{
-              background: glowPreview,
-              backgroundSize: '300% 100%',
-            }}
-            aria-hidden
+        <div className="space-y-5">
+          <GlowSwatchPicker
+            label="Primary glow"
+            badge="1"
+            selected={glowPrimary}
+            customHex={glowCustomPrimary}
+            onSelect={(rosterGlowPreset) =>
+              setSite((s) => ({ ...s, rosterGlowPreset }))
+            }
+            onCustomHex={(rosterGlowCustom) =>
+              setSite((s) => ({ ...s, rosterGlowCustom }))
+            }
           />
-          <p className="type-body mt-2 text-xs text-ink/40">
-            Geel is de standaard No Type glow. Alleen de kleur wijzigt.
-          </p>
+          <GlowSwatchPicker
+            label="Secondary glow"
+            badge="2"
+            selected={glowSecondary}
+            customHex={glowCustomSecondary}
+            onSelect={(rosterGlowSecondary) =>
+              setSite((s) => ({ ...s, rosterGlowSecondary }))
+            }
+            onCustomHex={(rosterGlowCustomSecondary) =>
+              setSite((s) => ({ ...s, rosterGlowCustomSecondary }))
+            }
+          />
+          <div>
+            <p className="type-label mb-2 text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+              Blend preview
+            </p>
+            <div
+              className="h-10 overflow-hidden rounded-xl border border-ink/10"
+              style={{
+                background: glowPreview,
+                backgroundSize: '300% 100%',
+              }}
+              aria-hidden
+            />
+            <p className="type-body mt-2 text-xs text-ink/40">
+              Default: Geel + Rose. Maximaal twee kleuren — elk apart te wijzigen.
+            </p>
+          </div>
         </div>
       </EditorSection>
 
