@@ -12,7 +12,8 @@ export default defineConfig({
     },
   },
   build: {
-    target: 'es2022',
+    // Broad mobile Safari/Chrome support (avoid bare es2022 syntax gaps).
+    target: ['es2019', 'safari14'],
     cssCodeSplit: true,
     rollupOptions: {
       output: {

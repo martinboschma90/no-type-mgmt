@@ -38,8 +38,8 @@ export function usePublicArtists() {
     prefetchPublicArtists()
     let cancelled = false
 
-    void fetchPublicArtistsFromSupabaseCached().then(
-      ({ artists, fromSupabase }) => {
+    void fetchPublicArtistsFromSupabaseCached()
+      .then(({ artists, fromSupabase }) => {
         if (cancelled) return
         if (fromSupabase) {
           const visible = visibleArtists(artists)
@@ -49,8 +49,10 @@ export function usePublicArtists() {
           setRemoteArtists(null)
         }
         setReady(true)
-      },
-    )
+      })
+      .catch(() => {
+        if (!cancelled) setReady(true)
+      })
 
     return () => {
       cancelled = true
@@ -96,14 +98,18 @@ export function usePublicArtist(slug: string) {
       return
     }
 
-    void fetchArtistBySlugFromSupabase(slug).then((artist) => {
-      if (cancelled) return
-      if (artist && isArtistVisible(artist)) {
-        setRemoteArtist(artist)
-      } else {
-        setRemoteArtist(null)
-      }
-    })
+    void fetchArtistBySlugFromSupabase(slug)
+      .then((artist) => {
+        if (cancelled) return
+        if (artist && isArtistVisible(artist)) {
+          setRemoteArtist(artist)
+        } else {
+          setRemoteArtist(null)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRemoteArtist(null)
+      })
 
     return () => {
       cancelled = true

@@ -5,6 +5,7 @@ import {
 } from '@/cms/api/artists'
 import { visibleArtists } from '@/cms/artistVisibility'
 import { isSupabaseConfigured } from '@/lib/supabase'
+import { storageGet, storageRemove, storageSet } from '@/lib/safeStorage'
 import type { Artist } from '@/types/artist'
 
 const TTL_MS = 30_000
@@ -13,9 +14,9 @@ const TTL_MS = 30_000
 export const PUBLIC_ARTISTS_STORAGE_KEY = 'notype-public-artists-v2'
 
 export function readStoredPublicArtists(): Artist[] | null {
+  const raw = storageGet(PUBLIC_ARTISTS_STORAGE_KEY)
+  if (!raw) return null
   try {
-    const raw = localStorage.getItem(PUBLIC_ARTISTS_STORAGE_KEY)
-    if (!raw) return null
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed) || parsed.length === 0) return null
     return visibleArtists(parsed as Artist[])
@@ -25,19 +26,11 @@ export function readStoredPublicArtists(): Artist[] | null {
 }
 
 export function writeStoredPublicArtists(artists: Artist[]) {
-  try {
-    localStorage.setItem(PUBLIC_ARTISTS_STORAGE_KEY, JSON.stringify(artists))
-  } catch {
-    // Ignore quota / private mode
-  }
+  storageSet(PUBLIC_ARTISTS_STORAGE_KEY, JSON.stringify(artists))
 }
 
 export function clearStoredPublicArtists() {
-  try {
-    localStorage.removeItem(PUBLIC_ARTISTS_STORAGE_KEY)
-  } catch {
-    // ignore
-  }
+  storageRemove(PUBLIC_ARTISTS_STORAGE_KEY)
 }
 
 let fullInflight: Promise<ArtistsReadResult> | null = null
@@ -92,6 +85,15 @@ export function fetchPublicArtistsFromSupabaseCached(
       publicCached = result
       publicCachedAt = Date.now()
       return result
+    })
+    .catch((error) => {
+      // Never leave callers hanging on rejection (mobile network / CORS quirks).
+      console.warn('Public artists fetch failed', error)
+      const fallback: ArtistsReadResult = {
+        artists: publicCached?.artists ?? [],
+        fromSupabase: false,
+      }
+      return fallback
     })
     .finally(() => {
       publicInflight = null

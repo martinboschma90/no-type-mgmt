@@ -3,6 +3,7 @@ import { getArtistBySlug } from '@/data/artistDetails'
 import { createDefaultFaqCategories } from '@/data/faq'
 import { withArtDirection } from '@/cms/imageFocus'
 import { normalizeSiteContent } from '@/cms/mappers/site'
+import { storageGet, storageSet } from '@/lib/safeStorage'
 import {
   DEFAULT_ROSTER_GLOW_CUSTOM,
   DEFAULT_ROSTER_GLOW_PRESET,
@@ -165,9 +166,9 @@ export function createDefaultContent(): CmsContent {
 }
 
 export function loadStoredContent(): CmsContent | null {
+  const raw = storageGet(CMS_STORAGE_KEY)
+  if (!raw) return null
   try {
-    const raw = localStorage.getItem(CMS_STORAGE_KEY)
-    if (!raw) return null
     const parsed = JSON.parse(raw) as CmsContent
     if (!parsed?.site || !Array.isArray(parsed.artists) || !Array.isArray(parsed.team)) {
       return null
@@ -192,17 +193,13 @@ export function persistContent(
   options?: { persistArtists?: boolean },
 ) {
   const persistArtists = options?.persistArtists !== false
-  try {
-    const payload: CmsContent = persistArtists
-      ? content
-      : {
-          site: content.site,
-          team: content.team,
-          // Empty array keeps schema valid; seed/Supabase hydrate artists on load
-          artists: [],
-        }
-    localStorage.setItem(CMS_STORAGE_KEY, JSON.stringify(payload))
-  } catch {
-    // Ignore quota / private-mode failures
-  }
+  const payload: CmsContent = persistArtists
+    ? content
+    : {
+        site: content.site,
+        team: content.team,
+        // Empty array keeps schema valid; seed/Supabase hydrate artists on load
+        artists: [],
+      }
+  storageSet(CMS_STORAGE_KEY, JSON.stringify(payload))
 }

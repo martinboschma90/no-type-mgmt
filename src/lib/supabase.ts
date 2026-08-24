@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
+import { storageGet, storageRemove, storageSet } from '@/lib/safeStorage'
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim()
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim()
@@ -27,6 +28,16 @@ function createSupabaseClient(): SupabaseClient<Database> | null {
       autoRefreshToken: true,
       detectSessionInUrl: true,
       storageKey: 'notype-supabase-auth',
+      // Safari private / blocked storage must not throw during auth hydrate.
+      storage: {
+        getItem: (key) => storageGet(key),
+        setItem: (key, value) => {
+          storageSet(key, value)
+        },
+        removeItem: (key) => {
+          storageRemove(key)
+        },
+      },
     },
   })
 }
