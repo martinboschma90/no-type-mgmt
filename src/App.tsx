@@ -31,7 +31,7 @@ const CmsShell = lazy(() =>
 function RouteFallback() {
   return (
     <div
-      className="min-h-svh bg-[var(--body-bg,#090909)]"
+      className="min-h-[100vh] bg-[#f5f3ef]"
       aria-busy="true"
       aria-label="Loading"
     />

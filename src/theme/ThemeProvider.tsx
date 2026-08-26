@@ -19,7 +19,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-const STORAGE_KEY = 'notype-theme'
+const STORAGE_KEY = 'notype-theme-v3'
 
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light'

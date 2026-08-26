@@ -23,12 +23,12 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div
           style={{
-            minHeight: '100svh',
+            minHeight: '100vh',
             display: 'grid',
             placeItems: 'center',
             padding: '2rem',
-            background: '#090909',
-            color: '#f5f5f5',
+            background: '#f5f3ef',
+            color: '#111111',
             fontFamily: 'system-ui, sans-serif',
             textAlign: 'center',
           }}
@@ -45,9 +45,9 @@ export class ErrorBoundary extends Component<Props, State> {
               onClick={() => window.location.reload()}
               style={{
                 appearance: 'none',
-                border: '1px solid #d8ff3e',
+                border: '1px solid #111111',
                 background: 'transparent',
-                color: '#d8ff3e',
+                color: '#111111',
                 padding: '0.65rem 1.1rem',
                 fontSize: '0.85rem',
                 letterSpacing: '0.06em',

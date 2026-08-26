@@ -15,6 +15,7 @@ export default defineConfig({
     // Broad mobile Safari/Chrome support (avoid bare es2022 syntax gaps).
     target: ['es2019', 'safari14'],
     cssCodeSplit: true,
+    modulePreload: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
