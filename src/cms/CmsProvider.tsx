@@ -41,6 +41,7 @@ import {
 } from '@/cms/artistLocalMedia'
 import { ART_DIRECTION_VERSION, withArtDirection } from '@/cms/imageFocus'
 import { isSupabaseConfigured } from '@/lib/supabaseEnv'
+import { useAuth } from '@/cms/auth/AuthProvider'
 import { useLocation } from 'react-router-dom'
 
 function initialContent(): CmsContent {
@@ -87,6 +88,8 @@ function clearDirty(
 export function CmsProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const isCmsRoute = pathname.startsWith('/cms')
+  const { ready: authReady, session, authRequired } = useAuth()
+  const canWriteRemote = authReady && (!authRequired || Boolean(session))
   const [content, setContent] = useState<CmsContent>(initialContent)
   const [savedAt, setSavedAt] = useState<number | null>(() =>
     loadStoredContent() ? Date.now() : null,
@@ -189,6 +192,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
   // Hydrate full artist catalog only in CMS — public pages use slim roster / by-slug.
   useEffect(() => {
     if (!isSupabaseConfigured || artistsHydrated.current || !isCmsRoute) return
+    if (!canWriteRemote) return
     let cancelled = false
 
     void fetchArtistsFromSupabaseCached()
@@ -209,11 +213,12 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [isCmsRoute])
+  }, [canWriteRemote, isCmsRoute])
 
   // Hydrate site + team from Supabase (source of truth when rows exist)
   useEffect(() => {
     if (!isSupabaseConfigured || siteHydrated.current) return
+    if (!canWriteRemote) return
     let cancelled = false
 
     void Promise.all([
@@ -282,11 +287,11 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [clearSiteError, reportSiteError])
+  }, [canWriteRemote, clearSiteError, reportSiteError])
 
   // Debounced site + team → Supabase
   useEffect(() => {
-    if (!isSupabaseConfigured || !siteHydrated.current) return
+    if (!isSupabaseConfigured || !siteHydrated.current || !canWriteRemote) return
     if (skipSiteRemoteSync.current) {
       skipSiteRemoteSync.current = false
       return
@@ -319,7 +324,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     }, 700)
 
     return () => window.clearTimeout(timer)
-  }, [content.site, content.team, clearSiteError, reportSiteError])
+  }, [canWriteRemote, content.site, content.team, clearSiteError, reportSiteError])
 
   // Re-apply campaign seeds when art-direction version bumps
   useEffect(() => {
