@@ -19,13 +19,13 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-const STORAGE_KEY = 'notype-theme-v3'
+const STORAGE_KEY = 'notype-theme'
 
 function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'light'
+  if (typeof window === 'undefined') return 'dark'
   const stored = storageGet(STORAGE_KEY)
   if (stored === 'light' || stored === 'dark') return stored
-  return 'light'
+  return 'dark'
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -34,6 +34,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     storageSet(STORAGE_KEY, theme)
+    const themeColor = document.querySelector('meta[name="theme-color"]')
+    if (themeColor) {
+      themeColor.setAttribute(
+        'content',
+        theme === 'dark' ? '#090909' : '#f5f3ef',
+      )
+    }
   }, [theme])
 
   const setTheme = useCallback((next: Theme) => {
