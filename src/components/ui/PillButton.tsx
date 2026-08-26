@@ -1,7 +1,8 @@
-import { motion, type HTMLMotionProps } from 'framer-motion'
+import type { AnchorHTMLAttributes, ReactNode } from 'react'
 
-type PillButtonProps = HTMLMotionProps<'a'> & {
+type PillButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   variant?: 'solid' | 'ghost'
+  children?: ReactNode
 }
 
 export function PillButton({
@@ -11,7 +12,7 @@ export function PillButton({
   ...props
 }: PillButtonProps) {
   const base =
-    'type-ui inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs transition-colors'
+    'type-ui inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs transition-transform transition-colors hover:scale-[1.03] active:scale-[0.97]'
 
   const styles =
     variant === 'solid'
@@ -19,13 +20,8 @@ export function PillButton({
       : 'border border-ink/80 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink'
 
   return (
-    <motion.a
-      className={`${base} ${styles} ${className}`}
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
-      {...props}
-    >
+    <a className={`${base} ${styles} ${className}`} {...props}>
       {children}
-    </motion.a>
+    </a>
   )
 }

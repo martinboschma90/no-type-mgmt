@@ -217,7 +217,21 @@
   }
 }
 
+@keyframes brand-mark-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.brand-mark-spin {
+  animation: brand-mark-spin 52s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .brand-mark-spin {
+    animation: none;
+  }
+
   .artist-card:hover .artist-card__glow,
   .artist-card:focus-visible .artist-card__glow {
     animation: none;

@@ -22,7 +22,7 @@ export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
   const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
   const reduceMotion = useReducedMotion()
-  const priority = index < 4
+  const priority = index < 2
   const glowStyle = {
     ['--artist-card-glow' as string]: rosterGlowGradient(
       content.site.rosterGlowPreset,

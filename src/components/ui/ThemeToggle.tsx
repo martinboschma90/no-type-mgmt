@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { useTheme } from '@/theme/ThemeProvider'
 
 /** Light / dark switch — sits in the navbar. */
@@ -15,40 +14,22 @@ export function ThemeToggle() {
       <button
         type="button"
         onClick={() => setTheme('light')}
-        className="type-ui relative rounded-full px-3 py-1.5 text-[0.65rem]"
+        className={`type-ui relative rounded-full px-3 py-1.5 text-[0.65rem] ${
+          !isDark ? 'bg-accent text-[#f5f5f5]' : 'text-ink/55'
+        }`}
         aria-pressed={!isDark}
       >
-        {!isDark && (
-          <motion.span
-            layoutId="theme-toggle-pill"
-            className="absolute inset-0 rounded-full bg-accent"
-            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-          />
-        )}
-        <span
-          className={`relative z-10 ${!isDark ? 'text-[#f5f5f5]' : 'text-ink/55'}`}
-        >
-          Light
-        </span>
+        Light
       </button>
       <button
         type="button"
         onClick={() => setTheme('dark')}
-        className="type-ui relative rounded-full px-3 py-1.5 text-[0.65rem]"
+        className={`type-ui relative rounded-full px-3 py-1.5 text-[0.65rem] ${
+          isDark ? 'bg-accent text-[#f5f5f5]' : 'text-ink/55'
+        }`}
         aria-pressed={isDark}
       >
-        {isDark && (
-          <motion.span
-            layoutId="theme-toggle-pill"
-            className="absolute inset-0 rounded-full bg-accent"
-            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-          />
-        )}
-        <span
-          className={`relative z-10 ${isDark ? 'text-[#f5f5f5]' : 'text-ink/55'}`}
-        >
-          Dark
-        </span>
+        Dark
       </button>
     </div>
   )

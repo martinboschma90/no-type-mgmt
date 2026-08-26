@@ -9,6 +9,7 @@ type LogoProps = {
   className?: string
   height?: number
   title?: string
+  fetchPriority?: 'high' | 'low' | 'auto'
 }
 
 const ASSETS = {
@@ -46,6 +47,7 @@ export function Logo({
   className = '',
   height,
   title = 'No Type',
+  fetchPriority,
 }: LogoProps) {
   const { theme } = useTheme()
   const resolved =
@@ -78,6 +80,7 @@ export function Logo({
       }
       draggable={false}
       decoding="async"
+      fetchPriority={fetchPriority}
       onError={() =>
         setFallback((current) =>
           current === 'svg' ? 'webp' : current === 'webp' ? 'png' : 'png',
