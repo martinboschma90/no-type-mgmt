@@ -1,90 +1,49 @@
-import { useEffect, useMemo, useState } from 'react'
-import { fetchArtistBySlugFromSupabase } from '@/cms/api/artists'
+import { useEffect, useState } from 'react'
+import { fetchPublicArtistBySlug } from '@/cms/api/publicRead'
 import {
   fetchPublicArtistsFromSupabaseCached,
   prefetchPublicArtists,
   readStoredPublicArtists,
   writeStoredPublicArtists,
-} from '@/cms/api/artistsCache'
-import { useCms } from '@/cms/CmsProvider'
+} from '@/cms/api/publicArtistsCache'
 import { isArtistVisible, visibleArtists } from '@/cms/artistVisibility'
-import { isSupabaseConfigured } from '@/lib/supabase'
+import { isSupabaseConfigured } from '@/lib/supabaseEnv'
 import type { Artist } from '@/types/artist'
 
-/**
- * Public roster: use last Supabase snapshot instantly when present, then refresh.
- * Never flash seed/localStorage CMS artists while waiting on the network.
- */
 export function usePublicArtists() {
-  const { content } = useCms()
-  const localArtists = useMemo(
-    () => visibleArtists(content.artists),
-    [content.artists],
-  )
-
-  const [remoteArtists, setRemoteArtists] = useState<Artist[] | null>(() =>
-    isSupabaseConfigured ? readStoredPublicArtists() : null,
-  )
-  const [ready, setReady] = useState(
-    () => !isSupabaseConfigured || readStoredPublicArtists() !== null,
+  const [remoteArtists, setRemoteArtists] = useState<Artist[]>(
+    () => (isSupabaseConfigured ? readStoredPublicArtists() : null) ?? [],
   )
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setReady(true)
-      return
-    }
+    if (!isSupabaseConfigured) return
 
     prefetchPublicArtists()
     let cancelled = false
 
     void fetchPublicArtistsFromSupabaseCached()
       .then(({ artists, fromSupabase }) => {
-        if (cancelled) return
-        if (fromSupabase) {
-          const visible = visibleArtists(artists)
-          setRemoteArtists(visible)
-          writeStoredPublicArtists(visible)
-        } else if (remoteArtists === null) {
-          setRemoteArtists(null)
-        }
-        setReady(true)
+        if (cancelled || !fromSupabase) return
+        const visible = visibleArtists(artists)
+        setRemoteArtists(visible)
+        writeStoredPublicArtists(visible)
       })
-      .catch(() => {
-        if (!cancelled) setReady(true)
-      })
+      .catch(() => undefined)
 
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only refresh
   }, [])
 
-  const waitingForRemote =
-    isSupabaseConfigured && !ready && remoteArtists === null
-
   return {
-    artists: waitingForRemote
-      ? []
-      : remoteArtists !== null
-        ? remoteArtists
-        : localArtists,
-    ready: !waitingForRemote,
+    artists: remoteArtists,
+    ready: true,
     source:
-      remoteArtists !== null ? ('supabase' as const) : ('local' as const),
+      remoteArtists.length > 0 ? ('supabase' as const) : ('local' as const),
   }
 }
 
-/**
- * Public artist detail: prefer Supabase when configured.
- * Does not flash a local/seed artist while the remote check is in flight.
- */
 export function usePublicArtist(slug: string) {
-  const { getArtistBySlug } = useCms()
-  const localArtist = getArtistBySlug(slug)
-  const localPublic =
-    localArtist && isArtistVisible(localArtist) ? localArtist : undefined
-
   const [remoteArtist, setRemoteArtist] = useState<Artist | null | undefined>(
     undefined,
   )
@@ -98,7 +57,7 @@ export function usePublicArtist(slug: string) {
       return
     }
 
-    void fetchArtistBySlugFromSupabase(slug)
+    void fetchPublicArtistBySlug(slug)
       .then((artist) => {
         if (cancelled) return
         if (artist && isArtistVisible(artist)) {
@@ -118,10 +77,8 @@ export function usePublicArtist(slug: string) {
 
   const checkingRemote = isSupabaseConfigured && remoteArtist === undefined
 
-  const artist = checkingRemote ? undefined : remoteArtist ?? localPublic
-
   return {
-    artist,
+    artist: checkingRemote ? undefined : remoteArtist ?? undefined,
     source:
       remoteArtist && remoteArtist.slug === slug
         ? ('supabase' as const)

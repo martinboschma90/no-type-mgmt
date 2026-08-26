@@ -4,12 +4,12 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import { prefetchPublicArtists } from '@/cms/api/artistsCache'
-import { isSupabaseConfigured } from '@/lib/supabase'
+import { prefetchPublicArtists } from '@/cms/api/publicArtistsCache'
+import { isSupabaseConfigured, SUPABASE_URL } from '@/lib/supabaseEnv'
 
 // Warm DNS/TLS + start roster fetch before React commits.
 if (isSupabaseConfigured) {
-  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim()
+  const url = SUPABASE_URL
   if (url) {
     const preconnect = document.createElement('link')
     preconnect.rel = 'preconnect'

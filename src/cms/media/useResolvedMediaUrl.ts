@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react'
-import { MediaContext } from '@/cms/media/MediaProvider'
+import { MediaContext } from '@/cms/media/MediaContext'
 import { parseMediaRef } from '@/cms/media/refs'
-import { resolveMediaFromSupabase } from '@/cms/media/publicMedia'
+import { fetchPublicMediaUrl } from '@/cms/api/publicRead'
 
 /**
  * Resolve `media://id` refs to a playable URL.
@@ -26,7 +26,7 @@ export function useResolvedMediaUrl(
     }
 
     let cancelled = false
-    void resolveMediaFromSupabase(id).then((url) => {
+    void fetchPublicMediaUrl(id).then((url) => {
       if (!cancelled) setRemoteUrl(url ?? '')
     })
 

@@ -10,6 +10,6 @@ export function parseMediaRef(value: string | undefined | null): string | null {
   return null
 }
 
-export function isMediaRef(value: string | undefined | null) {
+export function isMediaLibraryRef(value: string | undefined | null) {
   return Boolean(parseMediaRef(value))
 }

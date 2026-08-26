@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/Logo'
 import { PillButton } from '@/components/ui/PillButton'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 import {
   buildWhatsAppUrl,

@@ -2,7 +2,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { SectionRow } from '@/components/ui/SectionRow'
 import { TeamSection } from '@/components/about/TeamSection'
 import { Logo } from '@/components/ui/Logo'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 import { motion } from 'framer-motion'
 
 export function AboutPage() {

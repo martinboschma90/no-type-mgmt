@@ -1,6 +1,6 @@
 import { getRosterImageUrl } from '@/data/artists'
 import { parseMediaRef } from '@/cms/media/refs'
-import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { fetchPublicMediaUrl } from '@/cms/api/publicRead'
 
 /** Seed / catalog http(s) portrait for a slug — used when `media://` cannot resolve. */
 export function getSeedImageUrl(slug: string): string | undefined {
@@ -20,97 +20,24 @@ const resolvedUrlCache = new Map<string, string | null>()
 const resolvedUrlInflight = new Map<string, Promise<string | null>>()
 
 /**
- * Resolve a media:// id via Supabase Storage public URL when metadata exists.
- * Returns null when not configured / missing (common for IndexedDB-only uploads).
- * Dedupes concurrent lookups and caches successful/miss results per session.
+ * Resolve a media:// id via REST public URL. No supabase-js.
  */
 export async function resolveMediaFromSupabase(
   mediaId: string,
 ): Promise<string | null> {
-  if (!isSupabaseConfigured || !supabase || !mediaId) return null
-
   if (resolvedUrlCache.has(mediaId)) {
     return resolvedUrlCache.get(mediaId) ?? null
   }
-
   const pending = resolvedUrlInflight.get(mediaId)
   if (pending) return pending
-
-  const task = (async (): Promise<string | null> => {
-    const { data, error } = await supabase!
-      .from('media_assets')
-      .select('storage_path')
-      .eq('id', mediaId)
-      .maybeSingle()
-
-    if (error || !data?.storage_path) {
-      // Do not cache misses — assets may appear after a Storage sync.
-      return null
-    }
-
-    const { data: pub } = supabase!.storage
-      .from('media')
-      .getPublicUrl(data.storage_path)
-
-    const url = pub.publicUrl || null
-    if (url) resolvedUrlCache.set(mediaId, url)
-    return url
-  })().finally(() => {
-    resolvedUrlInflight.delete(mediaId)
-  })
-
+  const task = fetchPublicMediaUrl(mediaId)
+    .then((url) => {
+      if (url) resolvedUrlCache.set(mediaId, url)
+      return url
+    })
+    .finally(() => {
+      resolvedUrlInflight.delete(mediaId)
+    })
   resolvedUrlInflight.set(mediaId, task)
   return task
-}
-
-/** Upload a local library blob to the public `media` bucket + media_assets row. */
-export async function publishMediaAssetToSupabase(input: {
-  id: string
-  name: string
-  kind: 'image' | 'video'
-  mimeType: string
-  size: number
-  width?: number
-  height?: number
-  duration?: number
-  blob: Blob
-}): Promise<string | null> {
-  if (!isSupabaseConfigured || !supabase) return null
-
-  const storagePath = `library/${input.id}/${input.name}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('media')
-    .upload(storagePath, input.blob, {
-      upsert: true,
-      contentType: input.mimeType,
-      cacheControl: '31536000',
-    })
-
-  if (uploadError) {
-    console.warn('[media] storage upload:', uploadError.message)
-    return null
-  }
-
-  const { error: rowError } = await supabase.from('media_assets').upsert(
-    {
-      id: input.id,
-      name: input.name,
-      kind: input.kind,
-      mime_type: input.mimeType,
-      storage_path: storagePath,
-      size: input.size,
-      width: input.width ?? null,
-      height: input.height ?? null,
-      duration: input.duration ?? null,
-    },
-    { onConflict: 'id' },
-  )
-
-  if (rowError) {
-    console.warn('[media] media_assets upsert:', rowError.message)
-  }
-
-  const { data: pub } = supabase.storage.from('media').getPublicUrl(storagePath)
-  return pub.publicUrl || null
 }

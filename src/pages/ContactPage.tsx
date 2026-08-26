@@ -3,7 +3,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Logo } from '@/components/ui/Logo'
 import { SectionRow } from '@/components/ui/SectionRow'
 import { PillButton } from '@/components/ui/PillButton'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 
 export function ContactPage() {
   const { content } = useCms()

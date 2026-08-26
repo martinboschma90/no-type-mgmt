@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { FaqHub } from '@/components/faq/FaqHub'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 
 export function FaqPage() {
   const { content } = useCms()

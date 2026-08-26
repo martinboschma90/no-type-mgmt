@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { BookingForm } from '@/components/booking/BookingForm'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 
 export function BookingPage() {
   const { content } = useCms()

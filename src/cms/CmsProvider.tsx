@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -10,13 +8,13 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react'
-import type { Artist, TeamMember } from '@/types/artist'
+import type { Artist } from '@/types/artist'
+import { CmsContext, type CmsContextValue } from '@/cms/CmsContext'
 import {
   createDefaultContent,
   loadStoredContent,
   persistContent,
   type CmsContent,
-  type SiteContent,
 } from '@/cms/content'
 import { createBlankArtist } from '@/cms/createArtist'
 import {
@@ -42,38 +40,8 @@ import {
   LOCAL_MEDIA_PUBLISH_WARNING,
 } from '@/cms/artistLocalMedia'
 import { ART_DIRECTION_VERSION, withArtDirection } from '@/cms/imageFocus'
-import { isSupabaseConfigured } from '@/lib/supabase'
+import { isSupabaseConfigured } from '@/lib/supabaseEnv'
 import { useLocation } from 'react-router-dom'
-
-type CmsContextValue = {
-  content: CmsContent
-  savedAt: number | null
-  /** Last artist ↔ Supabase sync error, if any. */
-  artistSyncError: string | null
-  /** Last site/team ↔ Supabase sync error, if any. */
-  siteSyncError: string | null
-  /** Artist ids with unsaved local edits. */
-  dirtyArtistIds: ReadonlySet<string>
-  artistSaving: boolean
-  setSite: (updater: (site: SiteContent) => SiteContent) => void
-  setTeam: (updater: (team: TeamMember[]) => TeamMember[]) => void
-  setArtists: (updater: (artists: Artist[]) => Artist[]) => void
-  /** Local edit only — does not sync until saveArtist / publish. */
-  updateArtist: (slug: string, updater: (artist: Artist) => Artist) => void
-  addArtist: (name: string) => Artist
-  removeArtist: (slug: string) => void
-  /** Persist current artist draft to Supabase (or localStorage fallback). */
-  saveArtist: (slug: string) => Promise<{ error: string | null }>
-  /** Save + set status published (public). */
-  publishArtist: (slug: string) => Promise<{ error: string | null }>
-  /** Save + set status draft (hidden from public). */
-  unpublishArtist: (slug: string) => Promise<{ error: string | null }>
-  resetContent: () => void
-  getArtistBySlug: (slug: string) => Artist | undefined
-  isArtistDirty: (id: string) => boolean
-}
-
-const CmsContext = createContext<CmsContextValue | null>(null)
 
 function initialContent(): CmsContent {
   const defaults = createDefaultContent()
@@ -586,10 +554,4 @@ export function CmsProvider({ children }: { children: ReactNode }) {
   return <CmsContext.Provider value={value}>{children}</CmsContext.Provider>
 }
 
-export function useCms() {
-  const ctx = useContext(CmsContext)
-  if (!ctx) {
-    throw new Error('useCms must be used within CmsProvider')
-  }
-  return ctx
-}
+export { useCms, CmsContext } from '@/cms/CmsContext'

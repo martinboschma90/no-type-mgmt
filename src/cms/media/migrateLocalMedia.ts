@@ -1,9 +1,7 @@
 import type { Artist } from '@/types/artist'
 import { isMediaLibraryRef } from '@/cms/media/publicMedia'
-import {
-  publishMediaAssetToSupabase,
-  resolveMediaFromSupabase,
-} from '@/cms/media/publicMedia'
+import { publishMediaAssetToSupabase } from '@/cms/media/publishMedia'
+import { resolveMediaFromSupabase } from '@/cms/media/publicMedia'
 import { parseMediaRef } from '@/cms/media/refs'
 import { idbGetAsset } from '@/cms/media/idb'
 import type { MediaAsset } from '@/cms/media/types'

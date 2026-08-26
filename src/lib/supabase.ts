@@ -1,28 +1,20 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { storageGet, storageRemove, storageSet } from '@/lib/safeStorage'
+import {
+  isSupabaseConfigured,
+  SUPABASE_ANON_KEY,
+  SUPABASE_URL,
+} from '@/lib/supabaseEnv'
 
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim()
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim()
-
-/**
- * True when both Vite env vars are set to real values.
- * Local CMS keeps working when this is false.
- */
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl &&
-    supabaseAnonKey &&
-    !supabaseUrl.includes('YOUR_PROJECT') &&
-    supabaseUrl !== 'your-project-url' &&
-    supabaseAnonKey !== 'your-anon-key',
-)
+export { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabaseEnv'
 
 function createSupabaseClient(): SupabaseClient<Database> | null {
   if (!isSupabaseConfigured) {
     return null
   }
 
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,

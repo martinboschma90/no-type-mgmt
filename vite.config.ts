@@ -15,7 +15,11 @@ export default defineConfig({
     // Broad mobile Safari/Chrome support (avoid bare es2022 syntax gaps).
     target: ['es2019', 'safari14'],
     cssCodeSplit: true,
-    modulePreload: false,
+    modulePreload: {
+      resolveDependencies(_filename, deps) {
+        return deps.filter((dep) => !/\/supabase-[^/]+$/.test(dep))
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {

@@ -1,4 +1,4 @@
-import { isMediaLibraryRef } from '@/cms/media/publicMedia'
+import { isMediaLibraryRef } from '@/cms/media/refs'
 import type { Artist } from '@/types/artist'
 
 /** Shown in CMS when publish is blocked due to local-only media refs. */

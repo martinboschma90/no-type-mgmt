@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -16,24 +15,10 @@ import {
   isVideoFile,
 } from '@/cms/media/convert'
 import { idbClearAssets, idbDeleteAsset, idbListAssets, idbPutAsset } from '@/cms/media/idb'
-import { publishMediaAssetToSupabase } from '@/cms/media/publicMedia'
+import { MediaContext } from '@/cms/media/MediaContext'
+import { publishMediaAssetToSupabase } from '@/cms/media/publishMedia'
 import type { MediaAsset, MediaUploadProgress } from '@/cms/media/types'
-import { isSupabaseConfigured } from '@/lib/supabase'
-
-type MediaContextValue = {
-  assets: MediaAsset[]
-  ready: boolean
-  /** True while local library is being published to Supabase Storage. */
-  syncingRemote: boolean
-  uploading: MediaUploadProgress | null
-  uploadFiles: (files: FileList | File[]) => Promise<MediaAsset[]>
-  removeAsset: (id: string) => Promise<void>
-  clearAll: () => Promise<void>
-  getAssetUrl: (id: string) => string | undefined
-  getPublicUrl: (id: string) => string | undefined
-}
-
-export const MediaContext = createContext<MediaContextValue | null>(null)
+import { isSupabaseConfigured } from '@/lib/supabaseEnv'
 
 function baseName(fileName: string) {
   return fileName.replace(/\.[^.]+$/, '')

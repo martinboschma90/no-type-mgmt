@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 import { prefetchRoute } from '@/lib/prefetchRoute'
 
 type MenuOverlayProps = {

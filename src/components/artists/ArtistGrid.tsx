@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { ArtistCard } from '@/components/artists/ArtistCard'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 import type { Artist } from '@/types/artist'
 
 type ArtistGridProps = {

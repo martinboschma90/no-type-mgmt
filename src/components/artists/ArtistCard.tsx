@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import type { Artist } from '@/types/artist'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import { rosterGlowGradient } from '@/cms/rosterGlow'

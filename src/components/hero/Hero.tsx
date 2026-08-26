@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Logo } from '@/components/ui/Logo'
 import { BrandMark } from '@/components/ui/BrandMark'
-import { useCms } from '@/cms/CmsProvider'
+import { useCms } from '@/cms/CmsContext'
 
 export function Hero() {
   const { content } = useCms()

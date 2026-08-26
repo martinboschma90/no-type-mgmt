@@ -1,8 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
-import { AuthProvider } from '@/cms/auth/AuthProvider'
-import { CmsProvider } from '@/cms/CmsProvider'
+import { PublicContentProvider } from '@/cms/PublicContentProvider'
 import { HomePage } from '@/pages/HomePage'
 
 const AboutPage = lazy(() =>
@@ -20,27 +19,21 @@ const FaqPage = lazy(() =>
 const ArtistPage = lazy(() =>
   import('@/pages/ArtistPage').then((m) => ({ default: m.ArtistPage })),
 )
-const CmsLoginPage = lazy(() =>
-  import('@/pages/CmsLoginPage').then((m) => ({ default: m.CmsLoginPage })),
-)
-const CmsShell = lazy(() =>
-  import('@/cms/CmsShell').then((m) => ({ default: m.CmsShell })),
-)
+const CmsApp = lazy(() => import('@/CmsApp'))
 
-/** Minimal route fallback — avoid heavy BrandLoader + framer-motion on navigations. */
 function RouteFallback() {
   return (
     <div
-      className="min-h-[100vh] bg-[#f5f3ef]"
+      className="min-h-[100vh] bg-[var(--body-bg,#090909)]"
       aria-busy="true"
       aria-label="Loading"
     />
   )
 }
 
-function AppRoutes() {
+function PublicApp() {
   return (
-    <>
+    <PublicContentProvider>
       <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -51,23 +44,27 @@ function AppRoutes() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/faq" element={<FaqPage />} />
-          <Route path="/cms/login" element={<CmsLoginPage />} />
-          <Route path="/cms/*" element={<CmsShell />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </>
+    </PublicContentProvider>
   )
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <CmsProvider>
-          <AppRoutes />
-        </CmsProvider>
-      </AuthProvider>
+      <Routes>
+        <Route
+          path="/cms/*"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <CmsApp />
+            </Suspense>
+          }
+        />
+        <Route path="*" element={<PublicApp />} />
+      </Routes>
     </BrowserRouter>
   )
 }
