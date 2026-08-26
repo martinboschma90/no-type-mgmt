@@ -33,7 +33,16 @@ export type ArtistMusic = {
   visible: boolean
 }
 
-export type ArtistSectionId = 'hero' | 'video' | 'tracks'
+export type ArtistSectionId = 'hero' | 'video' | 'instagram' | 'tracks'
+
+/** Instagram profile + up to 6 post/reel permalinks for the artist-page carousel. */
+export type ArtistInstagramFeed = {
+  /** Profile URL (`instagram.com/handle`). Falls back to socials Instagram. */
+  profileUrl: string
+  /** Post or reel permalinks — empty slots are ignored on the public page. */
+  posts: string[]
+  visible: boolean
+}
 
 export type ArtistSectionConfig = {
   id: ArtistSectionId
@@ -89,6 +98,7 @@ export type Artist = {
    * Persisted inside the `tracks` jsonb column alongside the track list.
    */
   music?: ArtistMusic
+  instagramFeed?: ArtistInstagramFeed
   presskitUrl?: string
   /** Page layout order + visibility — editable via CMS drag & drop. */
   sections?: ArtistSectionConfig[]

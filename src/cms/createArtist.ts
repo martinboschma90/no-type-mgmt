@@ -67,6 +67,11 @@ export function createBlankArtist(
       title: 'Latest Mix',
       visible: false,
     },
+    instagramFeed: {
+      profileUrl: `https://instagram.com/${slug}`,
+      posts: ['', '', '', '', '', ''],
+      visible: true,
+    },
     sections: DEFAULT_ARTIST_SECTIONS.map((s) => ({ ...s })),
     status: 'draft',
     visible: false,

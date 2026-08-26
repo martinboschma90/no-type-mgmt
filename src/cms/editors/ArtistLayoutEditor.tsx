@@ -117,6 +117,7 @@ export function ArtistLayoutEditor({
           onChange([
             { id: 'hero', visible: true },
             { id: 'video', visible: true },
+            { id: 'instagram', visible: true },
             { id: 'tracks', visible: true },
           ])
         }

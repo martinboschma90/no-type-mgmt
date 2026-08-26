@@ -42,7 +42,7 @@ function parseStatus(value: unknown, visible: boolean): ArtistStatus {
 
 /** Map a Supabase artists row → app Artist type. */
 export function artistFromRow(row: ArtistRow): Artist {
-  const { tracks, music } = parseTracksColumn(row.tracks)
+  const { tracks, music, instagramFeed } = parseTracksColumn(row.tracks)
   const status = parseStatus(row.status, row.visible)
 
   const mapped: Artist = {
@@ -63,6 +63,7 @@ export function artistFromRow(row: ArtistRow): Artist {
     socials: asArray<SocialLink>(row.socials),
     tracks,
     music,
+    instagramFeed,
     sections: asArray<ArtistSectionConfig>(row.sections),
     presskitUrl: row.presskit_url ?? undefined,
     status,
@@ -150,7 +151,11 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
         title: v.title?.trim() || '',
       })),
     socials: artist.socials ?? [],
-    tracks: serializeTracksColumn(artist.tracks, artist.music),
+    tracks: serializeTracksColumn(
+      artist.tracks,
+      artist.music,
+      artist.instagramFeed,
+    ),
     sections,
     presskit_url: artist.presskitUrl ?? null,
     status,

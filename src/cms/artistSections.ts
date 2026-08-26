@@ -18,6 +18,10 @@ export const ARTIST_SECTION_META: Record<
     label: 'Content',
     description: 'Visuals / vertical 9:16 cinematic carousel',
   },
+  instagram: {
+    label: 'Instagram',
+    description: 'Carousel van tot 6 posts, gekoppeld via Instagram-links',
+  },
   tracks: {
     label: 'Music',
     description: 'Platform embed (SoundCloud / Spotify / custom) of tracklijst',
@@ -27,6 +31,7 @@ export const ARTIST_SECTION_META: Record<
 export const DEFAULT_ARTIST_SECTIONS: ArtistSectionConfig[] = [
   { id: 'hero', visible: true },
   { id: 'video', visible: true },
+  { id: 'instagram', visible: true },
   { id: 'tracks', visible: true },
 ]
 

@@ -1,4 +1,5 @@
-import type { ArtistMusic, MusicPlatform, Track } from '@/types/artist'
+import type { ArtistInstagramFeed, ArtistMusic, MusicPlatform, Track } from '@/types/artist'
+import { parseInstagramFeed } from '@/cms/artistInstagram'
 
 export const MUSIC_PLATFORMS: {
   id: MusicPlatform
@@ -63,11 +64,12 @@ function parseMusic(value: unknown): ArtistMusic | undefined {
 /**
  * Migration-safe read of the `artists.tracks` jsonb column.
  * Legacy: Track[]
- * New: { tracks: Track[], music?: ArtistMusic }
+ * New: { tracks: Track[], music?: ArtistMusic, instagramFeed?: ArtistInstagramFeed }
  */
 export function parseTracksColumn(value: unknown): {
   tracks: Track[]
   music?: ArtistMusic
+  instagramFeed?: ArtistInstagramFeed
 } {
   if (Array.isArray(value)) {
     return { tracks: asTrackArray(value) }
@@ -78,23 +80,43 @@ export function parseTracksColumn(value: unknown): {
     return {
       tracks: asTrackArray(obj.tracks ?? obj.items),
       music: parseMusic(obj.music),
+      instagramFeed: parseInstagramFeed(obj.instagramFeed ?? obj.instagram_feed),
     }
   }
 
   return { tracks: [] }
 }
 
+function hasInstagramFeedPayload(feed: ArtistInstagramFeed | undefined) {
+  if (!feed) return false
+  return Boolean(
+    feed.profileUrl.trim() || feed.posts.some((post) => post.trim()),
+  )
+}
+
 /**
- * Write `tracks` jsonb. Keeps a plain Track[] when no music config
- * so legacy rows stay compatible until music is set.
+ * Write `tracks` jsonb. Keeps a plain Track[] when no extra config
+ * so legacy rows stay compatible until music / Instagram feed is set.
  */
 export function serializeTracksColumn(
   tracks: Track[] | undefined,
   music: ArtistMusic | undefined,
-): Track[] | { tracks: Track[]; music: ArtistMusic } {
+  instagramFeed?: ArtistInstagramFeed,
+):
+  | Track[]
+  | {
+      tracks: Track[]
+      music?: ArtistMusic
+      instagramFeed?: ArtistInstagramFeed
+    } {
   const list = tracks ?? []
-  if (!music) return list
-  return { tracks: list, music }
+  const feed = hasInstagramFeedPayload(instagramFeed) ? instagramFeed : undefined
+  if (!music && !feed) return list
+  return {
+    tracks: list,
+    ...(music ? { music } : {}),
+    ...(feed ? { instagramFeed: feed } : {}),
+  }
 }
 
 /** Build an iframe-ready embed src from platform + URL. */

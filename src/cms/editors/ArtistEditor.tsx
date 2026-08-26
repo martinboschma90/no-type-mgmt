@@ -16,6 +16,13 @@ import {
   MUSIC_PLATFORMS,
 } from '@/cms/artistMusic'
 import {
+  DEFAULT_INSTAGRAM_FEED,
+  INSTAGRAM_FEED_COUNT,
+  padInstagramPosts,
+  parseInstagramPostUrl,
+  withSyncedInstagramSocial,
+} from '@/cms/artistInstagram'
+import {
   isArtistSectionVisible,
   setArtistSectionVisible,
 } from '@/cms/artistSections'
@@ -167,6 +174,11 @@ export function ArtistEditor() {
 
   const musicSectionVisible = isArtistSectionVisible(artist, 'tracks')
   const contentSectionVisible = isArtistSectionVisible(artist, 'video')
+  const instagramSectionVisible = isArtistSectionVisible(artist, 'instagram')
+  const instagramFeed = artist.instagramFeed ?? DEFAULT_INSTAGRAM_FEED
+  const instagramPosts = padInstagramPosts(instagramFeed.posts)
+  const instagramSocialUrl =
+    socials.find((link) => link.platform === 'instagram')?.url ?? ''
 
   const setMusicSectionVisible = (visible: boolean) => {
     updateArtist(updateKey, (a) => ({
@@ -183,6 +195,28 @@ export function ArtistEditor() {
     updateArtist(updateKey, (a) => ({
       ...a,
       sections: setArtistSectionVisible(a.sections, 'video', visible),
+    }))
+  }
+
+  const setInstagramSectionVisible = (visible: boolean) => {
+    updateArtist(updateKey, (a) => ({
+      ...a,
+      sections: setArtistSectionVisible(a.sections, 'instagram', visible),
+      instagramFeed: {
+        ...(a.instagramFeed ?? DEFAULT_INSTAGRAM_FEED),
+        visible,
+      },
+    }))
+  }
+
+  const patchInstagramFeed = (
+    patch: Partial<typeof instagramFeed>,
+    extra?: { socials?: typeof artist.socials },
+  ) => {
+    updateArtist(updateKey, (a) => ({
+      ...a,
+      ...extra,
+      instagramFeed: { ...(a.instagramFeed ?? DEFAULT_INSTAGRAM_FEED), ...patch },
     }))
   }
 
@@ -306,12 +340,20 @@ export function ArtistEditor() {
           updateArtist(updateKey, (a) => {
             const tracks = sections.find((s) => s.id === 'tracks')
             const musicVisible = tracks ? tracks.visible !== false : true
+            const instagram = sections.find((s) => s.id === 'instagram')
+            const instagramVisible = instagram
+              ? instagram.visible !== false
+              : true
             return {
               ...a,
               sections,
               music: {
                 ...(a.music ?? DEFAULT_ARTIST_MUSIC),
                 visible: musicVisible,
+              },
+              instagramFeed: {
+                ...(a.instagramFeed ?? DEFAULT_INSTAGRAM_FEED),
+                visible: instagramVisible,
               },
             }
           })
@@ -329,6 +371,79 @@ export function ArtistEditor() {
           }))
         }
       />
+
+      <EditorSection
+        title="Instagram feed"
+        description="Koppel het Instagram-profiel en plak tot 6 post- of reel-links. Die worden een carousel op de artiestenpagina."
+        defaultOpen
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
+          <div>
+            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+              Instagram sectie
+            </p>
+            <p className="type-body mt-1 text-xs text-ink/45">
+              {instagramSectionVisible
+                ? 'Zichtbaar op de artiestenpagina'
+                : 'Verborgen — links blijven bewaard'}
+            </p>
+          </div>
+          <ArtistVisibilityToggle
+            visible={instagramSectionVisible}
+            onChange={setInstagramSectionVisible}
+          />
+        </div>
+        <TextInput
+          label="Profiel-link"
+          value={instagramFeed.profileUrl || instagramSocialUrl}
+          placeholder="https://www.instagram.com/handle/"
+          hint="Wordt ook als Instagram social op de pagina gebruikt."
+          onChange={(profileUrl) =>
+            patchInstagramFeed(
+              { profileUrl },
+              {
+                socials: withSyncedInstagramSocial(artist.socials, profileUrl),
+              },
+            )
+          }
+        />
+        <div className="space-y-3">
+          <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+            Posts (max {INSTAGRAM_FEED_COUNT})
+          </p>
+          {instagramPosts.map((post, index) => {
+            const parsed = parseInstagramPostUrl(post)
+            const invalid = Boolean(post.trim()) && !parsed
+            return (
+              <Field
+                key={`ig-post-${index}`}
+                label={`Post ${index + 1}`}
+                hint={
+                  invalid
+                    ? 'Plak een Instagram post- of reel-URL, bijvoorbeeld https://www.instagram.com/p/…'
+                    : parsed
+                      ? parsed.kind === 'reel'
+                        ? 'Reel gekoppeld'
+                        : 'Post gekoppeld'
+                      : undefined
+                }
+              >
+                <input
+                  type="url"
+                  className={slugControlClass}
+                  value={post}
+                  placeholder="https://www.instagram.com/p/… of /reel/…"
+                  onChange={(e) => {
+                    const posts = [...instagramPosts]
+                    posts[index] = e.target.value
+                    patchInstagramFeed({ posts })
+                  }}
+                />
+              </Field>
+            )
+          })}
+        </div>
+      </EditorSection>
 
       <EditorSection
         title="Profile"

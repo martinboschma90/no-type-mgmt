@@ -1,9 +1,11 @@
 import { ArtistHero } from '@/components/artists/ArtistHero'
+import { ArtistInstagramCarousel } from '@/components/artists/ArtistInstagramCarousel'
 import { ArtistVideoSlide } from '@/components/artists/ArtistVideoSlide'
 import { MusicPlayer } from '@/components/artists/MusicPlayer'
 import {
   isMusicEmbedActive,
 } from '@/cms/artistMusic'
+import { isInstagramFeedActive } from '@/cms/artistInstagram'
 import { normalizeArtistSections } from '@/cms/artistSections'
 import type { Artist } from '@/types/artist'
 
@@ -42,6 +44,16 @@ export function ArtistPageSections({
                 showEmptyState={previewMode}
               />
             )
+          case 'instagram': {
+            if (!previewMode && !isInstagramFeedActive(artist)) return null
+            return (
+              <ArtistInstagramCarousel
+                key="instagram"
+                artist={artist}
+                showEmptyState={previewMode}
+              />
+            )
+          }
           case 'tracks': {
             if (!previewMode && !hasMusicToShow(artist)) return null
             return (
