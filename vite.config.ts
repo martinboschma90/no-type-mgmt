@@ -43,6 +43,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Keep this off the public index chunk so CmsApp does not import index
+          // (circular lazy load → blank CMS on production).
+          if (id.includes('/components/layout/ScrollToTop')) return 'scroll-top'
           if (!id.includes('node_modules')) return
           if (id.includes('@supabase')) return 'supabase'
           if (id.includes('react-router')) return 'router'

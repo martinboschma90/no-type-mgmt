@@ -28,8 +28,8 @@ export default function CmsApp() {
         <ScrollToTop />
         <Suspense fallback={<Fallback />}>
           <Routes>
-            <Route path="/cms/login" element={<CmsLoginPage />} />
-            <Route path="/cms/*" element={<CmsShell />} />
+            <Route path="login" element={<CmsLoginPage />} />
+            <Route path="*" element={<CmsShell />} />
           </Routes>
         </Suspense>
       </CmsProvider>
