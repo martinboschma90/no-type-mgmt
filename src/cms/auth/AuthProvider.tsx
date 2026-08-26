@@ -44,12 +44,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let cancelled = false
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setReady(true)
+    }, 2500)
 
-    void getSession().then((next) => {
-      if (cancelled) return
-      setSession(next)
-      setReady(true)
-    })
+    void getSession()
+      .then((next) => {
+        if (cancelled) return
+        setSession(next)
+        setReady(true)
+      })
+      .catch(() => {
+        if (!cancelled) setReady(true)
+      })
+      .finally(() => {
+        window.clearTimeout(timer)
+      })
 
     const { data } = onAuthStateChange((_event, next) => {
       setSession(next)
@@ -58,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
       data.subscription.unsubscribe()
     }
   }, [])

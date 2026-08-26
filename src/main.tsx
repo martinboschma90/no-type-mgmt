@@ -5,7 +5,7 @@ import App from './App.tsx'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import { prefetchPublicArtists } from '@/cms/api/artistsCache'
-import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
 // Warm DNS/TLS + start roster fetch before React commits.
 if (isSupabaseConfigured) {
@@ -18,8 +18,6 @@ if (isSupabaseConfigured) {
     document.head.appendChild(preconnect)
   }
   prefetchPublicArtists()
-  // Touch client early so auth storage hydrate overlaps roster fetch.
-  void supabase?.auth.getSession()
 }
 
 createRoot(document.getElementById('root')!).render(

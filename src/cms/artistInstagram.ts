@@ -14,6 +14,7 @@ const POST_PATH =
 export type InstagramEmbed = {
   permalink: string
   embedSrc: string
+  shortcode: string
   kind: 'post' | 'reel'
 }
 
@@ -42,6 +43,7 @@ export function parseInstagramPostUrl(raw: string): InstagramEmbed | null {
     return {
       permalink,
       embedSrc: `${permalink}embed/`,
+      shortcode: code,
       kind,
     }
   } catch {

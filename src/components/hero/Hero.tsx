@@ -14,9 +14,8 @@ export function Hero() {
       <div className="relative mx-auto grid max-w-[1600px] grid-cols-1 items-start lg:grid-cols-12 lg:gap-2">
         <motion.div
           className="relative z-10 max-w-xl py-4 lg:col-span-7 lg:py-8 lg:pr-8"
-          initial={{ opacity: 0, x: -24 }}
+          initial={false}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
           <h1 className="m-0">
             <span className="sr-only">{content.site.name}</span>
@@ -25,22 +24,13 @@ export function Hero() {
               className="h-[clamp(2.75rem,7vw,5.25rem)] w-auto"
             />
           </h1>
-          <motion.p
-            className="type-label mt-8 max-w-[18rem] whitespace-pre-line text-ink/50 sm:mt-10"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.5 }}
-          >
+          <p className="type-label mt-8 max-w-[18rem] whitespace-pre-line text-ink/50 sm:mt-10">
             {content.site.tagline}
-          </motion.p>
+          </p>
         </motion.div>
 
         <div className="relative mt-6 flex h-[140px] items-center justify-end sm:mt-8 sm:h-[160px] lg:col-span-5 lg:mt-0 lg:h-[280px] lg:items-start lg:justify-end lg:pt-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
-          >
+          <motion.div initial={false} animate={{ opacity: 1, scale: 1 }}>
             <div className="opacity-[0.72] transition-opacity duration-500 hover:opacity-100">
               <BrandMark
                 duration={52}

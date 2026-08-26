@@ -374,7 +374,7 @@ export function ArtistEditor() {
 
       <EditorSection
         title="Instagram feed"
-        description="Koppel het Instagram-profiel en plak tot 6 post- of reel-links. Die worden een carousel op de artiestenpagina."
+        description="Koppel tot 6 post- of reel-links. Op de pagina zie je zes tegels in een slide, zonder extra kader."
         defaultOpen
       >
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">

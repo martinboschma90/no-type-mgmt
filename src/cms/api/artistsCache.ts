@@ -80,24 +80,31 @@ export function fetchPublicArtistsFromSupabaseCached(
 
   if (!options?.force && publicInflight) return publicInflight
 
-  publicInflight = fetchPublicArtistsFromSupabase()
-    .then((result) => {
-      publicCached = result
-      publicCachedAt = Date.now()
-      return result
-    })
-    .catch((error) => {
-      // Never leave callers hanging on rejection (mobile network / CORS quirks).
-      console.warn('Public artists fetch failed', error)
-      const fallback: ArtistsReadResult = {
-        artists: publicCached?.artists ?? [],
-        fromSupabase: false,
-      }
-      return fallback
-    })
-    .finally(() => {
-      publicInflight = null
-    })
+  publicInflight = Promise.race([
+    fetchPublicArtistsFromSupabase()
+      .then((result) => {
+        publicCached = result
+        publicCachedAt = Date.now()
+        return result
+      })
+      .catch((error) => {
+        console.warn('Public artists fetch failed', error)
+        return {
+          artists: publicCached?.artists ?? [],
+          fromSupabase: false,
+        } satisfies ArtistsReadResult
+      }),
+    new Promise<ArtistsReadResult>((resolve) => {
+      window.setTimeout(() => {
+        resolve({
+          artists: publicCached?.artists ?? [],
+          fromSupabase: false,
+        })
+      }, 8000)
+    }),
+  ]).finally(() => {
+    publicInflight = null
+  })
 
   return publicInflight
 }

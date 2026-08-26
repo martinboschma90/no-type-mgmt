@@ -43,6 +43,7 @@ import {
 } from '@/cms/artistLocalMedia'
 import { ART_DIRECTION_VERSION, withArtDirection } from '@/cms/imageFocus'
 import { isSupabaseConfigured } from '@/lib/supabase'
+import { useLocation } from 'react-router-dom'
 
 type CmsContextValue = {
   content: CmsContent
@@ -116,6 +117,8 @@ function clearDirty(
 }
 
 export function CmsProvider({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  const isCmsRoute = pathname.startsWith('/cms')
   const [content, setContent] = useState<CmsContent>(initialContent)
   const [savedAt, setSavedAt] = useState<number | null>(() =>
     loadStoredContent() ? Date.now() : null,
@@ -215,26 +218,30 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     persistLocal(content)
   }, [content, persistLocal])
 
-  // Hydrate CMS artists from Supabase when available
+  // Hydrate full artist catalog only in CMS — public pages use slim roster / by-slug.
   useEffect(() => {
-    if (!isSupabaseConfigured || artistsHydrated.current) return
+    if (!isSupabaseConfigured || artistsHydrated.current || !isCmsRoute) return
     let cancelled = false
 
-    void fetchArtistsFromSupabaseCached().then(({ artists, fromSupabase }) => {
-      if (cancelled || !fromSupabase) return
-      artistsHydrated.current = true
-      setContent((prev) => ({
-        ...prev,
-        artists: artists.map((artist) => withArtDirection(artist)),
-      }))
-      setDirtyArtistIds(new Set())
-      setSavedAt(Date.now())
-    })
+    void fetchArtistsFromSupabaseCached()
+      .then(({ artists, fromSupabase }) => {
+        if (cancelled || !fromSupabase) return
+        artistsHydrated.current = true
+        setContent((prev) => ({
+          ...prev,
+          artists: artists.map((artist) => withArtDirection(artist)),
+        }))
+        setDirtyArtistIds(new Set())
+        setSavedAt(Date.now())
+      })
+      .catch((error) => {
+        console.warn('[cms] artist hydrate failed', error)
+      })
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [isCmsRoute])
 
   // Hydrate site + team from Supabase (source of truth when rows exist)
   useEffect(() => {

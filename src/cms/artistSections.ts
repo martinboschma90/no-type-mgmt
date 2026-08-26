@@ -20,7 +20,7 @@ export const ARTIST_SECTION_META: Record<
   },
   instagram: {
     label: 'Instagram',
-    description: 'Carousel van tot 6 posts, gekoppeld via Instagram-links',
+    description: 'Zes post-tegels in een slide, gekoppeld via Instagram-links',
   },
   tracks: {
     label: 'Music',
