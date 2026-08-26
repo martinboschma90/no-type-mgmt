@@ -11,27 +11,29 @@
       content="NOTYP MGMT — premium artist management for crossover dance & pop."
     />
     <style>
-      html[data-theme='dark'] {
+      html, body {
+        margin: 0;
+        min-height: 100%;
         background: #090909;
+        color: #f5f5f5;
       }
       html[data-theme='light'] {
         background: #f5f3ef;
+        color: #111111;
+      }
+      #root { min-height: 100vh; }
+      .boot {
+        box-sizing: border-box;
+        min-height: 100vh;
+        padding: 1.5rem 1rem 2rem;
+        font-family: system-ui, sans-serif;
+      }
+      .boot img {
+        display: block;
+        height: clamp(2.75rem, 7vw, 5.25rem);
+        width: auto;
       }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600&display=swap"
-      rel="stylesheet"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600&display=swap"
-        rel="stylesheet"
-      />
-    </noscript>
     <link rel="preload" as="image" href="/brand/notype-wordmark.svg" type="image/svg+xml" />
     <title>NOTYP MGMT</title>
     <script>
@@ -48,9 +50,9 @@
   </head>
   <body>
     <div id="root">
-      <p style="margin:0;padding:2rem;font-family:system-ui,sans-serif;letter-spacing:0.08em">
-        NOTYP MGMT
-      </p>
+      <div class="boot">
+        <img src="/brand/notype-wordmark.svg" alt="NOTYP MGMT" />
+      </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

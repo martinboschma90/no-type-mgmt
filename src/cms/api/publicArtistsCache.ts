@@ -82,7 +82,3 @@ export function prefetchPublicArtists() {
   if (!isSupabaseConfigured) return
   void fetchPublicArtistsFromSupabaseCached()
 }
-
-if (typeof window !== 'undefined' && isSupabaseConfigured) {
-  prefetchPublicArtists()
-}

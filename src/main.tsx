@@ -4,28 +4,33 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import { prefetchPublicArtists } from '@/cms/api/publicArtistsCache'
-import { isSupabaseConfigured, SUPABASE_URL } from '@/lib/supabaseEnv'
 
-// Warm DNS/TLS + start roster fetch before React commits.
-if (isSupabaseConfigured) {
-  const url = SUPABASE_URL
-  if (url) {
-    const preconnect = document.createElement('link')
-    preconnect.rel = 'preconnect'
-    preconnect.href = url
-    preconnect.crossOrigin = 'anonymous'
-    document.head.appendChild(preconnect)
-  }
-  prefetchPublicArtists()
+function loadFonts() {
+  const href =
+    'https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600&display=swap'
+  if (document.querySelector(`link[href="${href}"]`)) return
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = href
+  document.head.appendChild(link)
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </ErrorBoundary>
-  </StrictMode>,
-)
+const root = document.getElementById('root')
+if (root) {
+  createRoot(root).render(
+    <StrictMode>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </ErrorBoundary>
+    </StrictMode>,
+  )
+}
+
+requestAnimationFrame(() => {
+  loadFonts()
+  void import('@/cms/api/publicArtistsCache').then((m) => {
+    m.prefetchPublicArtists()
+  })
+})
