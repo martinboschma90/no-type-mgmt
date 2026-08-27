@@ -533,7 +533,7 @@ export function CmsLayout() {
                 aria-pressed={previewOpen}
                 className="type-label ml-auto rounded-full border border-ink/12 px-3 py-1.5 text-[0.55rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:border-ink/25 hover:text-ink"
               >
-                {previewOpen ? 'Hide preview' : 'Show preview'}
+                {previewOpen ? 'Verberg preview' : 'Toon preview'}
               </button>
             </div>
           </div>

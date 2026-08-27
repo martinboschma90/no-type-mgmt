@@ -35,66 +35,68 @@ export function ArtistPublishBar({
   return (
     <div className="space-y-2">
       <div
-        className="flex flex-wrap items-center gap-2 rounded-2xl border border-ink/15 bg-ink/[0.06] px-3 py-3 sm:gap-3 sm:px-4"
+        className="flex flex-wrap items-center gap-2 rounded-2xl border border-ink/15 bg-ink/[0.06] px-3 py-2.5 sm:gap-3 sm:px-4"
         data-cms-publish-bar
         role="toolbar"
-        aria-label="Artist publish actions"
+        aria-label="Artiest opslaan en publiceren"
       >
         <span
           className={[
             'type-label inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.6rem] tracking-[0.12em] uppercase',
             published
-              ? 'bg-accent/25 text-ink'
+              ? 'bg-emerald-500/20 text-ink'
               : 'bg-ink/10 text-ink/70',
           ].join(' ')}
         >
           <span
             className={[
               'h-1.5 w-1.5 rounded-full',
-              published ? 'bg-accent' : 'bg-ink/40',
+              published ? 'bg-emerald-500' : 'bg-ink/40',
             ].join(' ')}
           />
-          {published ? 'Published' : 'Draft'}
+          {published ? 'Live op de site' : 'Concept'}
         </span>
 
         {dirty ? (
-          <span className="type-label text-[0.55rem] tracking-[0.12em] text-brand uppercase">
-            Unsaved changes
+          <span className="type-label rounded-full bg-brand/20 px-2.5 py-1 text-[0.55rem] tracking-[0.12em] text-ink uppercase">
+            Niet opgeslagen
           </span>
         ) : (
           <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
-            {artist.publishedAt && published
-              ? `Live · ${new Date(artist.publishedAt).toLocaleDateString('nl-BE')}`
-              : 'Not on public site'}
+            Alles opgeslagen
           </span>
         )}
 
         <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
-          <a
-            href={`/artists/${artist.slug}`}
-            target="_blank"
-            rel="noreferrer"
-            className="type-label rounded-full border border-ink/20 bg-[var(--body-bg)] px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors hover:border-ink/40"
-          >
-            Open live page ↗
-          </a>
           <button
             type="button"
             disabled={saving || !dirty}
             onClick={onSave}
-            className="type-label rounded-full border border-ink/20 bg-[var(--body-bg)] px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors hover:border-ink/40 disabled:cursor-not-allowed disabled:opacity-45"
+            className={[
+              'type-label rounded-full px-4 py-2.5 text-[0.65rem] tracking-[0.12em] uppercase transition-opacity disabled:cursor-not-allowed disabled:opacity-45',
+              dirty
+                ? 'bg-brand text-[#111111] hover:opacity-90'
+                : 'border border-ink/20 bg-[var(--body-bg)] text-ink',
+            ].join(' ')}
           >
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? 'Opslaan…' : 'Opslaan'}
           </button>
-
+          <a
+            href={`/artists/${artist.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="type-label rounded-full border border-ink/20 px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/55 uppercase transition-colors hover:border-ink/40 hover:text-ink"
+          >
+            Live pagina ↗
+          </a>
           {published ? (
             <button
               type="button"
               disabled={saving}
               onClick={onUnpublish}
-              className="type-label rounded-full border border-ink/20 bg-[var(--body-bg)] px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/70 uppercase transition-colors hover:border-ink/40 hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
+              className="type-label rounded-full px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Unpublish
+              Depubliceren
             </button>
           ) : (
             <button
@@ -102,9 +104,9 @@ export function ArtistPublishBar({
               disabled={saving || localMedia}
               onClick={onPublish}
               title={localMedia ? LOCAL_MEDIA_PUBLISH_WARNING : undefined}
-              className="type-label rounded-full bg-brand px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-[#111111] uppercase transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
+              className="type-label rounded-full bg-ink px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink-inverse uppercase transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Publish
+              Publiceren
             </button>
           )}
         </div>
@@ -119,7 +121,7 @@ export function ArtistPublishBar({
             {LOCAL_MEDIA_PUBLISH_WARNING}
           </p>
           <p className="type-body mt-1.5 text-xs text-ink/60">
-            Local-only refs: {localFields.join(', ')}. Re-upload via Profile /
+            Local-only refs: {localFields.join(', ')}. Re-upload via Profiel /
             Visuals so files get a permanent HTTPS Storage URL, then publish.
           </p>
         </div>

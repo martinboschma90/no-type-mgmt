@@ -1,8 +1,8 @@
 export const ARTIST_EDITOR_TABS = [
-  { id: 'hero', label: 'Hero' },
-  { id: 'content', label: 'Content' },
+  { id: 'hero', label: 'Profiel' },
+  { id: 'content', label: 'Visuals' },
   { id: 'instagram', label: 'Instagram' },
-  { id: 'settings', label: 'Settings' },
+  { id: 'settings', label: 'Instellingen' },
 ] as const
 
 export type ArtistEditorTabId = (typeof ARTIST_EDITOR_TABS)[number]['id']

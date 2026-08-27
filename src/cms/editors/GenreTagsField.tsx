@@ -15,6 +15,10 @@ export function GenreTagsField({ value, onChange }: GenreTagsFieldProps) {
   const [draft, setDraft] = useState('')
   const genres = uniqueGenres(value)
   const selectedKeys = new Set(genres.map((g) => g.toLowerCase()))
+  const customGenres = genres.filter(
+    (genre) =>
+      !GENRE_PRESETS.some((preset) => preset.toLowerCase() === genre.toLowerCase()),
+  )
 
   function add(raw: string) {
     const next = uniqueGenres([...genres, raw])
@@ -48,7 +52,7 @@ export function GenreTagsField({ value, onChange }: GenreTagsFieldProps) {
   return (
     <Field
       label="Genres"
-      hint="Tap a genre button to add it. Shown as buttons on the artist profile."
+      hint="Tik een tag aan. Die verschijnt als knop op de artiestenpagina."
     >
       <div className="flex flex-wrap gap-1.5">
         {GENRE_PRESETS.map((preset) => {
@@ -71,14 +75,14 @@ export function GenreTagsField({ value, onChange }: GenreTagsFieldProps) {
           )
         })}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg border border-ink/12 bg-[var(--body-bg)] px-2 py-2">
-        {genres.map((genre) => (
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        {customGenres.map((genre) => (
           <button
             key={genre}
             type="button"
             className="type-ui inline-flex items-center gap-1.5 rounded-full border border-ink/25 bg-ink/5 px-2.5 py-1 text-[0.6rem] text-ink"
             onClick={() => onChange(genres.filter((g) => g !== genre))}
-            aria-label={`Remove ${genre}`}
+            aria-label={`Verwijder ${genre}`}
           >
             {genre}
             <span aria-hidden className="text-ink/40">
@@ -95,8 +99,8 @@ export function GenreTagsField({ value, onChange }: GenreTagsFieldProps) {
             onBlur={() => {
               if (draft.trim()) add(draft)
             }}
-            placeholder={genres.length ? 'Other genre' : 'Custom genre'}
-            className="min-w-[7rem] flex-1 bg-transparent px-1.5 py-1 type-body text-sm text-ink outline-none placeholder:text-ink/30"
+            placeholder="Eigen genre…"
+            className="min-w-[8rem] flex-1 rounded-lg border border-ink/12 bg-[var(--body-bg)] px-2.5 py-1.5 type-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-accent/60"
           />
         ) : null}
       </div>

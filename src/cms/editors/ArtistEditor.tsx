@@ -418,12 +418,12 @@ export function ArtistEditor() {
       {editorTab === 'hero' ? (
       <>
       <EditorSection
-        title="Portrait"
-        description="Hero image for the roster card and artist page. Click the thumbnail to set the focal point."
+        title="Foto"
+        description="Portret voor de roster-card en de artiestenpagina."
         defaultOpen
       >
                 <MediaUrlField
-                  label="Portrait / hero image"
+                  label="Portretfoto"
                   kind="image"
                   value={artist.imageUrl}
                   onChange={(imageUrl) =>
@@ -448,7 +448,7 @@ export function ArtistEditor() {
                   }
                 />
                 <TextInput
-                  label="Image alt text"
+                  label="Alt-tekst (toegankelijkheid)"
                   value={artist.imageAlt}
                   onChange={(imageAlt) =>
                     updateArtist(updateKey, (a) => ({ ...a, imageAlt }))
@@ -456,21 +456,21 @@ export function ArtistEditor() {
                 />
       </EditorSection>
       <EditorSection
-        title="Profile"
-        description="Name, genre, bio, booking and socials on the public page."
+        title="Naam & bio"
+        description="Dit staat op de publieke artiestenpagina."
         defaultOpen
       >
                 <TextInput
-                  label="Artist name"
+                  label="Naam"
                   value={artist.name}
                   onChange={(name) => updateArtist(updateKey, (a) => ({ ...a, name }))}
                 />
                 <Field
-                  label="Slug (URL)"
+                  label="URL-slug"
                   hint={
                     slugError
                       ? undefined
-                      : `Live URL: /artists/${artist.slug} — apply to save. Typing does not navigate.`
+                      : `Live: /artists/${artist.slug} — wijziging geldt na Toepassen of als je het veld verlaat.`
                   }
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -498,7 +498,7 @@ export function ArtistEditor() {
                       className="type-label shrink-0 rounded-full border border-ink/15 px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/70 uppercase transition-colors hover:border-ink/30 hover:text-ink"
                       onClick={() => commitSlug()}
                     >
-                      Apply slug
+                      Toepassen
                     </button>
                   </div>
                   {slugError ? (
@@ -520,10 +520,10 @@ export function ArtistEditor() {
                   onChange={(bio) => updateArtist(updateKey, (a) => ({ ...a, bio }))}
                 />
                 <TextInput
-                  label="Presskit URL"
+                  label="Presskit-link"
                   value={artist.presskitUrl ?? ''}
                   placeholder="https://…"
-                  hint="Booking / press kit link on the artist page."
+                  hint="Boeking / presskit op de artiestenpagina."
                   onChange={(presskitUrl) =>
                     updateArtist(updateKey, (a) => ({ ...a, presskitUrl }))
                   }
@@ -532,10 +532,10 @@ export function ArtistEditor() {
                 <div className="space-y-3.5 border-t border-ink/8 pt-4">
                   <div>
                     <p className="type-label m-0 text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-                      Social links
+                      Socials
                     </p>
                     <p className="type-body mt-1.5 text-[0.7rem] leading-snug text-ink/32">
-                      Empty URLs stay hidden on the live page.
+                      Lege URL’s blijven verborgen op de site.
                     </p>
                   </div>
 

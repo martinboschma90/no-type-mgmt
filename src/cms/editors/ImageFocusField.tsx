@@ -148,14 +148,14 @@ export function ImageFocusField({
 
   return (
     <Field
-      label="Focal point"
-      hint="Click the thumbnail to set the focus. The large preview shows the card crop."
+      label="Uitsnede"
+      hint="Klik op de kleine foto voor het gezichtspunt. Sleep de grote preview om te schuiven. Scroll om te zoomen."
     >
       <div className="space-y-4">
         <div className="flex flex-wrap items-start gap-4">
           <div>
             <p className="type-label mb-2 text-[0.55rem] tracking-[0.14em] text-ink/40 uppercase">
-              Focus
+              Gezichtspunt
             </p>
             <div
               role="slider"
@@ -206,7 +206,7 @@ export function ImageFocusField({
 
           <div className="min-w-0 flex-1">
             <p className="type-label mb-2 text-[0.55rem] tracking-[0.14em] text-ink/40 uppercase">
-              Card preview
+              Zo ziet de card eruit
             </p>
         <div
           ref={stageRef}
@@ -263,13 +263,44 @@ export function ImageFocusField({
           </div>
 
           <p className="pointer-events-none absolute inset-x-0 bottom-3 z-[3] text-center type-label text-[0.55rem] tracking-[0.14em] text-white/70 uppercase">
-            {dragging ? 'Loslaten om te bevestigen' : 'Sleep om te verplaatsen'}
+            {dragging ? 'Loslaten' : 'Sleep de foto'}
           </p>
         </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={!resolved}
+                onClick={() => patch({ x: 50, y: 50 })}
+                className="type-label rounded-full border border-ink/15 px-3 py-1.5 text-[0.6rem] tracking-[0.1em] text-ink/60 uppercase transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-30"
+              >
+                Centreer
+              </button>
+              <button
+                type="button"
+                disabled={!resolved}
+                onClick={() =>
+                  onChange({
+                    x: 50,
+                    y: 28,
+                    scale: IMAGE_SCALE_DEFAULT,
+                  })
+                }
+                className="type-label rounded-full border border-ink/15 px-3 py-1.5 text-[0.6rem] tracking-[0.1em] text-ink/60 uppercase transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-30"
+              >
+                Reset
+              </button>
+              <span className="type-label ml-auto text-[0.55rem] tracking-[0.08em] text-ink/30 uppercase tabular-nums">
+                {Math.round(scale * 100)}% zoom
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-4 rounded-2xl border border-ink/10 bg-[var(--body-bg)] p-3">
+        <details className="rounded-2xl border border-ink/10 bg-[var(--body-bg)]">
+          <summary className="cursor-pointer list-none px-3 py-2.5 type-label text-[0.6rem] tracking-[0.12em] text-ink/45 uppercase marker:content-none [&::-webkit-details-marker]:hidden">
+            Fijnafstelling (schuifregelaars)
+          </summary>
+        <div className="space-y-4 border-t border-ink/8 p-3">
           {/* Vertical: up / down */}
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -409,35 +440,8 @@ export function ImageFocusField({
               +
             </button>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={!resolved}
-              onClick={() => patch({ x: 50, y: 50 })}
-              className="type-label rounded-full border border-ink/15 px-3 py-1.5 text-[0.6rem] tracking-[0.1em] text-ink/60 uppercase transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-30"
-            >
-              Centreer
-            </button>
-            <button
-              type="button"
-              disabled={!resolved}
-              onClick={() =>
-                onChange({
-                  x: 50,
-                  y: 28,
-                  scale: IMAGE_SCALE_DEFAULT,
-                })
-              }
-              className="type-label rounded-full border border-ink/15 px-3 py-1.5 text-[0.6rem] tracking-[0.1em] text-ink/60 uppercase transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-30"
-            >
-              Reset
-            </button>
-            <span className="type-label ml-auto text-[0.55rem] tracking-[0.08em] text-ink/30 uppercase tabular-nums">
-              {formatFocus(x, y)} · {Math.round(scale * 100)}%
-            </span>
-          </div>
         </div>
+        </details>
       </div>
     </Field>
   )
