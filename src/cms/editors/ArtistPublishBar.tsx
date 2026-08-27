@@ -70,6 +70,14 @@ export function ArtistPublishBar({
         )}
 
         <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+          <a
+            href={`/artists/${artist.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="type-label rounded-full border border-ink/20 bg-[var(--body-bg)] px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors hover:border-ink/40"
+          >
+            Open live page ↗
+          </a>
           <button
             type="button"
             disabled={saving || !dirty}

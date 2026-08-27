@@ -184,6 +184,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cms_content: {
+        Row: {
+          id: string
+          key: string
+          data: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          data?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          data?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cms_artists: {
+        Row: {
+          id: string
+          slug: string
+          data: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          data?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          data?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

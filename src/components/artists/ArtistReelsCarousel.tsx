@@ -168,8 +168,7 @@ export function ArtistReelsCarousel({
                 Visuals
               </p>
               <p className="type-body max-w-sm text-xs text-[#F5F5F5]/40">
-                Nog geen visuals voor {artist.name}. Voeg 9:16 video&apos;s toe
-                in het CMS.
+                No visuals yet — add vertical 9:16 clips in the CMS.
               </p>
               <Link
                 to={`/cms/artists/${artist.slug}`}

@@ -2,9 +2,12 @@ import { createContext, useContext } from 'react'
 import type { Artist, TeamMember } from '@/types/artist'
 import type { CmsContent, SiteContent } from '@/cms/content'
 
+export type ContentSyncStatus = 'synced' | 'pending'
+
 export type CmsContextValue = {
   content: CmsContent
   savedAt: number | null
+  contentSyncStatus: ContentSyncStatus
   artistSyncError: string | null
   siteSyncError: string | null
   dirtyArtistIds: ReadonlySet<string>

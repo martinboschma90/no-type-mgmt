@@ -50,7 +50,7 @@ export function MediaLibrary({ onSelect, selectKind = 'any' }: MediaLibraryProps
     <div className="space-y-7">
       <EditorSection
         title="Upload"
-        description="Photos/videos sync to Supabase Storage when you are logged in. Use “Sync missing media to Storage” above to migrate old media:// refs."
+        description="Photos/videos sync to Supabase Storage when you are logged in. Unsynced media:// files show as an orange count on Media in the sidebar."
       >
         <div
           role="button"

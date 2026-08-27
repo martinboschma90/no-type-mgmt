@@ -3,6 +3,7 @@ import { PillButton } from '@/components/ui/PillButton'
 import { SocialLinks } from '@/components/artists/SocialLinks'
 import type { Artist } from '@/types/artist'
 import { useCms } from '@/cms/CmsContext'
+import { artistGenres } from '@/cms/artistGenres'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import { OptimizedImg } from '@/components/ui/OptimizedImg'
@@ -79,15 +80,22 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
             {artist.name}
           </motion.h1>
 
-          {artist.genre && (
-            <motion.p
-              className="type-label mt-2 text-ink/50 sm:mt-3"
+          {artistGenres(artist).length > 0 && (
+            <motion.div
+              className="mt-3 flex flex-wrap gap-2 sm:mt-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.15 }}
             >
-              {artist.genre}
-            </motion.p>
+              {artistGenres(artist).map((genre) => (
+                <span
+                  key={genre}
+                  className="type-ui inline-flex rounded-full border border-ink/70 px-3.5 py-1.5 text-[0.65rem] tracking-[0.1em] text-ink uppercase"
+                >
+                  {genre}
+                </span>
+              ))}
+            </motion.div>
           )}
 
           {artist.socials && (

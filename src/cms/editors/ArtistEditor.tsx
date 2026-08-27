@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useCms } from '@/cms/CmsProvider'
 import { artistSlugFromPath } from '@/cms/artistSlug'
+import { artistEditorTabFromSearch } from '@/cms/artistEditorTabs'
+import { withGenres } from '@/cms/artistGenres'
 import { ArtistLayoutEditor } from '@/cms/editors/ArtistLayoutEditor'
 import { ArtistVideosEditor, withSyncedVideos } from '@/cms/editors/ArtistVideosEditor'
 import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
+import { GenreTagsField } from '@/cms/editors/GenreTagsField'
 import { EditorSection, Field, TextArea, TextInput } from '@/cms/fields'
 import { ImageFocusField } from '@/cms/editors/ImageFocusField'
 import { ART_DIRECTION_VERSION, resolveArtDirection } from '@/cms/imageFocus'
@@ -27,9 +30,10 @@ import {
   setArtistSectionVisible,
 } from '@/cms/artistSections'
 import { ArtistPublishBar } from '@/cms/editors/ArtistPublishBar'
+import { CmsToast } from '@/cms/editors/CmsToast'
 import { artistHasLocalMediaRefs } from '@/cms/artistLocalMedia'
 import { normalizeArtistVideos } from '@/cms/artistVideos'
-import { isArtistVisible, sortArtistsByName } from '@/cms/artistVisibility'
+import { isArtistVisible } from '@/cms/artistVisibility'
 import type { MusicPlatform, SocialPlatform } from '@/types/artist'
 
 const PLATFORMS: SocialPlatform[] = [
@@ -62,6 +66,8 @@ function finalizeSlug(raw: string) {
 
 export function ArtistEditor() {
   const { pathname } = useLocation()
+  const [searchParams] = useSearchParams()
+  const editorTab = artistEditorTabFromSearch(searchParams.get('tab'))
   const routeSlug = artistSlugFromPath(pathname) ?? ''
   const navigate = useNavigate()
   const { content, updateArtist, getArtistBySlug, removeArtist, saveArtist, publishArtist, unpublishArtist, isArtistDirty, artistSaving } = useCms()
@@ -78,6 +84,16 @@ export function ArtistEditor() {
 
   const [slugDraft, setSlugDraft] = useState(artist?.slug ?? routeSlug)
   const [slugError, setSlugError] = useState<string | null>(null)
+  const [toast, setToast] = useState<{
+    message: string
+    detail?: string
+  } | null>(null)
+
+  const dismissToast = useCallback(() => setToast(null), [])
+
+  function showToast(message: string, detail?: string) {
+    setToast({ message, detail })
+  }
 
   useEffect(() => {
     if (artistFromRoute) {
@@ -155,14 +171,58 @@ export function ArtistEditor() {
   async function handleSave() {
     const slug = commitSlug()
     if (!slug) return
-    await saveArtist(slug)
+    const result = await saveArtist(slug)
+    if (result.error) {
+      showToast('Opslaan mislukt', result.error)
+      return
+    }
+    showToast(
+      'Opgeslagen ✓',
+      new Date().toLocaleString('nl-BE', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    )
   }
 
   async function handlePublish() {
     if (!artist || artistHasLocalMediaRefs(artist)) return
     const slug = commitSlug()
     if (!slug) return
-    await publishArtist(slug)
+    const result = await publishArtist(slug)
+    if (result.error) {
+      showToast('Publiceren mislukt', result.error)
+      return
+    }
+    showToast(
+      'Opgeslagen ✓',
+      new Date().toLocaleString('nl-BE', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    )
+  }
+
+  async function handleUnpublish() {
+    if (!artist) return
+    const result = await unpublishArtist(artist.slug)
+    if (result.error) {
+      showToast('Unpublish mislukt', result.error)
+      return
+    }
+    showToast(
+      'Opgeslagen ✓',
+      new Date().toLocaleString('nl-BE', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    )
   }
 
   const patchMusic = (patch: Partial<typeof music>) => {
@@ -173,8 +233,6 @@ export function ArtistEditor() {
   }
 
   const musicSectionVisible = isArtistSectionVisible(artist, 'tracks')
-  const contentSectionVisible = isArtistSectionVisible(artist, 'video')
-  const instagramSectionVisible = isArtistSectionVisible(artist, 'instagram')
   const instagramFeed = artist.instagramFeed ?? DEFAULT_INSTAGRAM_FEED
   const instagramPosts = padInstagramPosts(instagramFeed.posts)
   const instagramSocialUrl =
@@ -186,24 +244,6 @@ export function ArtistEditor() {
       sections: setArtistSectionVisible(a.sections, 'tracks', visible),
       music: {
         ...(a.music ?? DEFAULT_ARTIST_MUSIC),
-        visible,
-      },
-    }))
-  }
-
-  const setContentSectionVisible = (visible: boolean) => {
-    updateArtist(updateKey, (a) => ({
-      ...a,
-      sections: setArtistSectionVisible(a.sections, 'video', visible),
-    }))
-  }
-
-  const setInstagramSectionVisible = (visible: boolean) => {
-    updateArtist(updateKey, (a) => ({
-      ...a,
-      sections: setArtistSectionVisible(a.sections, 'instagram', visible),
-      instagramFeed: {
-        ...(a.instagramFeed ?? DEFAULT_INSTAGRAM_FEED),
         visible,
       },
     }))
@@ -222,51 +262,23 @@ export function ArtistEditor() {
 
   return (
     <div className="space-y-3">
-      {/* Sticky so Save / Publish stay visible while scrolling the editor */}
-      <div className="sticky top-0 z-20 -mx-4 border-b border-ink/10 bg-[var(--body-bg)]/95 px-4 py-2 backdrop-blur-md sm:-mx-5 sm:px-5">
+      {toast ? (
+        <CmsToast
+          message={toast.message}
+          detail={toast.detail}
+          onDismiss={dismissToast}
+        />
+      ) : null}
+
+      <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-1 border-b border-ink/10 bg-[var(--body-bg)]/95 px-4 pt-4 pb-3 backdrop-blur-md sm:-mx-5 sm:px-5">
         <ArtistPublishBar
           artist={artist}
           dirty={dirty}
           saving={artistSaving}
           onSave={() => void handleSave()}
           onPublish={() => void handlePublish()}
-          onUnpublish={() => void unpublishArtist(artist.slug)}
+          onUnpublish={() => void handleUnpublish()}
         />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          to="/cms/artists"
-          className="type-label text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:text-ink"
-        >
-          ← Alle artiesten
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <a
-            href={`/artists/${artist.slug}`}
-            target="_blank"
-            rel="noreferrer"
-            className="type-label text-[0.65rem] tracking-[0.12em] text-brand uppercase transition-opacity hover:opacity-70"
-          >
-            Open live page ↗
-          </a>
-          <button
-            type="button"
-            className="type-label text-[0.65rem] tracking-[0.12em] text-ink/35 uppercase transition-colors hover:text-ink"
-            onClick={() => {
-              if (
-                window.confirm(
-                  `Artiest “${artist.name}” verwijderen van roster en CMS?`,
-                )
-              ) {
-                removeArtist(artist.slug)
-                navigate('/cms/artists')
-              }
-            }}
-          >
-            Verwijderen
-          </button>
-        </div>
       </div>
 
       {!isArtistVisible(artist) ? (
@@ -276,94 +288,57 @@ export function ArtistEditor() {
         </p>
       ) : null}
 
-      <label className="block">
-        <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-          Switch artist page
-        </span>
-        <select
-          className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none focus:border-accent/60"
-          value={artist.slug}
-          onChange={(e) => navigate(`/cms/artists/${e.target.value}`)}
-          aria-label="Select artist"
+      {editorTab === 'settings' ? (
+        <>
+        <EditorSection
+          title="Publicatie"
+          description="Draft blijft in het CMS. Published staat op de roster en op /artists/."
+          defaultOpen
         >
-          {sortArtistsByName(content.artists).map((a) => (
-            <option key={a.id} value={a.slug}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <EditorSection
-        title="Section visibility"
-        description="Show or hide Music and Content on this artist page. Data stays saved when hidden."
-        defaultOpen
-        badge="Settings"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
-          <div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-              Music
+              {isArtistVisible(artist) ? 'Published' : 'Draft'}
             </p>
-            <p className="type-body mt-1 text-xs text-ink/45">
-              {musicSectionVisible
-                ? 'Zichtbaar op de artiestenpagina'
-                : 'Verborgen — muziekdata blijft bewaard'}
-            </p>
+            <ArtistVisibilityToggle
+              visible={isArtistVisible(artist)}
+              onChange={(visible) => {
+                if (visible) void handlePublish()
+                else void handleUnpublish()
+              }}
+            />
           </div>
-          <ArtistVisibilityToggle
-            visible={musicSectionVisible}
-            onChange={setMusicSectionVisible}
-          />
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
-          <div>
-            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-              Content
-            </p>
-            <p className="type-body mt-1 text-xs text-ink/45">
-              {contentSectionVisible
-                ? 'Zichtbaar op de artiestenpagina'
-                : 'Verborgen — visuals blijven bewaard'}
-            </p>
-          </div>
-          <ArtistVisibilityToggle
-            visible={contentSectionVisible}
-            onChange={setContentSectionVisible}
-          />
-        </div>
-      </EditorSection>
+        </EditorSection>
+        <ArtistLayoutEditor
+          artist={artist}
+          onChange={(sections) => {
+            updateArtist(updateKey, (a) => {
+              const tracks = sections.find((s) => s.id === 'tracks')
+              const musicVisible = tracks ? tracks.visible !== false : true
+              const instagram = sections.find((s) => s.id === 'instagram')
+              const instagramVisible = instagram
+                ? instagram.visible !== false
+                : true
+              return {
+                ...a,
+                sections,
+                music: {
+                  ...(a.music ?? DEFAULT_ARTIST_MUSIC),
+                  visible: musicVisible,
+                },
+                instagramFeed: {
+                  ...(a.instagramFeed ?? DEFAULT_INSTAGRAM_FEED),
+                  visible: instagramVisible,
+                },
+              }
+            })
+          }}
+        />
+        </>
+      ) : null}
 
-      <ArtistLayoutEditor
-        artist={artist}
-        onChange={(sections) => {
-          updateArtist(updateKey, (a) => {
-            const tracks = sections.find((s) => s.id === 'tracks')
-            const musicVisible = tracks ? tracks.visible !== false : true
-            const instagram = sections.find((s) => s.id === 'instagram')
-            const instagramVisible = instagram
-              ? instagram.visible !== false
-              : true
-            return {
-              ...a,
-              sections,
-              music: {
-                ...(a.music ?? DEFAULT_ARTIST_MUSIC),
-                visible: musicVisible,
-              },
-              instagramFeed: {
-                ...(a.instagramFeed ?? DEFAULT_INSTAGRAM_FEED),
-                visible: instagramVisible,
-              },
-            }
-          })
-        }}
-      />
-
-      <ArtistVideosEditor
+      {editorTab === 'content' ? (
+        <ArtistVideosEditor
         videos={editableVideos}
-        sectionVisible={contentSectionVisible}
-        onSectionVisibleChange={setContentSectionVisible}
         onChange={(videos) =>
           updateArtist(updateKey, (a) => ({
             ...a,
@@ -371,28 +346,14 @@ export function ArtistEditor() {
           }))
         }
       />
+      ) : null}
 
+      {editorTab === 'instagram' ? (
       <EditorSection
         title="Instagram feed"
-        description="Koppel tot 6 post- of reel-links. Op de pagina zie je zes tegels in een slide, zonder extra kader."
+        description="Koppel tot 6 post- of reel-links. Zes tegels in een slide, zonder extra kader."
         defaultOpen
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
-          <div>
-            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-              Instagram sectie
-            </p>
-            <p className="type-body mt-1 text-xs text-ink/45">
-              {instagramSectionVisible
-                ? 'Zichtbaar op de artiestenpagina'
-                : 'Verborgen — links blijven bewaard'}
-            </p>
-          </div>
-          <ArtistVisibilityToggle
-            visible={instagramSectionVisible}
-            onChange={setInstagramSectionVisible}
-          />
-        </div>
         <TextInput
           label="Profiel-link"
           value={instagramFeed.profileUrl || instagramSocialUrl}
@@ -411,6 +372,14 @@ export function ArtistEditor() {
           <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
             Posts (max {INSTAGRAM_FEED_COUNT})
           </p>
+          {instagramPosts.every((p) => !p.trim()) ? (
+            <div className="rounded-2xl border border-dashed border-ink/15 px-4 py-6 text-center">
+              <p className="type-headline text-sm text-ink/70">No Instagram posts yet</p>
+              <p className="type-body mt-1.5 text-xs text-ink/40">
+                Paste post or reel URLs below — up to {INSTAGRAM_FEED_COUNT} tiles.
+              </p>
+            </div>
+          ) : null}
           {instagramPosts.map((post, index) => {
             const parsed = parseInstagramPostUrl(post)
             const invalid = Boolean(post.trim()) && !parsed
@@ -444,18 +413,53 @@ export function ArtistEditor() {
           })}
         </div>
       </EditorSection>
+      ) : null}
 
+      {editorTab === 'hero' ? (
+      <>
+      <EditorSection
+        title="Portrait"
+        description="Hero image for the roster card and artist page. Click the thumbnail to set the focal point."
+        defaultOpen
+      >
+                <MediaUrlField
+                  label="Portrait / hero image"
+                  kind="image"
+                  value={artist.imageUrl}
+                  onChange={(imageUrl) =>
+                    updateArtist(updateKey, (a) => ({ ...a, imageUrl }))
+                  }
+                />
+                <ImageFocusField
+                  imageUrl={artist.imageUrl}
+                  imageAlt={artist.imageAlt}
+                  x={art.x}
+                  y={art.y}
+                  scale={art.scale}
+                  onChange={({ x, y, scale }) =>
+                    updateArtist(updateKey, (a) => ({
+                      ...a,
+                      imageFocusX: x,
+                      imageFocusY: y,
+                      imageScale: scale,
+                      imageFocus: `${Math.round(x)}% ${Math.round(y)}%`,
+                      artDirectionVersion: ART_DIRECTION_VERSION,
+                    }))
+                  }
+                />
+                <TextInput
+                  label="Image alt text"
+                  value={artist.imageAlt}
+                  onChange={(imageAlt) =>
+                    updateArtist(updateKey, (a) => ({ ...a, imageAlt }))
+                  }
+                />
+      </EditorSection>
       <EditorSection
         title="Profile"
-        description="Content and media for the public artist page."
+        description="Name, genre, bio, booking and socials on the public page."
         defaultOpen
-        defaultTabId="content"
-        tabs={[
-          {
-            id: 'content',
-            label: 'Content',
-            children: (
-              <>
+      >
                 <TextInput
                   label="Artist name"
                   value={artist.name}
@@ -503,11 +507,11 @@ export function ArtistEditor() {
                     </span>
                   ) : null}
                 </Field>
-                <TextInput
-                  label="Genre"
-                  value={artist.genre ?? ''}
-                  placeholder="e.g. House, Techno"
-                  onChange={(genre) => updateArtist(updateKey, (a) => ({ ...a, genre }))}
+                <GenreTagsField
+                  value={artist.genres ?? (artist.genre ? [artist.genre] : [])}
+                  onChange={(genres) =>
+                    updateArtist(updateKey, (a) => ({ ...a, ...withGenres(genres) }))
+                  }
                 />
                 <TextArea
                   label="Bio"
@@ -516,16 +520,10 @@ export function ArtistEditor() {
                   onChange={(bio) => updateArtist(updateKey, (a) => ({ ...a, bio }))}
                 />
                 <TextInput
-                  label="Image alt text"
-                  value={artist.imageAlt}
-                  onChange={(imageAlt) =>
-                    updateArtist(updateKey, (a) => ({ ...a, imageAlt }))
-                  }
-                />
-                <TextInput
                   label="Presskit URL"
                   value={artist.presskitUrl ?? ''}
                   placeholder="https://…"
+                  hint="Booking / press kit link on the artist page."
                   onChange={(presskitUrl) =>
                     updateArtist(updateKey, (a) => ({ ...a, presskitUrl }))
                   }
@@ -533,12 +531,11 @@ export function ArtistEditor() {
 
                 <div className="space-y-3.5 border-t border-ink/8 pt-4">
                   <div>
-                    <p className="type-headline m-0 text-[0.9rem] text-ink">
+                    <p className="type-label m-0 text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
                       Social links
                     </p>
-                    <p className="type-body mt-1 text-xs text-ink/40">
-                      Existing JSON structure preserved. Empty URLs stay hidden on the
-                      live page.
+                    <p className="type-body mt-1.5 text-[0.7rem] leading-snug text-ink/32">
+                      Empty URLs stay hidden on the live page.
                     </p>
                   </div>
 
@@ -571,7 +568,7 @@ export function ArtistEditor() {
                         </button>
                       </div>
                       <label className="block">
-                        <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+                        <span className="type-label mb-2 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
                           Platform
                         </span>
                         <select
@@ -665,49 +662,12 @@ export function ArtistEditor() {
                     </button>
                   </div>
                 </div>
-              </>
-            ),
-          },
-          {
-            id: 'media',
-            label: 'Media',
-            children: (
-              <>
-                <MediaUrlField
-                  label="Portrait / hero image"
-                  kind="image"
-                  value={artist.imageUrl}
-                  onChange={(imageUrl) =>
-                    updateArtist(updateKey, (a) => ({ ...a, imageUrl }))
-                  }
-                />
-                <ImageFocusField
-                  imageUrl={artist.imageUrl}
-                  imageAlt={artist.imageAlt}
-                  x={art.x}
-                  y={art.y}
-                  scale={art.scale}
-                  onChange={({ x, y, scale }) =>
-                    updateArtist(updateKey, (a) => ({
-                      ...a,
-                      imageFocusX: x,
-                      imageFocusY: y,
-                      imageScale: scale,
-                      imageFocus: `${Math.round(x)}% ${Math.round(y)}%`,
-                      artDirectionVersion: ART_DIRECTION_VERSION,
-                    }))
-                  }
-                />
-                <p className="type-body text-xs text-ink/40">
-                  Visuals are managed in the <span className="text-ink/70">Visuals</span>{' '}
-                  section above (9:16, up to 5 clips).
-                </p>
-              </>
-            ),
-          },
-        ]}
-      />
+      </EditorSection>
+      </>
+      ) : null}
 
+      {editorTab === 'settings' ? (
+        <>
       <EditorSection
         title="Music"
         description="Choose a platform embed per artist. Legacy track list stays available below."
@@ -898,6 +858,30 @@ export function ArtistEditor() {
           + Add track
         </button>
       </EditorSection>
+
+      <EditorSection
+        title="Danger zone"
+        description="Verwijderen haalt de artiest van roster en CMS. Dit kan niet ongedaan."
+      >
+        <button
+          type="button"
+          className="type-label rounded-full border border-ink/20 px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:border-ink/40 hover:text-ink"
+          onClick={() => {
+            if (
+              window.confirm(
+                `Artiest “${artist.name}” verwijderen van roster en CMS?`,
+              )
+            ) {
+              removeArtist(artist.slug)
+              navigate('/cms/artists')
+            }
+          }}
+        >
+          Verwijderen
+        </button>
+      </EditorSection>
+        </>
+      ) : null}
     </div>
   )
 }

@@ -57,6 +57,19 @@ export type ArtistVideo = {
   /** Optional poster / thumbnail before playback. */
   posterUrl?: string
   title?: string
+  /** `film` = landscape tile under bio; omit / `reel` = 9:16 carousel. */
+  kind?: 'reel' | 'film'
+  /** Optional pill on the film tile (e.g. Live, Studio). */
+  label?: string
+}
+
+/** Landscape film tile under the artist bio (House of Yellow-style row of 3). */
+export type ArtistFilm = {
+  id: string
+  videoUrl: string
+  posterUrl?: string
+  title?: string
+  label?: string
 }
 
 /** CMS publish workflow — public site only shows `published`. */
@@ -67,6 +80,8 @@ export type Artist = {
   name: string
   slug: string
   genre?: string
+  /** Multiple genres for profile chips. `genre` stays the first / legacy value. */
+  genres?: string[]
   imageUrl: string
   imageAlt: string
   /**
@@ -89,6 +104,11 @@ export type Artist = {
    * Prefer this over legacy `videoUrl`. Empty → fall back to `videoUrl`.
    */
   videos?: ArtistVideo[]
+  /**
+   * Landscape films under the bio — up to 3, shown in a row on desktop.
+   * Stored in the same `videos` jsonb column with `kind: 'film'`.
+   */
+  films?: ArtistFilm[]
   bio?: string
   socials?: SocialLink[]
   /** Legacy playlist rows — kept for compatibility. */

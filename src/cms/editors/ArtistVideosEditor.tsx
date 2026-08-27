@@ -42,8 +42,8 @@ export function ArtistVideosEditor({
 
   return (
     <EditorSection
-      title="Content"
-      description="Visuals — vertical 9:16 clips (1080×1920). 3–5 recommended. Cinematic carousel on the public page."
+      title="Visuals"
+      description="Vertical 9:16 clips (1080×1920). 3–5 recommended. Cinematic carousel on the public page."
       defaultOpen
       badge={`${videos.length}/${MAX_ARTIST_VIDEOS}`}
     >
@@ -156,9 +156,12 @@ export function ArtistVideosEditor({
       </ul>
 
       {videos.length === 0 ? (
-        <p className="type-body text-sm text-ink/40">
-          No visuals yet — add vertical clips for the carousel.
-        </p>
+        <div className="rounded-2xl border border-dashed border-ink/15 px-4 py-8 text-center">
+          <p className="type-headline text-sm text-ink/70">No visuals yet</p>
+          <p className="type-body mt-1.5 text-xs text-ink/40">
+            Add vertical 9:16 clips for the carousel.
+          </p>
+        </div>
       ) : null}
 
       <button

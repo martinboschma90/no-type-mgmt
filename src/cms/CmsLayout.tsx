@@ -1,30 +1,33 @@
-import { Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react'
+import { Link, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/cms/auth/AuthProvider'
 import { useCms } from '@/cms/CmsProvider'
+import {
+  ARTIST_EDITOR_TABS,
+  artistEditorPath,
+  artistEditorTabFromSearch,
+  isArtistEditorTabActive,
+} from '@/cms/artistEditorTabs'
 import { artistSlugFromPath, isArtistsIndexPath } from '@/cms/artistSlug'
-import { sortArtistsByName } from '@/cms/artistVisibility'
-import { HomeEditor } from '@/cms/editors/HomeEditor'
-import { AboutEditor } from '@/cms/editors/AboutEditor'
-import { ContactEditor } from '@/cms/editors/ContactEditor'
-import { BookingEditor } from '@/cms/editors/BookingEditor'
-import { FaqEditor } from '@/cms/editors/FaqEditor'
-import { FooterEditor } from '@/cms/editors/FooterEditor'
-import { RosterEditor } from '@/cms/editors/RosterEditor'
-import { ArtistEditor } from '@/cms/editors/ArtistEditor'
-import { ArtistsIndexEditor } from '@/cms/editors/ArtistsIndexEditor'
-import { HomePreview } from '@/cms/previews/HomePreview'
-import { AboutPreview } from '@/cms/previews/AboutPreview'
-import { ContactPreview } from '@/cms/previews/ContactPreview'
-import { BookingPreview } from '@/cms/previews/BookingPreview'
-import { FaqPreview } from '@/cms/previews/FaqPreview'
-import { FooterPreview } from '@/cms/previews/FooterPreview'
-import { RosterPreview } from '@/cms/previews/RosterPreview'
-import { ArtistPreview } from '@/cms/previews/ArtistPreview'
-import { ArtistsIndexPreview } from '@/cms/previews/ArtistsIndexPreview'
-import { MediaLibrary } from '@/cms/media/MediaLibrary'
-import { MediaPreview } from '@/cms/previews/MediaPreview'
+import { getArtistStatus, sortArtistsByName } from '@/cms/artistVisibility'
+import type { CmsPanelProps } from '@/cms/panels/types'
+import { RouteFallback } from '@/components/ui/RouteFallback'
 import { useMedia } from '@/cms/media/MediaProvider'
-import { MediaArtistRepair } from '@/cms/media/MediaArtistRepair'
+import { countUnsyncedMediaUrls } from '@/cms/media/migrateLocalMedia'
+import { CMS_PREVIEW_OPEN_KEY } from '@/cms/storageKeys'
+import { storageGet, storageSet } from '@/lib/safeStorage'
+
+const CmsHomePanel = lazy(() => import('@/cms/panels/home'))
+const CmsAboutPanel = lazy(() => import('@/cms/panels/about'))
+const CmsContactPanel = lazy(() => import('@/cms/panels/contact'))
+const CmsBookingPanel = lazy(() => import('@/cms/panels/booking'))
+const CmsFaqPanel = lazy(() => import('@/cms/panels/faq'))
+const CmsFooterPanel = lazy(() => import('@/cms/panels/footer'))
+const CmsRosterPanel = lazy(() => import('@/cms/panels/roster'))
+const CmsArtistsIndexPanel = lazy(() => import('@/cms/panels/artistsIndex'))
+const CmsArtistDetailPanel = lazy(() => import('@/cms/panels/artistDetail'))
+const CmsMediaPanel = lazy(() => import('@/cms/panels/media'))
+const CmsSettingsPanel = lazy(() => import('@/cms/panels/settings'))
 
 const siteTabs = [
   { to: '/cms/home', label: 'Home' },
@@ -36,108 +39,112 @@ const siteTabs = [
   { to: '/cms/roster', label: 'Roster' },
 ] as const
 
-function useCmsPanels() {
+function useCmsPanels(): {
+  mode: 'pages' | 'artists' | 'media' | 'settings'
+  title: string
+  subtitle: string
+  Page: ComponentType<CmsPanelProps>
+} {
   const { pathname } = useLocation()
   const { getArtistBySlug, content } = useCms()
   const artistSlug = artistSlugFromPath(pathname)
 
+  if (pathname.startsWith('/cms/settings')) {
+    return {
+      mode: 'settings',
+      title: 'Instellingen',
+      subtitle: 'Account · danger zone',
+      Page: CmsSettingsPanel,
+    }
+  }
+
   if (pathname.startsWith('/cms/media')) {
     return {
-      mode: 'media' as const,
+      mode: 'media',
       title: 'Media',
       subtitle: 'Upload · WebP / WebM',
-      editor: <MediaLibrary />,
-      preview: <MediaPreview />,
+      Page: CmsMediaPanel,
     }
   }
 
   if (isArtistsIndexPath(pathname)) {
     return {
-      mode: 'artists' as const,
+      mode: 'artists',
       title: 'Artiesten',
       subtitle: `${content.artists.length} artist pages`,
-      editor: <ArtistsIndexEditor />,
-      preview: <ArtistsIndexPreview />,
+      Page: CmsArtistsIndexPanel,
     }
   }
 
   if (artistSlug) {
     const artist = getArtistBySlug(artistSlug)
     return {
-      mode: 'artists' as const,
+      mode: 'artists',
       title: artist?.name ?? 'Artist',
       subtitle: artist ? `/artists/${artist.slug}` : 'Artist detail page',
-      editor: <ArtistEditor />,
-      preview: <ArtistPreview />,
+      Page: CmsArtistDetailPanel,
     }
   }
 
   if (pathname.startsWith('/cms/about')) {
     return {
-      mode: 'pages' as const,
+      mode: 'pages',
       title: 'About',
       subtitle: 'About · team · social',
-      editor: <AboutEditor />,
-      preview: <AboutPreview />,
+      Page: CmsAboutPanel,
     }
   }
 
   if (pathname.startsWith('/cms/contact')) {
     return {
-      mode: 'pages' as const,
+      mode: 'pages',
       title: 'Contact',
       subtitle: 'Contact channels',
-      editor: <ContactEditor />,
-      preview: <ContactPreview />,
+      Page: CmsContactPanel,
     }
   }
 
   if (pathname.startsWith('/cms/booking')) {
     return {
-      mode: 'pages' as const,
+      mode: 'pages',
       title: 'Booking',
       subtitle: 'Booking request form',
-      editor: <BookingEditor />,
-      preview: <BookingPreview />,
+      Page: CmsBookingPanel,
     }
   }
 
   if (pathname.startsWith('/cms/faq')) {
     return {
-      mode: 'pages' as const,
+      mode: 'pages',
       title: 'FAQ',
       subtitle: 'Promoter FAQ · /faq',
-      editor: <FaqEditor />,
-      preview: <FaqPreview />,
+      Page: CmsFaqPanel,
     }
   }
 
   if (pathname.startsWith('/cms/footer')) {
     return {
-      mode: 'pages' as const,
+      mode: 'pages',
       title: 'Footer',
       subtitle: 'Global footer · all pages',
-      editor: <FooterEditor />,
-      preview: <FooterPreview />,
+      Page: CmsFooterPanel,
     }
   }
 
   if (pathname.startsWith('/cms/roster')) {
     return {
-      mode: 'pages' as const,
+      mode: 'pages',
       title: 'Roster',
       subtitle: 'Homepage artist grid',
-      editor: <RosterEditor />,
-      preview: <RosterPreview />,
+      Page: CmsRosterPanel,
     }
   }
 
   return {
-    mode: 'pages' as const,
+    mode: 'pages',
     title: 'Home',
     subtitle: 'Hero · brand',
-    editor: <HomeEditor />,
-    preview: <HomePreview />,
+    Page: CmsHomePanel,
   }
 }
 
@@ -151,23 +158,69 @@ function formatSavedAt(ts: number | null) {
   })}`
 }
 
+function SidebarHeading({ children }: { children: string }) {
+  return (
+    <p className="type-label px-2.5 pb-1.5 text-[0.55rem] tracking-[0.16em] text-ink/35 uppercase">
+      {children}
+    </p>
+  )
+}
+
+function readPreviewOpen(): boolean {
+  const stored = storageGet(CMS_PREVIEW_OPEN_KEY)
+  if (stored === '0') return false
+  if (stored === '1') return true
+  return typeof window !== 'undefined' ? window.innerWidth >= 1280 : true
+}
+
+function MediaUnsyncedBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span
+      className="ml-1.5 inline-flex min-h-[1.15rem] min-w-[1.15rem] items-center justify-center rounded-full bg-orange-400 px-1 text-[0.6rem] font-medium tracking-normal text-[#111] normal-case"
+      title={`${count} unsynced media:// file${count === 1 ? '' : 's'}`}
+    >
+      {count}
+    </span>
+  )
+}
+
 /** Frame-inspired CMS shell: sidebar · editor · live preview. */
 export function CmsLayout() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const navigate = useNavigate()
-  const { resetContent, savedAt, artistSyncError, siteSyncError, content } =
+  const { savedAt, artistSyncError, siteSyncError, content, contentSyncStatus } =
     useCms()
   const { user, authRequired, signOut } = useAuth()
   const { assets } = useMedia()
   const panels = useCmsPanels()
+  const artistsActive = pathname.startsWith('/cms/artists')
+  const mediaActive = pathname.startsWith('/cms/media')
+  const settingsActive = pathname.startsWith('/cms/settings')
+  const pagesActive = !artistsActive && !mediaActive && !settingsActive
+  const artistSlug = artistSlugFromPath(pathname)
+  const editorTab = artistEditorTabFromSearch(
+    new URLSearchParams(search).get('tab'),
+  )
+  const unsyncedMediaCount = countUnsyncedMediaUrls(content)
+  const [artistsOpen, setArtistsOpen] = useState(artistsActive)
+  const [previewOpen, setPreviewOpen] = useState(readPreviewOpen)
+
+  useEffect(() => {
+    if (artistsActive) setArtistsOpen(true)
+  }, [artistsActive])
+
+  function togglePreview() {
+    setPreviewOpen((open) => {
+      const next = !open
+      storageSet(CMS_PREVIEW_OPEN_KEY, next ? '1' : '0')
+      return next
+    })
+  }
 
   if (pathname === '/cms' || pathname === '/cms/') {
     return <Navigate to="/cms/home" replace />
   }
-
-  const artistsActive = pathname.startsWith('/cms/artists')
-  const mediaActive = pathname.startsWith('/cms/media')
-  const pagesActive = !artistsActive && !mediaActive
 
   async function handleLogout() {
     await signOut()
@@ -176,7 +229,7 @@ export function CmsLayout() {
 
   return (
     <div className="flex h-svh overflow-hidden bg-[#ebe8e2] text-ink dark:bg-[#0c0b0d]">
-      <aside className="hidden w-[210px] shrink-0 flex-col border-r border-ink/8 bg-[var(--body-bg)] md:flex">
+      <aside className="hidden min-h-0 w-[220px] shrink-0 flex-col border-r border-ink/8 bg-[var(--body-bg)] md:flex">
         <div className="border-b border-ink/8 px-4 py-5">
           <p className="type-label text-[0.6rem] tracking-[0.18em] text-brand uppercase">
             No Type
@@ -184,6 +237,15 @@ export function CmsLayout() {
           <h1 className="type-display m-0 mt-1 text-[1.65rem] leading-none text-ink">CMS</h1>
           <p className="type-body mt-2 text-[0.7rem] text-ink/40">
             {authRequired ? 'Admin · autosave' : 'Local · autosave'}
+          </p>
+          <p className="mt-2 flex items-center gap-1.5 type-label text-[0.55rem] tracking-[0.12em] text-ink/45 uppercase">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                contentSyncStatus === 'synced' ? 'bg-emerald-500' : 'bg-orange-400'
+              }`}
+              aria-hidden
+            />
+            {contentSyncStatus === 'synced' ? 'Synced' : 'Pending'}
           </p>
           {user?.email ? (
             <p
@@ -195,48 +257,132 @@ export function CmsLayout() {
           ) : null}
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="CMS">
-          <NavLink
-            to="/cms/home"
-            className={[
-              'type-label rounded-xl px-3 py-2.5 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
-              pagesActive
-                ? 'bg-accent text-[#f5f5f5]'
-                : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
-            ].join(' ')}
-          >
-            Pagina&apos;s
-          </NavLink>
-          <NavLink
-            to="/cms/artists"
-            className={[
-              'type-label rounded-xl px-3 py-2.5 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
-              artistsActive
-                ? 'bg-accent text-[#f5f5f5]'
-                : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
-            ].join(' ')}
-          >
-            Artiesten
-            <span className="ml-2 opacity-55">{content.artists.length}</span>
-          </NavLink>
-          <NavLink
-            to="/cms/media"
-            className={[
-              'type-label rounded-xl px-3 py-2.5 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
-              mediaActive
-                ? 'bg-accent text-[#f5f5f5]'
-                : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
-            ].join(' ')}
-          >
-            Media
-            <span className="ml-2 opacity-55">{assets.length}</span>
-          </NavLink>
+        <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-2" aria-label="CMS">
+          <div className="border-b border-ink/8 py-2">
+            <SidebarHeading>Pagina&apos;s</SidebarHeading>
+            <NavLink
+              to="/cms/home"
+              className={[
+                'type-label block rounded-lg px-2.5 py-2 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
+                pagesActive
+                  ? 'bg-accent/15 text-ink'
+                  : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
+              ].join(' ')}
+            >
+              Alle pagina&apos;s
+            </NavLink>
+          </div>
+
+          <div className="border-b border-ink/8 py-2">
+            <div className="flex items-center gap-0.5">
+              <div className="min-w-0 flex-1">
+                <SidebarHeading>Artiesten</SidebarHeading>
+              </div>
+              <span className="type-label mb-1 pr-1 text-[0.55rem] tracking-[0.12em] text-ink/35">
+                {content.artists.length}
+              </span>
+              <button
+                type="button"
+                className="mb-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink/40 transition-colors hover:bg-accent/10 hover:text-ink"
+                aria-expanded={artistsOpen}
+                aria-label={artistsOpen ? 'Collapse artists' : 'Expand artists'}
+                onClick={() => setArtistsOpen((open) => !open)}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className={`h-3.5 w-3.5 transition-transform ${artistsOpen ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden
+                >
+                  <path d="m5 8 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+            <NavLink
+              to="/cms/artists"
+              end
+              className={[
+                'type-label mb-1 block rounded-lg px-2.5 py-1.5 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
+                isArtistsIndexPath(pathname)
+                  ? 'bg-accent/15 text-ink'
+                  : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
+              ].join(' ')}
+            >
+              Overzicht
+            </NavLink>
+            {artistsOpen ? (
+              <ul className="space-y-0.5">
+                {sortArtistsByName(content.artists).map((artist) => {
+                  const published = getArtistStatus(artist) === 'published'
+                  const href = artistEditorPath(artist.slug, editorTab)
+                  const selected = artistSlug === artist.slug
+                  return (
+                    <li key={artist.id}>
+                      <NavLink
+                        to={href}
+                        title={artist.name}
+                        className={[
+                          'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[0.75rem] transition-colors',
+                          selected
+                            ? 'bg-ink/8 text-ink'
+                            : 'text-ink/55 hover:bg-accent/10 hover:text-ink',
+                        ].join(' ')}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                            published ? 'bg-emerald-500' : 'bg-ink/25'
+                          }`}
+                          title={published ? 'Published' : 'Draft'}
+                          aria-label={published ? 'Published' : 'Draft'}
+                        />
+                        <span className="min-w-0 truncate type-body">{artist.name}</span>
+                      </NavLink>
+                    </li>
+                  )
+                })}
+              </ul>
+            ) : null}
+          </div>
+
+          <div className="border-b border-ink/8 py-2">
+            <SidebarHeading>Media</SidebarHeading>
+            <NavLink
+              to="/cms/media"
+              className={[
+                'type-label flex items-center rounded-lg px-2.5 py-2 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
+                mediaActive
+                  ? 'bg-accent/15 text-ink'
+                  : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
+              ].join(' ')}
+            >
+              Bibliotheek
+              <span className="ml-2 opacity-55">{assets.length}</span>
+              <MediaUnsyncedBadge count={unsyncedMediaCount} />
+            </NavLink>
+          </div>
+
+          <div className="py-2">
+            <SidebarHeading>Systeem</SidebarHeading>
+            <NavLink
+              to="/cms/settings"
+              className={[
+                'type-label block rounded-lg px-2.5 py-2 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
+                settingsActive
+                  ? 'bg-accent/15 text-ink'
+                  : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
+              ].join(' ')}
+            >
+              Instellingen
+            </NavLink>
+          </div>
         </nav>
 
         <div className="space-y-2 border-t border-ink/8 p-4">
           <a
             href="/"
-            className="type-label block rounded-xl border border-accent/35 bg-accent/10 px-3 py-2.5 text-center text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors hover:bg-accent/20"
+            className="type-label block rounded-xl bg-accent px-3 py-2.5 text-center text-[0.65rem] tracking-[0.12em] text-[#f5f5f5] uppercase transition-opacity hover:opacity-90"
           >
             View site
           </a>
@@ -244,26 +390,11 @@ export function CmsLayout() {
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="type-label w-full rounded-xl border border-ink/12 px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:border-ink/25 hover:text-ink"
+              className="type-label w-full rounded-xl px-3 py-2 text-[0.65rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink"
             >
               Log out
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              if (
-                window.confirm(
-                  'Reset all CMS content to the defaults shipped with the site?',
-                )
-              ) {
-                resetContent()
-              }
-            }}
-            className="type-label w-full rounded-xl border border-ink/12 px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:border-ink/25 hover:text-ink"
-          >
-            Reset content
-          </button>
         </div>
       </aside>
 
@@ -292,43 +423,51 @@ export function CmsLayout() {
               </div>
             ) : null}
 
-            {panels.mode === 'artists' ? (
-              <div className="flex gap-1 overflow-x-auto pb-1">
-                <NavLink
+            {panels.mode === 'artists' && artistSlug ? (
+              <div className="space-y-2">
+                <Link
                   to="/cms/artists"
-                  end
-                  className={({ isActive }) =>
-                    [
-                      'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
-                      isActive || pathname === '/cms/artists/'
-                        ? 'bg-accent text-[#f5f5f5]'
-                        : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
-                    ].join(' ')
-                  }
+                  className="type-label inline-flex text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:text-ink"
                 >
-                  Overzicht
-                </NavLink>
-                {sortArtistsByName(content.artists).map((artist) => (
-                  <NavLink
-                    key={artist.id}
-                    to={`/cms/artists/${artist.slug}`}
-                    className={({ isActive }) =>
-                      [
-                        'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.1em] uppercase transition-colors',
-                        isActive
-                          ? 'bg-accent text-[#f5f5f5]'
-                          : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
-                      ].join(' ')
-                    }
-                  >
-                    {artist.name}
-                  </NavLink>
-                ))}
+                  ← Alle artiesten
+                </Link>
+                <div className="flex gap-1 overflow-x-auto pb-1">
+                  {ARTIST_EDITOR_TABS.map((tab) => {
+                    const to = artistEditorPath(artistSlug, tab.id)
+                    const isActive = isArtistEditorTabActive(
+                      tab.id,
+                      new URLSearchParams(search).get('tab'),
+                    )
+                    return (
+                      <Link
+                        key={tab.id}
+                        to={to}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={[
+                          'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
+                          isActive
+                            ? 'bg-accent text-[#f5f5f5]'
+                            : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
+                        ].join(' ')}
+                      >
+                        {tab.label}
+                      </Link>
+                    )
+                  })}
+                </div>
               </div>
+            ) : null}
+
+            {panels.mode === 'artists' && !artistSlug ? (
+              <p className="type-headline text-base text-ink">Artiesten</p>
             ) : null}
 
             {panels.mode === 'media' ? (
               <p className="type-headline text-base text-ink">Media library</p>
+            ) : null}
+
+            {panels.mode === 'settings' ? (
+              <p className="type-headline text-base text-ink">Instellingen</p>
             ) : null}
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -344,6 +483,17 @@ export function CmsLayout() {
                   {user.email}
                 </span>
               ) : null}
+              <span className="type-label inline-flex items-center gap-1.5 text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    contentSyncStatus === 'synced'
+                      ? 'bg-emerald-500'
+                      : 'bg-orange-400'
+                  }`}
+                  aria-hidden
+                />
+                {contentSyncStatus === 'synced' ? 'Synced' : 'Pending'}
+              </span>
               <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
                 {formatSavedAt(savedAt)}
               </span>
@@ -365,18 +515,26 @@ export function CmsLayout() {
                   Site sync: {siteSyncError}
                 </span>
               ) : null}
+              <span className="type-label hidden text-[0.55rem] tracking-[0.12em] text-ink/35 uppercase sm:inline">
+                {panels.subtitle}
+              </span>
               {authRequired ? (
                 <button
                   type="button"
                   onClick={() => void handleLogout()}
-                  className="type-label ml-auto text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink md:hidden"
+                  className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink md:hidden"
                 >
                   Log out
                 </button>
               ) : null}
-              <span className="type-label hidden text-[0.55rem] tracking-[0.12em] text-ink/35 uppercase sm:inline">
-                {panels.subtitle}
-              </span>
+              <button
+                type="button"
+                onClick={togglePreview}
+                aria-pressed={previewOpen}
+                className="type-label ml-auto rounded-full border border-ink/12 px-3 py-1.5 text-[0.55rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:border-ink/25 hover:text-ink"
+              >
+                {previewOpen ? 'Hide preview' : 'Show preview'}
+              </button>
             </div>
           </div>
 
@@ -419,17 +577,43 @@ export function CmsLayout() {
               }
             >
               Media
+              <MediaUnsyncedBadge count={unsyncedMediaCount} />
+            </NavLink>
+            <NavLink
+              to="/cms/settings"
+              className={() =>
+                [
+                  'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
+                  settingsActive
+                    ? 'bg-accent text-[#f5f5f5]'
+                    : 'bg-ink/5 text-ink/50',
+                ].join(' ')
+              }
+            >
+              Instellingen
             </NavLink>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-            <MediaArtistRepair />
-            <div className="space-y-3">{panels.editor}</div>
+            <div className="space-y-3">
+              <Suspense fallback={<RouteFallback compact />}>
+                <panels.Page slot="editor" />
+              </Suspense>
+            </div>
           </div>
         </section>
 
-        <section className="flex min-h-[38vh] min-w-0 flex-col bg-[#ebe8e2] p-4 xl:min-h-0 xl:flex-[1.1] dark:bg-[#151217]">
-          <div className="min-h-0 flex-1">{panels.preview}</div>
+        <section
+          className={[
+            'min-h-[38vh] min-w-0 flex-col bg-[#ebe8e2] p-4 xl:min-h-0 xl:flex-[1.1] dark:bg-[#151217]',
+            previewOpen ? 'flex' : 'hidden',
+          ].join(' ')}
+        >
+          <div className="min-h-0 flex-1">
+            <Suspense fallback={<RouteFallback compact />}>
+              <panels.Page slot="preview" />
+            </Suspense>
+          </div>
         </section>
       </div>
     </div>

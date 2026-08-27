@@ -17,7 +17,7 @@ export function BookingField({
 }) {
   return (
     <label className="block min-w-0">
-      <span className="type-label mb-1.5 block text-[0.62rem] tracking-[0.14em] text-ink/45">
+      <span className="type-label mb-1 block text-[0.58rem] tracking-[0.14em] text-ink/45">
         {label}
         {optional ? (
           <span className="normal-case tracking-normal text-ink/28">
@@ -32,7 +32,7 @@ export function BookingField({
 }
 
 const inputClass =
-  'w-full rounded-full border border-ink/12 bg-transparent px-3.5 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-accent/70'
+  'w-full rounded-full border border-ink/12 bg-transparent px-3 py-2 type-body text-[0.8125rem] leading-snug text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-accent/70'
 
 export function BookingInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`${inputClass} ${props.className ?? ''}`} />
@@ -76,7 +76,7 @@ export function BookingButton({
   ...props
 }: BookingButtonProps) {
   const base =
-    'type-ui inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs transition-colors disabled:opacity-40'
+    'type-ui inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-[0.65rem] transition-colors disabled:opacity-40'
 
   const styles =
     variant === 'solid'
@@ -103,7 +103,7 @@ export function ArtistSelectChip({
     <button
       type="button"
       onClick={onClick}
-      className={`type-ui rounded-full px-5 py-2.5 text-xs transition-colors ${
+      className={`type-ui rounded-full px-3 py-1.5 text-[0.65rem] transition-colors ${
         active
           ? 'border border-accent bg-accent text-[#f5f5f5]'
           : 'border border-ink/80 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink'

@@ -1,31 +1,42 @@
+import {
+  PUBLIC_ARTISTS_STORAGE_KEY,
+  PUBLIC_ARTISTS_STORAGE_KEY_V2,
+} from '@/cms/storageKeys'
+import { fetchPublicCmsArtistsRow } from '@/cms/api/cmsStore'
+import {
+  parsePublicArtistsPayload,
+  publicArtistsToSlugMap,
+} from '@/cms/api/publicArtistsFormat'
 import { fetchPublicRoster, type ArtistsReadResult } from '@/cms/api/publicRead'
-import { visibleArtists } from '@/cms/artistVisibility'
 import { isSupabaseConfigured } from '@/lib/supabaseEnv'
 import { storageGet, storageRemove, storageSet } from '@/lib/safeStorage'
 import type { Artist } from '@/types/artist'
 
 const TTL_MS = 30_000
 
-export const PUBLIC_ARTISTS_STORAGE_KEY = 'notype-public-artists-v2'
+export { PUBLIC_ARTISTS_STORAGE_KEY }
+export { migrateArtistsV1toV2 } from '@/cms/api/publicArtistsFormat'
 
 export function readStoredPublicArtists(): Artist[] | null {
   const raw = storageGet(PUBLIC_ARTISTS_STORAGE_KEY)
   if (!raw) return null
   try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed) || parsed.length === 0) return null
-    return visibleArtists(parsed as Artist[])
+    return parsePublicArtistsPayload(JSON.parse(raw) as unknown)
   } catch {
     return null
   }
 }
 
 export function writeStoredPublicArtists(artists: Artist[]) {
-  storageSet(PUBLIC_ARTISTS_STORAGE_KEY, JSON.stringify(artists))
+  storageSet(
+    PUBLIC_ARTISTS_STORAGE_KEY,
+    JSON.stringify(publicArtistsToSlugMap(artists)),
+  )
 }
 
 export function clearStoredPublicArtists() {
   storageRemove(PUBLIC_ARTISTS_STORAGE_KEY)
+  storageRemove(PUBLIC_ARTISTS_STORAGE_KEY_V2)
 }
 
 let publicInflight: Promise<ArtistsReadResult> | null = null
@@ -43,7 +54,13 @@ export function fetchPublicArtistsFromSupabaseCached(
   if (!options?.force && publicInflight) return publicInflight
 
   publicInflight = Promise.race([
-    fetchPublicRoster()
+    fetchPublicCmsArtistsRow()
+      .then(async (cached) => {
+        if (cached && cached.length > 0) {
+          return { artists: cached, fromSupabase: true } satisfies ArtistsReadResult
+        }
+        return fetchPublicRoster()
+      })
       .then((result) => {
         publicCached = result
         publicCachedAt = Date.now()

@@ -136,12 +136,78 @@ export function ImageFocusField({
     patch({ y: 100 - value })
   }
 
+  const onThumbPointer = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!resolved || (e.buttons === 0 && e.type !== 'pointerdown')) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    if (rect.width < 2 || rect.height < 2) return
+    patch({
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
+    })
+  }
+
   return (
     <Field
-      label="Card crop"
-      hint="Sleep de foto, of zet de artiest omhoog / omlaag / links / rechts met de sliders. Zoom met − / + of scroll."
+      label="Focal point"
+      hint="Click the thumbnail to set the focus. The large preview shows the card crop."
     >
       <div className="space-y-4">
+        <div className="flex flex-wrap items-start gap-4">
+          <div>
+            <p className="type-label mb-2 text-[0.55rem] tracking-[0.14em] text-ink/40 uppercase">
+              Focus
+            </p>
+            <div
+              role="slider"
+              aria-label="Image focal point"
+              aria-valuemin={IMAGE_FOCUS_MIN}
+              aria-valuemax={IMAGE_FOCUS_MAX}
+              aria-valuenow={Math.round(x)}
+              tabIndex={resolved ? 0 : -1}
+              onPointerDown={(e) => {
+                if (!resolved || e.button !== 0) return
+                e.currentTarget.setPointerCapture(e.pointerId)
+                onThumbPointer(e)
+              }}
+              onPointerMove={(e) => {
+                if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+                onThumbPointer(e)
+              }}
+              className={[
+                'relative h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-ink/10 ring-1 ring-ink/10',
+                resolved ? 'cursor-crosshair touch-none' : '',
+              ].join(' ')}
+            >
+              {resolved ? (
+                <img
+                  src={resolved}
+                  alt=""
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center px-2 text-center type-label text-[0.5rem] tracking-[0.1em] text-ink/35 uppercase">
+                  No image
+                </div>
+              )}
+              {resolved ? (
+                <span
+                  className="pointer-events-none absolute z-[1] h-5 w-5 -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                  aria-hidden
+                >
+                  <span className="absolute inset-0 rounded-full border-2 border-brand shadow-[0_0_0_1px_rgba(0,0,0,0.45)]" />
+                  <span className="absolute top-1/2 left-0 h-px w-full -translate-y-1/2 bg-brand" />
+                  <span className="absolute top-0 left-1/2 h-full w-px -translate-x-1/2 bg-brand" />
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="type-label mb-2 text-[0.55rem] tracking-[0.14em] text-ink/40 uppercase">
+              Card preview
+            </p>
         <div
           ref={stageRef}
           role="presentation"
@@ -179,24 +245,35 @@ export function ImageFocusField({
           />
 
           <div
-            className="pointer-events-none absolute inset-0 z-[2] opacity-40"
+            className="pointer-events-none absolute inset-0 z-[2]"
             aria-hidden
           >
-            <div className="absolute left-1/2 top-[28%] h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/50" />
-            <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-white/25 to-transparent" />
-            <div className="absolute left-0 top-[28%] h-px w-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+            <span
+              className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/85 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+              style={{ left: `${x}%`, top: `${y}%` }}
+            />
+            <span
+              className="absolute h-px w-8 -translate-x-1/2 -translate-y-1/2 bg-white/90"
+              style={{ left: `${x}%`, top: `${y}%` }}
+            />
+            <span
+              className="absolute h-8 w-px -translate-x-1/2 -translate-y-1/2 bg-white/90"
+              style={{ left: `${x}%`, top: `${y}%` }}
+            />
           </div>
 
           <p className="pointer-events-none absolute inset-x-0 bottom-3 z-[3] text-center type-label text-[0.55rem] tracking-[0.14em] text-white/70 uppercase">
             {dragging ? 'Loslaten om te bevestigen' : 'Sleep om te verplaatsen'}
           </p>
         </div>
+          </div>
+        </div>
 
         <div className="space-y-4 rounded-2xl border border-ink/10 bg-[var(--body-bg)] p-3">
           {/* Vertical: up / down */}
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="type-label text-[0.6rem] tracking-[0.12em] text-ink/45">
+              <span className="type-label text-[0.6rem] tracking-[0.14em] text-ink/45 uppercase">
                 Omhoog / omlaag
               </span>
               <span className="type-label text-[0.65rem] text-ink/55 tabular-nums">
@@ -245,7 +322,7 @@ export function ImageFocusField({
           {/* Horizontal: left / right */}
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="type-label text-[0.6rem] tracking-[0.12em] text-ink/45">
+              <span className="type-label text-[0.6rem] tracking-[0.14em] text-ink/45 uppercase">
                 Links / rechts
               </span>
               <span className="type-label text-[0.65rem] text-ink/55 tabular-nums">
@@ -304,7 +381,7 @@ export function ImageFocusField({
             </button>
             <label className="min-w-0 flex-1">
               <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="type-label text-[0.6rem] tracking-[0.12em] text-ink/45">
+                <span className="type-label text-[0.6rem] tracking-[0.14em] text-ink/45 uppercase">
                   Zoom
                 </span>
                 <span className="type-label text-[0.65rem] text-ink/55 tabular-nums">

@@ -1,3 +1,4 @@
+import type { CmsContent } from '@/cms/content'
 import type { Artist } from '@/types/artist'
 import { isMediaLibraryRef } from '@/cms/media/publicMedia'
 import { publishMediaAssetToSupabase } from '@/cms/media/publishMedia'
@@ -24,7 +25,7 @@ export type MigrateLocalMediaResult = {
   /** Unique media IDs successfully mapped to HTTPS Storage URLs */
   migrated: number
   failed: MigrateLocalMediaFailure[]
-  /** Remaining media:// refs across all artists after rewrite */
+  /** Remaining unique media:// IDs in CMS content after rewrite */
   remaining: number
   urlById: Record<string, string>
   artistsUpdated: string[]
@@ -64,7 +65,55 @@ export function scanLocalMediaRefs(artists: Artist[]): LocalMediaRefHit[] {
 }
 
 export function countLocalMediaRefs(artists: Artist[]): number {
-  return scanLocalMediaRefs(artists).length
+  return collectMediaRefIds(artists).size
+}
+
+/** Unique media:// IDs anywhere in CMS JSON (artists, team, site, …). */
+export function collectMediaRefIds(
+  value: unknown,
+  ids: Set<string> = new Set(),
+): Set<string> {
+  if (typeof value === 'string') {
+    const id = parseMediaRef(value)
+    if (id) ids.add(id)
+    return ids
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectMediaRefIds(item, ids)
+    return ids
+  }
+  if (value && typeof value === 'object') {
+    for (const item of Object.values(value as Record<string, unknown>)) {
+      collectMediaRefIds(item, ids)
+    }
+  }
+  return ids
+}
+
+export function countUnsyncedMediaUrls(content: CmsContent): number {
+  return collectMediaRefIds(content).size
+}
+
+export function rewriteMediaRefStrings<T>(
+  value: T,
+  urlById: Record<string, string>,
+): T {
+  if (typeof value === 'string') {
+    const id = parseMediaRef(value)
+    if (id && urlById[id]) return urlById[id] as T
+    return value
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => rewriteMediaRefStrings(item, urlById)) as T
+  }
+  if (value && typeof value === 'object') {
+    const next: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+      next[key] = rewriteMediaRefStrings(item, urlById)
+    }
+    return next as T
+  }
+  return value
 }
 
 function rewriteValue(
@@ -162,21 +211,21 @@ async function resolveOrUploadMediaId(
  * when the underlying file can be resolved locally or is already in Storage.
  */
 export async function migrateLocalMediaRefs(options: {
-  artists: Artist[]
+  content: CmsContent
   localAssets: MediaAsset[]
-}): Promise<{ artists: Artist[]; result: MigrateLocalMediaResult }> {
-  const hits = scanLocalMediaRefs(options.artists)
-  const byId = new Map<string, LocalMediaRefHit[]>()
-  for (const hit of hits) {
-    const list = byId.get(hit.mediaId) ?? []
+}): Promise<{ content: CmsContent; result: MigrateLocalMediaResult }> {
+  const artistHits = scanLocalMediaRefs(options.content.artists)
+  const hitsById = new Map<string, LocalMediaRefHit[]>()
+  for (const hit of artistHits) {
+    const list = hitsById.get(hit.mediaId) ?? []
     list.push(hit)
-    byId.set(hit.mediaId, list)
+    hitsById.set(hit.mediaId, list)
   }
 
   const urlById: Record<string, string> = {}
   const failed: MigrateLocalMediaFailure[] = []
 
-  for (const [mediaId, idHits] of byId) {
+  for (const mediaId of collectMediaRefIds(options.content)) {
     const { url, error } = await resolveOrUploadMediaId(
       mediaId,
       options.localAssets,
@@ -184,40 +233,39 @@ export async function migrateLocalMediaRefs(options: {
     if (url) {
       urlById[mediaId] = url
     } else {
+      const idHits = hitsById.get(mediaId) ?? []
       failed.push({
         mediaId,
         reason: error ?? 'Unknown error',
-        fields: idHits.map((h) => `${h.artistSlug}:${h.field}`),
+        fields:
+          idHits.length > 0
+            ? idHits.map((h) => `${h.artistSlug}:${h.field}`)
+            : [mediaId],
       })
     }
   }
 
+  const nextContent = rewriteMediaRefStrings(options.content, urlById)
   const artistsUpdated: string[] = []
-  const nextArtists = options.artists.map((artist) => {
-    const before = JSON.stringify({
-      imageUrl: artist.imageUrl,
-      videoUrl: artist.videoUrl,
-      videos: artist.videos,
-    })
-    const updated = applyMediaUrlMap(artist, urlById)
-    const after = JSON.stringify({
-      imageUrl: updated.imageUrl,
-      videoUrl: updated.videoUrl,
-      videos: updated.videos,
-    })
-    if (before !== after) {
-      artistsUpdated.push(updated.slug)
-      return updated
+  for (let i = 0; i < options.content.artists.length; i += 1) {
+    const before = options.content.artists[i]
+    const after = nextContent.artists[i]
+    if (!before || !after) continue
+    if (
+      before.imageUrl !== after.imageUrl ||
+      before.videoUrl !== after.videoUrl ||
+      JSON.stringify(before.videos) !== JSON.stringify(after.videos)
+    ) {
+      artistsUpdated.push(after.slug)
     }
-    return artist
-  })
+  }
 
   return {
-    artists: nextArtists,
+    content: nextContent,
     result: {
       migrated: Object.keys(urlById).length,
       failed,
-      remaining: countLocalMediaRefs(nextArtists),
+      remaining: countUnsyncedMediaUrls(nextContent),
       urlById,
       artistsUpdated,
     },

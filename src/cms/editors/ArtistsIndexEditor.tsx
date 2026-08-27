@@ -1,17 +1,51 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCms } from '@/cms/CmsProvider'
 import {
   artistHasLocalMediaRefs,
   LOCAL_MEDIA_PUBLISH_WARNING,
 } from '@/cms/artistLocalMedia'
-import { isArtistVisible, sortArtistsByName } from '@/cms/artistVisibility'
+import { artistGenres } from '@/cms/artistGenres'
+import { instagramPostsFromArtist } from '@/cms/artistInstagram'
+import {
+  getArtistStatus,
+  isArtistVisible,
+  sortArtistsByName,
+} from '@/cms/artistVisibility'
+import { artistHasVideos } from '@/cms/artistVideos'
 import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import type { Artist } from '@/types/artist'
 
-function ArtistRow({
+function artistHasBio(artist: Artist) {
+  return (artist.bio ?? '').trim().length > 20
+}
+
+function artistHasVisuals(artist: Artist) {
+  if (artistHasVideos(artist)) return true
+  return (artist.films ?? []).some((film) => Boolean(film.videoUrl?.trim()))
+}
+
+function artistHasInstagramFeed(artist: Artist) {
+  return instagramPostsFromArtist(artist.instagramFeed).length > 0
+}
+
+function StatusChip({ label, ready }: { label: string; ready: boolean }) {
+  return (
+    <span
+      className={[
+        'type-label inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.5rem] tracking-[0.1em] uppercase',
+        ready ? 'bg-emerald-500/12 text-ink/65' : 'bg-ink/6 text-ink/35',
+      ].join(' ')}
+    >
+      {label}
+      {ready ? <span aria-hidden> ✓</span> : null}
+    </span>
+  )
+}
+
+function ArtistCard({
   artist,
   onRemove,
   onVisibilityChange,
@@ -22,29 +56,30 @@ function ArtistRow({
 }) {
   const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
-  const visible = isArtistVisible(artist)
+  const published = getArtistStatus(artist) === 'published'
+  const genres = artistGenres(artist)
 
   return (
-    <div
+    <article
       className={[
-        'flex items-stretch gap-2',
-        visible ? '' : 'opacity-70',
+        'flex flex-col overflow-hidden rounded-2xl border border-ink/10 bg-[var(--body-bg)]',
+        published ? '' : 'opacity-80',
       ].join(' ')}
     >
       <Link
         to={`/cms/artists/${artist.slug}`}
-        className="group flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-ink/10 bg-[var(--body-bg)] p-3 transition-colors hover:border-ink/25 hover:bg-ink/[0.03]"
+        className="group flex min-w-0 flex-1 flex-col"
       >
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-ink/5">
+        <div className="relative aspect-[4/5] overflow-hidden bg-ink/5">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt=""
-              className="absolute object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
               style={frame}
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 bg-ink/5 px-1 text-center">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 px-3 text-center">
               <span className="type-label text-[0.5rem] tracking-[0.1em] text-ink/35 uppercase">
                 No img
               </span>
@@ -53,33 +88,140 @@ function ArtistRow({
               </span>
             </div>
           )}
+          <span
+            className={[
+              'type-label absolute top-2 left-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.5rem] tracking-[0.1em] uppercase',
+              published
+                ? 'bg-emerald-500/90 text-[#111]'
+                : 'bg-ink/70 text-[#f5f5f5]',
+            ].join(' ')}
+          >
+            <span
+              className={`h-1 w-1 rounded-full ${
+                published ? 'bg-[#111]' : 'bg-ink/25'
+              }`}
+              aria-hidden
+            />
+            {published ? 'Published' : 'Draft'}
+          </span>
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="flex flex-1 flex-col p-3.5">
           <p className="type-headline truncate text-sm text-ink">{artist.name}</p>
-          <p className="type-label mt-1 truncate text-[0.6rem] tracking-[0.12em] text-ink/40 uppercase">
-            {artist.genre || 'No genre'} · /artists/{artist.slug}
-            {!visible ? ' · draft' : ' · published'}
+          <p className="type-label mt-1 truncate text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
+            {genres.join(' · ') || 'No genre'}
+          </p>
+          <p className="mt-2 flex flex-wrap gap-1">
+            <StatusChip label="Bio" ready={artistHasBio(artist)} />
+            <StatusChip label="Visuals" ready={artistHasVisuals(artist)} />
+            <StatusChip label="Instagram" ready={artistHasInstagramFeed(artist)} />
           </p>
         </div>
-        <span className="type-label shrink-0 text-[0.6rem] tracking-[0.12em] text-brand uppercase transition-opacity group-hover:opacity-80">
-          Edit →
-        </span>
       </Link>
-      <div className="flex shrink-0 flex-col justify-center gap-1.5">
+      <div className="flex items-center justify-between gap-2 border-t border-ink/8 px-3 py-2.5">
         <ArtistVisibilityToggle
           compact
-          visible={visible}
+          visible={published}
           onChange={onVisibilityChange}
         />
         <button
           type="button"
           aria-label={`Verwijder ${artist.name}`}
           onClick={onRemove}
-          className="type-label rounded-full border border-ink/10 px-2.5 py-1.5 text-[0.55rem] tracking-[0.12em] text-ink/35 uppercase transition-colors hover:border-ink/25 hover:text-ink"
+          className="type-label rounded-full px-2 py-1 text-[0.55rem] tracking-[0.12em] text-ink/35 uppercase transition-colors hover:text-ink"
         >
           Del
         </button>
       </div>
+    </article>
+  )
+}
+
+function AddArtistModal({
+  open,
+  name,
+  error,
+  onNameChange,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean
+  name: string
+  error: string | null
+  onNameChange: (value: string) => void
+  onClose: () => void
+  onSubmit: () => void
+}) {
+  const titleId = useId()
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const t = window.setTimeout(() => inputRef.current?.focus(), 40)
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.clearTimeout(t)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open, onClose])
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-4"
+      role="presentation"
+      onClick={onClose}
+    >
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="w-full max-w-md rounded-2xl border border-ink/12 bg-[var(--body-bg)] p-5 text-ink shadow-xl sm:p-6"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault()
+          onSubmit()
+        }}
+      >
+        <h2 id={titleId} className="type-headline m-0 text-lg text-ink">
+          Nieuwe artiest
+        </h2>
+        <p className="type-body mt-2 text-sm text-ink/50">
+          Naam is genoeg — de rest vul je in op de artiestenpagina.
+        </p>
+        <label className="mt-5 block">
+          <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+            Naam
+          </span>
+          <input
+            ref={inputRef}
+            type="text"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="Naam, bv. Alber-K"
+            className="w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-accent/60"
+          />
+        </label>
+        {error ? <p className="mt-2 text-xs text-red-500">{error}</p> : null}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="type-label rounded-full border border-ink/12 px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/50 uppercase hover:text-ink"
+          >
+            Annuleren
+          </button>
+          <button
+            type="submit"
+            className="type-label rounded-full bg-ink px-5 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink-inverse uppercase"
+          >
+            + Toevoegen
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
@@ -92,6 +234,7 @@ export function ArtistsIndexEditor() {
   const [query, setQuery] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -101,11 +244,17 @@ export function ArtistsIndexEditor() {
       (a) =>
         a.name.toLowerCase().includes(q) ||
         a.slug.toLowerCase().includes(q) ||
-        (a.genre ?? '').toLowerCase().includes(q),
+        artistGenres(a).join(' ').toLowerCase().includes(q),
     )
   }, [content.artists, query])
 
   const hiddenCount = content.artists.filter((a) => !isArtistVisible(a)).length
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setError(null)
+    setName('')
+  }
 
   const handleAdd = () => {
     const trimmed = name.trim()
@@ -115,50 +264,30 @@ export function ArtistsIndexEditor() {
     }
     setError(null)
     const artist = addArtist(trimmed)
-    setName('')
+    closeModal()
     navigate(`/cms/artists/${artist.slug}`)
   }
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="type-headline m-0 text-lg text-ink">Artiestenpagina&apos;s</h2>
-        <p className="type-body mt-1 text-xs text-ink/45">
-          Zet artiesten op verborgen om ze van roster én publieke pagina te halen — ze blijven
-          bewerkbaar in het CMS.
-        </p>
-      </div>
-
-      <form
-        className="space-y-2 rounded-2xl border border-accent/25 bg-accent/5 p-3.5"
-        onSubmit={(e) => {
-          e.preventDefault()
-          handleAdd()
-        }}
-      >
-        <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/50 uppercase">
-          Nieuwe artiest
-        </p>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value)
-              if (error) setError(null)
-            }}
-            placeholder="Naam, bv. Alber-K"
-            className="w-full rounded-xl border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none placeholder:text-ink/30 focus:border-accent/60"
-          />
-          <button
-            type="submit"
-            className="type-ui shrink-0 rounded-full bg-ink px-5 py-2.5 text-[0.65rem] text-ink-inverse transition-opacity hover:opacity-85"
-          >
-            + Toevoegen
-          </button>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="type-headline m-0 text-lg text-ink">
+            Artiestenpagina&apos;s
+          </h2>
+          <p className="type-body mt-1 text-xs text-ink/45">
+            Zet artiesten op verborgen om ze van roster én publieke pagina te
+            halen — ze blijven bewerkbaar in het CMS.
+          </p>
         </div>
-        {error ? <p className="text-xs text-red-500">{error}</p> : null}
-      </form>
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="type-label shrink-0 rounded-full bg-ink px-4 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink-inverse uppercase"
+        >
+          + Toevoegen
+        </button>
+      </div>
 
       <input
         type="search"
@@ -173,10 +302,10 @@ export function ArtistsIndexEditor() {
         {hiddenCount > 0 ? ` · ${hiddenCount} draft` : ''}
       </p>
 
-      <ul className="space-y-2">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {filtered.map((artist) => (
           <li key={artist.id}>
-            <ArtistRow
+            <ArtistCard
               artist={artist}
               onVisibilityChange={(visible) => {
                 if (visible && artistHasLocalMediaRefs(artist)) {
@@ -202,8 +331,22 @@ export function ArtistsIndexEditor() {
       </ul>
 
       {filtered.length === 0 ? (
-        <p className="type-body text-sm text-ink/40">Geen artiesten gevonden.</p>
+        <div className="rounded-2xl border border-dashed border-ink/15 px-4 py-10 text-center">
+          <p className="type-body text-sm text-ink/40">Geen artiesten gevonden.</p>
+        </div>
       ) : null}
+
+      <AddArtistModal
+        open={modalOpen}
+        name={name}
+        error={error}
+        onNameChange={(value) => {
+          setName(value)
+          if (error) setError(null)
+        }}
+        onClose={closeModal}
+        onSubmit={handleAdd}
+      />
     </div>
   )
 }

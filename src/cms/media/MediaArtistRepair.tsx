@@ -4,7 +4,7 @@ import { useCms } from '@/cms/CmsProvider'
 import { useMedia } from '@/cms/media/MediaProvider'
 import {
   applyMediaUrlMap,
-  countLocalMediaRefs,
+  countUnsyncedMediaUrls,
   migrateLocalMediaRefs,
   type MigrateLocalMediaResult,
 } from '@/cms/media/migrateLocalMedia'
@@ -45,7 +45,8 @@ function rewriteArtistMedia(
  * Keeps publish block intact; only rewrites when migration succeeds.
  */
 export function MediaArtistRepair() {
-  const { content, updateArtist, saveArtist, setArtists } = useCms()
+  const { content, updateArtist, saveArtist, setArtists, setSite, setTeam } =
+    useCms()
   const { ready, syncingRemote, getPublicUrl, assets } = useMedia()
   const [orphanCount, setOrphanCount] = useState(0)
   const [running, setRunning] = useState(false)
@@ -56,8 +57,8 @@ export function MediaArtistRepair() {
   const doneKeys = useRef(new Set<string>())
 
   useEffect(() => {
-    setOrphanCount(countLocalMediaRefs(content.artists))
-  }, [content.artists, assets, ready])
+    setOrphanCount(countUnsyncedMediaUrls(content))
+  }, [content, assets, ready])
 
   // Passive rewrite when MediaProvider already published a publicUrl for an id
   useEffect(() => {
@@ -102,13 +103,15 @@ export function MediaArtistRepair() {
     setRunning(true)
     setLastResult(null)
     try {
-      const { artists: nextArtists, result } = await migrateLocalMediaRefs({
-        artists: content.artists,
+      const { content: nextContent, result } = await migrateLocalMediaRefs({
+        content,
         localAssets: assets,
       })
 
       flushSync(() => {
-        setArtists(() => nextArtists)
+        setSite(() => nextContent.site)
+        setTeam(() => nextContent.team)
+        setArtists(() => nextContent.artists)
       })
 
       for (const slug of result.artistsUpdated) {
@@ -139,8 +142,8 @@ export function MediaArtistRepair() {
           </p>
           <p className="type-body mt-1.5 text-xs text-ink/65">
             {orphanCount > 0
-              ? `${orphanCount} media:// link${orphanCount === 1 ? '' : 's'} still need a permanent Supabase Storage URL before publish.`
-              : 'No local-only media:// references detected on artists.'}
+              ? `${orphanCount} media:// file${orphanCount === 1 ? '' : 's'} still ${orphanCount === 1 ? 'needs' : 'need'} a permanent Supabase Storage URL. Sync uploads ${orphanCount === 1 ? 'it' : 'them'} from this browser and rewrites the CMS links.`
+              : 'No local-only media:// references in CMS content. New uploads sync to Storage when you are logged in.'}
           </p>
         </div>
         <button

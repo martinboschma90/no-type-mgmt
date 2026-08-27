@@ -1,6 +1,7 @@
 import { artistFromRow, artistFromRosterRow, type ArtistRosterRow } from '@/cms/mappers/artist'
 import { teamMemberFromRow } from '@/cms/mappers/team'
 import { normalizeSiteContent } from '@/cms/mappers/site'
+import { fetchPublicCmsArtistBySlug } from '@/cms/api/cmsStore'
 import { restGet, publicStorageUrl } from '@/lib/publicRest'
 import { isSupabaseConfigured } from '@/lib/supabaseEnv'
 import type { ArtistRow, TeamMemberRow } from '@/lib/database.types'
@@ -34,6 +35,8 @@ export async function fetchPublicArtistBySlug(
   slug: string,
 ): Promise<Artist | null> {
   if (!isSupabaseConfigured || !slug) return null
+  const fromStore = await fetchPublicCmsArtistBySlug(slug)
+  if (fromStore) return fromStore
   const data = await restGet<ArtistRow[]>(
     `artists?slug=eq.${encodeURIComponent(slug)}&select=*&limit=1`,
   )

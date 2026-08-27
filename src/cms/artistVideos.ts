@@ -91,6 +91,8 @@ export function parseVideosColumn(value: unknown): ArtistVideo[] {
           ? row.video_url
           : ''
     if (!videoUrl.trim()) continue
+    const kindRaw = typeof row.kind === 'string' ? row.kind : ''
+    if (kindRaw === 'film') continue
     const posterRaw =
       typeof row.posterUrl === 'string'
         ? row.posterUrl

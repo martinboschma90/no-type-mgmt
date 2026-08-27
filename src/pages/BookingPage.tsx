@@ -19,18 +19,18 @@ export function BookingPage() {
 
   return (
     <AppShell navVariant="wordmark">
-      <div className="booking-page px-4 pb-20 pt-24 sm:px-6 sm:pt-28 lg:px-8">
-        <div className="mx-auto max-w-[1200px]">
+      <div className="booking-page px-4 pb-16 pt-24 sm:px-6 sm:pt-28 lg:px-8">
+        <div className="mx-auto max-w-[820px]">
           <motion.header
-            className="mb-10 max-w-xl sm:mb-14"
+            className="mb-7 max-w-lg sm:mb-8"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
           >
-            <h1 className="type-display text-[clamp(2rem,5vw,3.25rem)] text-ink">
+            <h1 className="type-display text-[clamp(1.75rem,4.2vw,2.6rem)] text-ink">
               {title}
             </h1>
-            <p className="type-body mt-4 text-base text-ink/60">{intro}</p>
+            <p className="type-body mt-2 text-sm text-ink/60 sm:text-[0.95rem]">{intro}</p>
           </motion.header>
 
           <motion.div

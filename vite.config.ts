@@ -42,6 +42,8 @@ export default defineConfig({
     modulePreload: false,
     rollupOptions: {
       output: {
+        // CMS pages split via React.lazy in CmsLayout; do not force them into
+        // one `cms` chunk here.
         manualChunks(id) {
           // Keep this off the public index chunk so CmsApp does not import index
           // (circular lazy load → blank CMS on production).

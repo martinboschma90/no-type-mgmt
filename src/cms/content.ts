@@ -4,6 +4,8 @@ import { createDefaultFaqCategories } from '@/data/faq'
 import { withArtDirection } from '@/cms/imageFocus'
 import { normalizeSiteContent } from '@/cms/mappers/site'
 import { storageGet, storageSet } from '@/lib/safeStorage'
+import { CMS_CONTENT_TS_KEY, CMS_STORAGE_KEY } from '@/cms/storageKeys'
+export { CMS_STORAGE_KEY }
 import {
   DEFAULT_ROSTER_GLOW_CUSTOM,
   DEFAULT_ROSTER_GLOW_PRESET,
@@ -106,8 +108,6 @@ export type CmsContent = {
   artists: Artist[]
 }
 
-export const CMS_STORAGE_KEY = 'notype-cms-content-v1'
-
 export function createDefaultContent(): CmsContent {
   const artists = defaultArtists.map((artist) => {
     const full = getArtistBySlug(artist.slug)
@@ -183,14 +183,15 @@ export function loadStoredContent(): CmsContent | null {
   }
 }
 
-/**
- * Persist CMS content to localStorage (local cache).
- * When Supabase is configured, artists are omitted; site + team still cache
- * locally while Supabase remains the source of truth after hydrate.
- */
+export function loadStoredContentUpdatedAt(): number {
+  const raw = storageGet(CMS_CONTENT_TS_KEY)
+  const n = raw ? Number(raw) : 0
+  return Number.isFinite(n) ? n : 0
+}
+
 export function persistContent(
   content: CmsContent,
-  options?: { persistArtists?: boolean },
+  options?: { persistArtists?: boolean; updatedAt?: number },
 ) {
   const persistArtists = options?.persistArtists !== false
   const payload: CmsContent = persistArtists
@@ -198,8 +199,8 @@ export function persistContent(
     : {
         site: content.site,
         team: content.team,
-        // Empty array keeps schema valid; seed/Supabase hydrate artists on load
         artists: [],
       }
   storageSet(CMS_STORAGE_KEY, JSON.stringify(payload))
+  storageSet(CMS_CONTENT_TS_KEY, String(options?.updatedAt ?? Date.now()))
 }

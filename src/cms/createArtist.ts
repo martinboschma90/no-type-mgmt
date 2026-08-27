@@ -50,6 +50,7 @@ export function createBlankArtist(
     name: trimmed,
     slug,
     genre: '',
+    genres: [],
     imageUrl: '',
     imageAlt: `${trimmed} portrait`,
     imageFocusX: DEFAULT_ART_DIRECTION.x,

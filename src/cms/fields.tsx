@@ -9,11 +9,15 @@ type FieldProps = {
 export function Field({ label, hint, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="type-label mb-1.5 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+      <span className="type-label mb-2 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
         {label}
       </span>
       {children}
-      {hint ? <span className="mt-1.5 block text-xs text-ink/35">{hint}</span> : null}
+      {hint ? (
+        <span className="mt-1.5 block text-[0.7rem] leading-snug text-ink/32">
+          {hint}
+        </span>
+      ) : null}
     </label>
   )
 }
@@ -117,7 +121,9 @@ export function EditorSection({
             ) : null}
           </div>
           {description ? (
-            <p className="type-body mt-1 text-xs text-ink/40">{description}</p>
+            <p className="type-body mt-1.5 max-w-prose text-[0.7rem] leading-snug text-ink/32">
+              {description}
+            </p>
           ) : null}
         </div>
         <span

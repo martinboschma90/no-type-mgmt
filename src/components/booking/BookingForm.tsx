@@ -183,22 +183,22 @@ export function BookingForm() {
   }
 
   return (
-    <div className="space-y-10 sm:space-y-12">
+    <div className="space-y-6 sm:space-y-7">
       {/* Artists */}
-      <section className="border-b border-ink/5 pb-10 sm:pb-12">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
-          <h2 className="type-headline text-[clamp(1.35rem,2.5vw,1.75rem)] text-ink">
+      <section>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="type-headline text-[clamp(1.15rem,2vw,1.4rem)] text-ink">
             Artist(s)
           </h2>
-          <p className="type-label text-[0.62rem] tracking-[0.14em] text-ink/40">
-            Select one or more artists
+          <p className="type-label text-[0.55rem] tracking-[0.14em] text-ink/40">
+            One or more
           </p>
         </div>
 
         {artists.length === 0 ? (
           <p className="type-body text-sm text-ink/40">Loading roster…</p>
         ) : (
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-1.5">
             {artists.map((artist) => (
               <ArtistSelectChip
                 key={artist.id}
@@ -212,214 +212,212 @@ export function BookingForm() {
         )}
       </section>
 
-      {/* Details */}
-      <section className="border-b border-ink/5 pb-10 sm:pb-12">
-        <h2 className="type-headline mb-6 text-[clamp(1.35rem,2.5vw,1.75rem)] text-ink">
+      {/* Details: company + event in one 2-col grid */}
+      <section className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+        <h2 className="type-headline text-[clamp(1.15rem,2vw,1.4rem)] text-ink sm:col-span-2">
           Details
         </h2>
 
-        <p className="type-label mb-3 text-[0.62rem] tracking-[0.14em] text-ink/40">
+        <p className="type-label text-[0.55rem] tracking-[0.14em] text-ink/40 sm:col-span-2">
           Company
         </p>
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <BookingField label="Company / Promoter Name">
-            <BookingInput
-              value={draft.company.companyName}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  company: { ...d.company, companyName: e.target.value },
-                }))
-              }
-              autoComplete="organization"
-            />
-          </BookingField>
-          <BookingField label="Contact Person">
-            <BookingInput
-              value={draft.company.contactPerson}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  company: { ...d.company, contactPerson: e.target.value },
-                }))
-              }
-              autoComplete="name"
-            />
-          </BookingField>
-          <BookingField label="Email Address">
-            <BookingInput
-              type="email"
-              value={draft.company.email}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  company: { ...d.company, email: e.target.value },
-                }))
-              }
-              autoComplete="email"
-            />
-          </BookingField>
-          <BookingField label="Phone Number">
-            <BookingInput
-              type="tel"
-              value={draft.company.phone}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  company: { ...d.company, phone: e.target.value },
-                }))
-              }
-              autoComplete="tel"
-            />
-          </BookingField>
-          <BookingField label="Website" optional>
-            <BookingInput
-              type="url"
-              value={draft.company.website}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  company: { ...d.company, website: e.target.value },
-                }))
-              }
-              placeholder="https://"
-            />
-          </BookingField>
-          <BookingField label="Instagram" optional>
-            <BookingInput
-              value={draft.company.instagram}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  company: { ...d.company, instagram: e.target.value },
-                }))
-              }
-              placeholder="@handle"
-            />
-          </BookingField>
-        </div>
+        <BookingField label="Company / Promoter">
+          <BookingInput
+            value={draft.company.companyName}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                company: { ...d.company, companyName: e.target.value },
+              }))
+            }
+            autoComplete="organization"
+          />
+        </BookingField>
+        <BookingField label="Contact Person">
+          <BookingInput
+            value={draft.company.contactPerson}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                company: { ...d.company, contactPerson: e.target.value },
+              }))
+            }
+            autoComplete="name"
+          />
+        </BookingField>
+        <BookingField label="Email">
+          <BookingInput
+            type="email"
+            value={draft.company.email}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                company: { ...d.company, email: e.target.value },
+              }))
+            }
+            autoComplete="email"
+          />
+        </BookingField>
+        <BookingField label="Phone">
+          <BookingInput
+            type="tel"
+            value={draft.company.phone}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                company: { ...d.company, phone: e.target.value },
+              }))
+            }
+            autoComplete="tel"
+          />
+        </BookingField>
+        <BookingField label="Website" optional>
+          <BookingInput
+            type="url"
+            value={draft.company.website}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                company: { ...d.company, website: e.target.value },
+              }))
+            }
+            placeholder="https://"
+          />
+        </BookingField>
+        <BookingField label="Instagram" optional>
+          <BookingInput
+            value={draft.company.instagram}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                company: { ...d.company, instagram: e.target.value },
+              }))
+            }
+            placeholder="@handle"
+          />
+        </BookingField>
 
-        <p className="type-label mb-3 text-[0.62rem] tracking-[0.14em] text-ink/40">
+        <p className="type-label mt-2 text-[0.55rem] tracking-[0.14em] text-ink/40 sm:col-span-2">
           Event
         </p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <BookingField label="Event Name">
-            <BookingInput
-              value={draft.event.eventName}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: { ...d.event, eventName: e.target.value },
-                }))
-              }
-            />
-          </BookingField>
-          <BookingField label="Event Type">
-            <BookingSelect
-              value={draft.event.eventType}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: {
-                    ...d.event,
-                    eventType: e.target.value as typeof d.event.eventType,
-                  },
-                }))
-              }
-            >
-              <option value="">Select type</option>
-              {EVENT_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </BookingSelect>
-          </BookingField>
-          <BookingField label="Indoor / Outdoor">
-            <BookingSelect
-              value={draft.event.venueType}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: {
-                    ...d.event,
-                    venueType: e.target.value as typeof d.event.venueType,
-                  },
-                }))
-              }
-            >
-              <option value="">Select</option>
-              {VENUE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </BookingSelect>
-          </BookingField>
-          <BookingField label="Country">
-            <BookingSelect
-              value={draft.event.country}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: { ...d.event, country: e.target.value },
-                }))
-              }
-            >
-              <option value="">Select country</option>
-              {COUNTRIES.map((country) => (
-                <option key={country} value={country}>
-                  {country}
-                </option>
-              ))}
-            </BookingSelect>
-          </BookingField>
-          <BookingField label="City">
-            <BookingInput
-              value={draft.event.city}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: { ...d.event, city: e.target.value },
-                }))
-              }
-            />
-          </BookingField>
-          <BookingField label="Venue / Location">
-            <BookingInput
-              value={draft.event.venue}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: { ...d.event, venue: e.target.value },
-                }))
-              }
-            />
-          </BookingField>
-          <BookingField label="Event Date">
-            <BookingInput
-              type="date"
-              value={draft.event.eventDate}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: { ...d.event, eventDate: e.target.value },
-                }))
-              }
-            />
-          </BookingField>
-          <BookingField label="PAX / Capacity">
-            <BookingInput
-              inputMode="numeric"
-              value={draft.event.pax}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  event: { ...d.event, pax: e.target.value },
-                }))
-              }
-            />
-          </BookingField>
+        <BookingField label="Event Name">
+          <BookingInput
+            value={draft.event.eventName}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: { ...d.event, eventName: e.target.value },
+              }))
+            }
+          />
+        </BookingField>
+        <BookingField label="Event Type">
+          <BookingSelect
+            value={draft.event.eventType}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: {
+                  ...d.event,
+                  eventType: e.target.value as typeof d.event.eventType,
+                },
+              }))
+            }
+          >
+            <option value="">Select type</option>
+            {EVENT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </BookingSelect>
+        </BookingField>
+        <BookingField label="Indoor / Outdoor">
+          <BookingSelect
+            value={draft.event.venueType}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: {
+                  ...d.event,
+                  venueType: e.target.value as typeof d.event.venueType,
+                },
+              }))
+            }
+          >
+            <option value="">Select</option>
+            {VENUE_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </BookingSelect>
+        </BookingField>
+        <BookingField label="Date">
+          <BookingInput
+            type="date"
+            value={draft.event.eventDate}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: { ...d.event, eventDate: e.target.value },
+              }))
+            }
+          />
+        </BookingField>
+        <BookingField label="Country">
+          <BookingSelect
+            value={draft.event.country}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: { ...d.event, country: e.target.value },
+              }))
+            }
+          >
+            <option value="">Select country</option>
+            {COUNTRIES.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </BookingSelect>
+        </BookingField>
+        <BookingField label="City">
+          <BookingInput
+            value={draft.event.city}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: { ...d.event, city: e.target.value },
+              }))
+            }
+          />
+        </BookingField>
+        <BookingField label="Venue">
+          <BookingInput
+            value={draft.event.venue}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: { ...d.event, venue: e.target.value },
+              }))
+            }
+          />
+        </BookingField>
+        <BookingField label="PAX / Capacity">
+          <BookingInput
+            inputMode="numeric"
+            value={draft.event.pax}
+            onChange={(e) =>
+              setDraft((d) => ({
+                ...d,
+                event: { ...d.event, pax: e.target.value },
+              }))
+            }
+          />
+        </BookingField>
+        <div className="sm:col-span-2">
           <BookingField label="Additional Information" optional>
             <BookingInput
               value={draft.event.additionalInfo}
@@ -436,41 +434,41 @@ export function BookingForm() {
 
       {/* Offer */}
       <section>
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
-          <h2 className="type-headline text-[clamp(1.35rem,2.5vw,1.75rem)] text-ink">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="type-headline text-[clamp(1.15rem,2vw,1.4rem)] text-ink">
             Offer
           </h2>
-          <p className="type-label text-[0.62rem] tracking-[0.14em] text-ink/40">
-            Your offer for the selected artist(s)
+          <p className="type-label text-[0.55rem] tracking-[0.14em] text-ink/40">
+            Per selected artist
           </p>
         </div>
 
         <div className="border-t border-ink/10">
-          <div className="grid grid-cols-1 gap-3 border-b border-ink/8 py-3 sm:grid-cols-[minmax(8rem,1.1fr)_minmax(7rem,0.8fr)_minmax(10rem,1.5fr)] sm:items-center">
-            <span className="type-label hidden text-[0.58rem] tracking-[0.14em] text-ink/40 sm:block">
+          <div className="grid grid-cols-1 gap-2 border-b border-ink/8 py-2 sm:grid-cols-[minmax(7rem,1fr)_minmax(6rem,0.7fr)_minmax(8rem,1.3fr)] sm:items-center">
+            <span className="type-label hidden text-[0.55rem] tracking-[0.14em] text-ink/40 sm:block">
               Artist
             </span>
-            <span className="type-label hidden text-[0.58rem] tracking-[0.14em] text-ink/40 sm:block">
+            <span className="type-label hidden text-[0.55rem] tracking-[0.14em] text-ink/40 sm:block">
               Offer (€)
             </span>
-            <span className="type-label hidden text-[0.58rem] tracking-[0.14em] text-ink/40 sm:block">
-              Additional Notes
+            <span className="type-label hidden text-[0.55rem] tracking-[0.14em] text-ink/40 sm:block">
+              Notes
             </span>
           </div>
 
           {draft.offers.length === 0 ? (
-            <p className="type-body py-5 text-sm text-ink/35">
+            <p className="type-body py-3 text-sm text-ink/35">
               No artists selected yet.
             </p>
           ) : (
             draft.offers.map((offer) => (
               <div
                 key={offer.artistId}
-                className="grid grid-cols-1 gap-3 border-b border-ink/8 py-4 last:border-b-0 sm:grid-cols-[minmax(8rem,1.1fr)_minmax(7rem,0.8fr)_minmax(10rem,1.5fr)] sm:items-center"
+                className="grid grid-cols-1 gap-2 border-b border-ink/8 py-2.5 last:border-b-0 sm:grid-cols-[minmax(7rem,1fr)_minmax(6rem,0.7fr)_minmax(8rem,1.3fr)] sm:items-center"
               >
-                <p className="type-ui text-xs text-ink">{offer.artistName}</p>
+                <p className="type-ui text-[0.65rem] text-ink">{offer.artistName}</p>
                 <label className="block min-w-0 sm:contents">
-                  <span className="type-label mb-1.5 block text-[0.62rem] tracking-[0.14em] text-ink/45 sm:hidden">
+                  <span className="type-label mb-1 block text-[0.58rem] tracking-[0.14em] text-ink/45 sm:hidden">
                     Offer (€)
                   </span>
                   <BookingInput
@@ -483,15 +481,15 @@ export function BookingForm() {
                   />
                 </label>
                 <label className="block min-w-0 sm:contents">
-                  <span className="type-label mb-1.5 block text-[0.62rem] tracking-[0.14em] text-ink/45 sm:hidden">
-                    Additional Notes
+                  <span className="type-label mb-1 block text-[0.58rem] tracking-[0.14em] text-ink/45 sm:hidden">
+                    Notes
                   </span>
                   <BookingInput
                     value={offer.notes}
                     onChange={(e) =>
                       updateOffer(offer.artistId, { notes: e.target.value })
                     }
-                    placeholder="Optional notes"
+                    placeholder="Optional"
                   />
                 </label>
               </div>
@@ -506,7 +504,7 @@ export function BookingForm() {
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
         <BookingButton variant="ghost" onClick={clearForm} disabled={submitting}>
           Clear form
         </BookingButton>

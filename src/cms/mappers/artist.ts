@@ -17,6 +17,8 @@ import {
   parseVideosColumn,
   syncLegacyVideoUrl,
 } from '@/cms/artistVideos'
+import { parseFilmsColumn } from '@/cms/artistFilms'
+import { parseGenreList, serializeGenres } from '@/cms/artistGenres'
 import { getArtistStatus } from '@/cms/artistVisibility'
 import { withArtDirection } from '@/cms/imageFocus'
 
@@ -49,7 +51,8 @@ export function artistFromRow(row: ArtistRow): Artist {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    genre: row.genre ?? undefined,
+    genre: parseGenreList(row.genre)[0],
+    genres: parseGenreList(row.genre),
     bio: row.bio ?? undefined,
     imageUrl: row.image_url ?? '',
     imageAlt: row.image_alt ?? `${row.name} portrait`,
@@ -60,6 +63,7 @@ export function artistFromRow(row: ArtistRow): Artist {
     artDirectionVersion: row.art_direction_version ?? undefined,
     videoUrl: row.video_url ?? undefined,
     videos: parseVideosColumn(row.videos),
+    films: parseFilmsColumn(row.videos),
     socials: asArray<SocialLink>(row.socials),
     tracks,
     music,
@@ -100,7 +104,8 @@ export function artistFromRosterRow(row: ArtistRosterRow): Artist {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    genre: row.genre ?? undefined,
+    genre: parseGenreList(row.genre)[0],
+    genres: parseGenreList(row.genre),
     imageUrl: row.image_url ?? '',
     imageAlt: row.image_alt ?? `${row.name} portrait`,
     imageFocus: row.image_focus ?? undefined,
@@ -125,7 +130,7 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
   return {
     slug: artist.slug,
     name: artist.name,
-    genre: artist.genre ?? null,
+    genre: serializeGenres(artist),
     bio: artist.bio ?? null,
     image_url: artist.imageUrl || null,
     image_alt: artist.imageAlt || null,
@@ -141,15 +146,29 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
         ? artist.artDirectionVersion
         : null,
     video_url: syncLegacyVideoUrl(artist.videos) ?? artist.videoUrl ?? null,
-    videos: (artist.videos ?? [])
-      .filter((v) => Boolean(v.videoUrl?.trim()))
-      .slice(0, 5)
-      .map((v) => ({
-        id: v.id,
-        videoUrl: v.videoUrl.trim(),
-        posterUrl: v.posterUrl?.trim() || '',
-        title: v.title?.trim() || '',
-      })),
+    videos: [
+      ...(artist.videos ?? [])
+        .filter((v) => Boolean(v.videoUrl?.trim()) && v.kind !== 'film')
+        .slice(0, 5)
+        .map((v) => ({
+          id: v.id,
+          kind: 'reel' as const,
+          videoUrl: v.videoUrl.trim(),
+          posterUrl: v.posterUrl?.trim() || '',
+          title: v.title?.trim() || '',
+        })),
+      ...(artist.films ?? [])
+        .filter((f) => Boolean(f.videoUrl?.trim()))
+        .slice(0, 3)
+        .map((f) => ({
+          id: f.id,
+          kind: 'film' as const,
+          videoUrl: f.videoUrl.trim(),
+          posterUrl: f.posterUrl?.trim() || '',
+          title: f.title?.trim() || '',
+          label: f.label?.trim() || '',
+        })),
+    ],
     socials: artist.socials ?? [],
     tracks: serializeTracksColumn(
       artist.tracks,

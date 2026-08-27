@@ -7,6 +7,8 @@ import {
 import { isArtistVisible } from '@/cms/artistVisibility'
 import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { EditorSection, TextInput } from '@/cms/fields'
+import { GenreTagsField } from '@/cms/editors/GenreTagsField'
+import { artistGenres, withGenres } from '@/cms/artistGenres'
 import { ImageFocusField } from '@/cms/editors/ImageFocusField'
 import { ART_DIRECTION_VERSION, resolveArtDirection } from '@/cms/imageFocus'
 import { MediaUrlField } from '@/cms/media/MediaUrlField'
@@ -246,7 +248,7 @@ export function RosterEditor() {
           title={artist.name}
           description={
             isArtistVisible(artist)
-              ? artist.genre || 'Artist on homepage roster'
+              ? artistGenres(artist).join(' · ') || 'Artist on homepage roster'
               : 'Draft — verborgen op publieke site'
           }
           defaultOpen={index === 0}
@@ -300,12 +302,13 @@ export function RosterEditor() {
                       )
                     }
                   />
-                  <TextInput
-                    label="Genre"
-                    value={artist.genre ?? ''}
-                    onChange={(genre) =>
+                  <GenreTagsField
+                    value={artist.genres ?? (artist.genre ? [artist.genre] : [])}
+                    onChange={(genres) =>
                       setArtists((list) =>
-                        list.map((a, i) => (i === index ? { ...a, genre } : a)),
+                        list.map((a, i) =>
+                          i === index ? { ...a, ...withGenres(genres) } : a,
+                        ),
                       )
                     }
                   />

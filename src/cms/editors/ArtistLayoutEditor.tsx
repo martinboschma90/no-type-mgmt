@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ARTIST_SECTION_META,
+  DEFAULT_ARTIST_SECTIONS,
   normalizeArtistSections,
   reorderSections,
   type ArtistSectionConfig,
@@ -14,7 +15,7 @@ type ArtistLayoutEditorProps = {
   onChange: (sections: ArtistSectionConfig[]) => void
 }
 
-/** Drag-and-drop page layout for a single artist page. */
+/** Page order + visibility for a single artist page. */
 export function ArtistLayoutEditor({
   artist,
   onChange,
@@ -25,10 +26,9 @@ export function ArtistLayoutEditor({
 
   return (
     <EditorSection
-      title="Page layout"
-      description="Sleep blokken voor de volgorde. Visuals beheer je in de sectie hieronder."
+      title="Pagina-opbouw"
+      description="Sleep blokken voor de volgorde. Zet een blok op verborgen — data blijft bewaard."
       defaultOpen
-      badge="Layout"
     >
       <ul className="space-y-2">
         {sections.map((section, index) => {
@@ -39,16 +39,6 @@ export function ArtistLayoutEditor({
           return (
             <li
               key={section.id}
-              draggable
-              onDragStart={(e) => {
-                setDragIndex(index)
-                e.dataTransfer.effectAllowed = 'move'
-                e.dataTransfer.setData('text/plain', String(index))
-              }}
-              onDragEnd={() => {
-                setDragIndex(null)
-                setOverIndex(null)
-              }}
               onDragOver={(e) => {
                 e.preventDefault()
                 e.dataTransfer.dropEffect = 'move'
@@ -66,7 +56,7 @@ export function ArtistLayoutEditor({
                 setOverIndex(null)
               }}
               className={[
-                'flex cursor-grab items-center gap-3 rounded-2xl border bg-[var(--body-bg)] px-3 py-3 transition-colors active:cursor-grabbing',
+                'flex items-center gap-2 rounded-2xl border bg-[var(--body-bg)] px-3 py-2.5 transition-colors',
                 isDragging
                   ? 'border-accent/50 opacity-45'
                   : isOver
@@ -75,36 +65,51 @@ export function ArtistLayoutEditor({
               ].join(' ')}
             >
               <span
-                className="flex h-8 w-6 shrink-0 flex-col items-center justify-center gap-0.5 text-ink/30"
-                aria-hidden
+                draggable
+                role="button"
+                tabIndex={0}
+                aria-label={`Sleep ${meta.label} om te herschikken`}
+                onDragStart={(e) => {
+                  setDragIndex(index)
+                  e.dataTransfer.effectAllowed = 'move'
+                  e.dataTransfer.setData('text/plain', String(index))
+                }}
+                onDragEnd={() => {
+                  setDragIndex(null)
+                  setOverIndex(null)
+                }}
+                className="flex h-8 w-6 shrink-0 cursor-grab items-center justify-center text-lg leading-none text-ink/35 select-none active:cursor-grabbing"
               >
-                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
-                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
-                <span className="block h-0.5 w-3.5 rounded-full bg-current" />
+                ⠿
               </span>
 
               <div className="min-w-0 flex-1">
-                <p className="type-headline text-sm text-ink">{meta.label}</p>
-                <p className="type-body mt-0.5 text-xs text-ink/40">
-                  {meta.description}
+                <p className="flex min-w-0 items-baseline gap-2">
+                  <span className="type-headline shrink-0 text-sm text-ink">
+                    {meta.label}
+                  </span>
+                  <span className="type-body hidden min-w-0 truncate text-xs text-ink/40 sm:inline">
+                    {meta.description}
+                  </span>
                 </p>
               </div>
 
-              <ArtistVisibilityToggle
-                compact
-                visible={section.visible}
-                onChange={(visible) => {
-                  onChange(
-                    sections.map((s, i) =>
-                      i === index ? { ...s, visible } : s,
-                    ),
-                  )
-                }}
-              />
-
-              <span className="type-label shrink-0 text-[0.55rem] tracking-[0.12em] text-ink/30 uppercase">
-                {index + 1}
-              </span>
+              <div
+                className="shrink-0"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <ArtistVisibilityToggle
+                  compact
+                  visible={section.visible}
+                  onChange={(visible) => {
+                    onChange(
+                      sections.map((s, i) =>
+                        i === index ? { ...s, visible } : s,
+                      ),
+                    )
+                  }}
+                />
+              </div>
             </li>
           )
         })}
@@ -113,14 +118,7 @@ export function ArtistLayoutEditor({
       <button
         type="button"
         className="type-label text-[0.6rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink"
-        onClick={() =>
-          onChange([
-            { id: 'hero', visible: true },
-            { id: 'video', visible: true },
-            { id: 'instagram', visible: true },
-            { id: 'tracks', visible: true },
-          ])
-        }
+        onClick={() => onChange(DEFAULT_ARTIST_SECTIONS.map((s) => ({ ...s })))}
       >
         Reset volgorde
       </button>

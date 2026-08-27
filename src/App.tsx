@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PublicContentProvider } from '@/cms/PublicContentProvider'
+import { RouteFallback } from '@/components/ui/RouteFallback'
 import { HomePage } from '@/pages/HomePage'
 
 const AboutPage = lazy(() =>
@@ -20,16 +21,6 @@ const ArtistPage = lazy(() =>
   import('@/pages/ArtistPage').then((m) => ({ default: m.ArtistPage })),
 )
 const CmsApp = lazy(() => import('@/CmsApp'))
-
-function RouteFallback() {
-  return (
-    <div
-      className="min-h-[100vh] bg-[var(--body-bg,#090909)]"
-      aria-busy="true"
-      aria-label="Loading"
-    />
-  )
-}
 
 function PublicApp() {
   return (

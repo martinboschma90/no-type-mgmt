@@ -47,6 +47,7 @@ export function PublicContentProvider({ children }: { children: ReactNode }) {
     () => ({
       content,
       savedAt: null,
+      contentSyncStatus: 'synced' as const,
       artistSyncError: null,
       siteSyncError: null,
       dirtyArtistIds: new Set<string>(),

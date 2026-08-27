@@ -9,10 +9,11 @@ import {
   type SetStateAction,
 } from 'react'
 import type { Artist } from '@/types/artist'
-import { CmsContext, type CmsContextValue } from '@/cms/CmsContext'
+import { CmsContext, type CmsContextValue, type ContentSyncStatus } from '@/cms/CmsContext'
 import {
   createDefaultContent,
   loadStoredContent,
+  loadStoredContentUpdatedAt,
   persistContent,
   type CmsContent,
 } from '@/cms/content'
@@ -30,6 +31,13 @@ import {
   fetchSiteSettingsFromSupabase,
   upsertSiteSettingsInSupabase,
 } from '@/cms/api/site'
+import {
+  deleteCmsArtist,
+  fetchCmsArtists,
+  fetchCmsContentBlob,
+  pushCmsSnapshot,
+  upsertCmsArtist,
+} from '@/cms/api/cmsStore'
 import {
   fetchTeamMembersFromSupabase,
   replaceTeamMembersInSupabase,
@@ -100,15 +108,21 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     () => new Set(),
   )
   const [artistSaving, setArtistSaving] = useState(false)
+  const [contentSyncStatus, setContentSyncStatus] =
+    useState<ContentSyncStatus>(
+      isSupabaseConfigured ? 'pending' : 'synced',
+    )
 
   const contentRef = useRef(content)
   contentRef.current = content
   const artistsHydrated = useRef(false)
   const siteHydrated = useRef(false)
+  const cmsStoreHydrated = useRef(false)
   const skipSiteRemoteSync = useRef(false)
+  const skipCmsPush = useRef(false)
 
   const persistLocal = useCallback((next: CmsContent) => {
-    persistContent(next, { persistArtists: !isSupabaseConfigured })
+    persistContent(next)
     setSavedAt(Date.now())
   }, [])
 
@@ -174,6 +188,11 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         reportArtistError(error)
         return { error, artist: null }
       }
+      const storeError = await upsertCmsArtist(server ?? artist)
+      if (storeError.error) {
+        reportArtistError(storeError.error)
+        setContentSyncStatus('pending')
+      }
       invalidateArtistsCache()
       clearArtistError()
       setSavedAt(Date.now())
@@ -184,10 +203,98 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     [adoptServerArtist, clearArtistError, persistLocal, reportArtistError],
   )
 
-  // Site + team (+ artists when Supabase off) → localStorage
+  // Site + team (+ artists) → localStorage cache
   useEffect(() => {
     persistLocal(content)
   }, [content, persistLocal])
+
+  // JSON store: Supabase first, localStorage cache; newer remote wins
+  useEffect(() => {
+    if (!isSupabaseConfigured || cmsStoreHydrated.current) return
+    if (!canWriteRemote) return
+    let cancelled = false
+
+    void (async () => {
+      const localTs = loadStoredContentUpdatedAt()
+      const remoteBlob = await fetchCmsContentBlob()
+      const remoteArtists = await fetchCmsArtists()
+      if (cancelled) return
+
+      const remoteTs = remoteBlob?.updatedAt ?? 0
+      const hasRemote = Boolean(remoteBlob) || remoteArtists.length > 0
+
+      if (hasRemote && remoteTs >= localTs) {
+        const next: CmsContent = {
+          site: remoteBlob?.content.site ?? contentRef.current.site,
+          team: remoteBlob?.content.team?.length
+            ? remoteBlob.content.team
+            : contentRef.current.team,
+          artists: remoteArtists.length
+            ? remoteArtists.map((artist) => withArtDirection(artist))
+            : (remoteBlob?.content.artists ?? contentRef.current.artists).map(
+                (artist) => withArtDirection(artist),
+              ),
+        }
+        skipCmsPush.current = true
+        skipSiteRemoteSync.current = true
+        artistsHydrated.current = true
+        siteHydrated.current = true
+        cmsStoreHydrated.current = true
+        setContent(next)
+        persistContent(next, { updatedAt: remoteTs || Date.now() })
+        setSavedAt(remoteTs || Date.now())
+        setContentSyncStatus('synced')
+        return
+      }
+
+      cmsStoreHydrated.current = true
+      const { error, updatedAt } = await pushCmsSnapshot(contentRef.current)
+      if (cancelled) return
+      if (error) {
+        reportSiteError(error)
+        setContentSyncStatus('pending')
+        return
+      }
+      skipCmsPush.current = true
+      persistContent(contentRef.current, { updatedAt: updatedAt ?? Date.now() })
+      setContentSyncStatus('synced')
+      clearSiteError()
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [canWriteRemote, clearSiteError, reportSiteError])
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !cmsStoreHydrated.current || !canWriteRemote) {
+      return
+    }
+    if (skipCmsPush.current) {
+      skipCmsPush.current = false
+      return
+    }
+    setContentSyncStatus('pending')
+    const timer = window.setTimeout(() => {
+      void pushCmsSnapshot(contentRef.current).then(({ error, updatedAt }) => {
+        if (error) {
+          reportSiteError(error)
+          setContentSyncStatus('pending')
+          return
+        }
+        persistContent(contentRef.current, { updatedAt: updatedAt ?? Date.now() })
+        setContentSyncStatus('synced')
+        clearSiteError()
+        setSavedAt(Date.now())
+      })
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [
+    canWriteRemote,
+    content,
+    clearSiteError,
+    reportSiteError,
+  ])
 
   // Hydrate full artist catalog only in CMS — public pages use slim roster / by-slug.
   useEffect(() => {
@@ -413,6 +520,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     () => ({
       content,
       savedAt,
+      contentSyncStatus,
       artistSyncError,
       siteSyncError,
       dirtyArtistIds,
@@ -466,6 +574,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
               reportArtistError(error)
               return
             }
+            void upsertCmsArtist(artist ?? created)
             invalidateArtistsCache()
             clearArtistError()
             setSavedAt(Date.now())
@@ -494,6 +603,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
               reportArtistError(error)
               return
             }
+            void deleteCmsArtist(existing.slug)
             invalidateArtistsCache()
             clearArtistError()
             setSavedAt(Date.now())
@@ -532,6 +642,15 @@ export function CmsProvider({ children }: { children: ReactNode }) {
               setContent((prev) => ({ ...prev, team }))
             },
           )
+          void pushCmsSnapshot(next).then(({ error, updatedAt }) => {
+            if (error) {
+              reportSiteError(error)
+              setContentSyncStatus('pending')
+              return
+            }
+            persistContent(next, { updatedAt: updatedAt ?? Date.now() })
+            setContentSyncStatus('synced')
+          })
         }
       },
       getArtistBySlug: (slug) => content.artists.find((a) => a.slug === slug),
@@ -540,6 +659,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
     [
       content,
       savedAt,
+      contentSyncStatus,
       artistSyncError,
       siteSyncError,
       dirtyArtistIds,
