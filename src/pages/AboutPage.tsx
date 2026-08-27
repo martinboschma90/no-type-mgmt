@@ -3,7 +3,6 @@ import { SectionRow } from '@/components/ui/SectionRow'
 import { TeamSection } from '@/components/about/TeamSection'
 import { Logo } from '@/components/ui/Logo'
 import { useCms } from '@/cms/CmsContext'
-import { motion } from 'framer-motion'
 
 export function AboutPage() {
   const { content } = useCms()
@@ -13,12 +12,7 @@ export function AboutPage() {
     <AppShell navVariant="wordmark">
       <div className="px-4 pb-6 pt-24 sm:px-6 sm:pt-28 lg:px-8">
         <div className="mx-auto max-w-[1200px]">
-          <motion.div
-            className="mb-10 sm:mb-14"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-          >
+          <div className="mb-10 sm:mb-14">
             <h1 className="m-0">
               <span className="sr-only">{site.aboutTitle || 'About No Type'}</span>
               <Logo
@@ -26,7 +20,7 @@ export function AboutPage() {
                 className="h-[clamp(2.5rem,7vw,4.5rem)] w-auto"
               />
             </h1>
-          </motion.div>
+          </div>
 
           <SectionRow label="About us">
             <div className="type-body space-y-4 text-[0.95rem] text-ink/85 sm:text-base">

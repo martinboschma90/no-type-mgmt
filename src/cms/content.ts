@@ -108,6 +108,48 @@ export type CmsContent = {
   artists: Artist[]
 }
 
+/** Site/team defaults without the seed roster — safe on the public bundle. */
+export function createDefaultSiteContent(): SiteContent {
+  return {
+    name: defaultSite.name,
+    fullName: defaultSite.fullName,
+    tagline: defaultSite.tagline,
+    instagram: defaultSite.instagram,
+    year: defaultSite.year,
+    contactIntro:
+      'Bookings, production and everything in between — reach the right inbox.',
+    contact: defaultSite.contact.map((item) => ({ ...item })),
+    legal: {
+      company: defaultSite.legal.company,
+      vat: defaultSite.legal.vat,
+      addressLines: [...defaultSite.legal.addressLines],
+    },
+    aboutTitle: 'About No Type',
+    about: [...defaultSite.about],
+    aboutImages: [],
+    photoCredits: defaultSite.photoCredits,
+    legalLinks: defaultSite.legalLinks.map((link) => ({ ...link })),
+    logoUrl: '',
+    copyrightText: '',
+    teamVisible: true,
+    rosterDesktopColumns: 4,
+    rosterGlowPreset: DEFAULT_ROSTER_GLOW_PRESET,
+    rosterGlowSecondary: DEFAULT_ROSTER_GLOW_SECONDARY,
+    rosterGlowCustom: DEFAULT_ROSTER_GLOW_CUSTOM,
+    rosterGlowCustomSecondary: '#a8487a',
+    bookingTitle: 'Booking Request',
+    bookingIntro: "Send us your booking request and we'll get back to you.",
+    bookingVisible: true,
+    phoneNumber: DEFAULT_PHONE_NUMBER,
+    whatsappNumber: DEFAULT_WHATSAPP_NUMBER,
+    faqTitle: 'Promoter FAQ',
+    faqIntro:
+      'Answers for promoters, festivals, clubs, brands and event organisers.',
+    faqVisible: true,
+    faqCategories: createDefaultFaqCategories(),
+  }
+}
+
 export function createDefaultContent(): CmsContent {
   const artists = defaultArtists.map((artist) => {
     const full = getArtistBySlug(artist.slug)
@@ -121,45 +163,7 @@ export function createDefaultContent(): CmsContent {
   })
 
   return {
-    site: {
-      name: defaultSite.name,
-      fullName: defaultSite.fullName,
-      tagline: defaultSite.tagline,
-      instagram: defaultSite.instagram,
-      year: defaultSite.year,
-      contactIntro:
-        'Bookings, production and everything in between — reach the right inbox.',
-      contact: defaultSite.contact.map((item) => ({ ...item })),
-      legal: {
-        company: defaultSite.legal.company,
-        vat: defaultSite.legal.vat,
-        addressLines: [...defaultSite.legal.addressLines],
-      },
-      aboutTitle: 'About No Type',
-      about: [...defaultSite.about],
-      aboutImages: [],
-      photoCredits: defaultSite.photoCredits,
-      legalLinks: defaultSite.legalLinks.map((link) => ({ ...link })),
-      logoUrl: '',
-      copyrightText: '',
-      teamVisible: true,
-      rosterDesktopColumns: 4,
-      rosterGlowPreset: DEFAULT_ROSTER_GLOW_PRESET,
-      rosterGlowSecondary: DEFAULT_ROSTER_GLOW_SECONDARY,
-      rosterGlowCustom: DEFAULT_ROSTER_GLOW_CUSTOM,
-      rosterGlowCustomSecondary: '#a8487a',
-      bookingTitle: 'Booking Request',
-      bookingIntro:
-        "Send us your booking request and we'll get back to you.",
-      bookingVisible: true,
-      phoneNumber: DEFAULT_PHONE_NUMBER,
-      whatsappNumber: DEFAULT_WHATSAPP_NUMBER,
-      faqTitle: 'Promoter FAQ',
-      faqIntro:
-        'Answers for promoters, festivals, clubs, brands and event organisers.',
-      faqVisible: true,
-      faqCategories: createDefaultFaqCategories(),
-    },
+    site: createDefaultSiteContent(),
     team: defaultTeam.map((member) => ({ ...member })),
     artists,
   }

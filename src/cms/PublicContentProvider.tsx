@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { CmsContext } from '@/cms/CmsContext'
 import {
-  createDefaultContent,
-  loadStoredContent,
+  createDefaultSiteContent,
   type CmsContent,
 } from '@/cms/content'
 import { fetchPublicSite, fetchPublicTeam } from '@/cms/api/publicRead'
@@ -10,11 +9,9 @@ import { isSupabaseConfigured } from '@/lib/supabaseEnv'
 import { createBlankArtist } from '@/cms/createArtist'
 
 function initialPublicContent(): CmsContent {
-  const defaults = createDefaultContent()
-  const stored = loadStoredContent()
   return {
-    site: stored?.site ?? defaults.site,
-    team: stored?.team?.length ? stored.team : defaults.team,
+    site: createDefaultSiteContent(),
+    team: [],
     artists: [],
   }
 }

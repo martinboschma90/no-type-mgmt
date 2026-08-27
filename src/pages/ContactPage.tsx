@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { AppShell } from '@/components/layout/AppShell'
 import { Logo } from '@/components/ui/Logo'
 import { SectionRow } from '@/components/ui/SectionRow'
@@ -13,11 +12,7 @@ export function ContactPage() {
     <AppShell navVariant="wordmark">
       <div className="px-4 pb-20 pt-24 sm:px-6 sm:pt-28 lg:px-8">
         <div className="mx-auto max-w-[1200px]">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-          >
+          <div>
             <h1 className="m-0 mb-4">
               <span className="sr-only">Contact No Type</span>
               <Logo
@@ -28,7 +23,7 @@ export function ContactPage() {
             <p className="type-body mb-10 max-w-md text-base text-ink/60 sm:mb-14">
               {site.contactIntro}
             </p>
-          </motion.div>
+          </div>
 
           <SectionRow label="Contact">
             <ul className="type-body space-y-3 text-[0.95rem] sm:text-base">

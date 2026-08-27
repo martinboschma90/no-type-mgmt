@@ -87,7 +87,7 @@ function VisualSlide({
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           onPlaying={() => setShowPoster(false)}
         />
       ) : null}

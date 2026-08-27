@@ -1,5 +1,4 @@
-import { useState, type ReactNode } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Artist } from '@/types/artist'
 import {
   isMusicEmbedActive,
@@ -30,13 +29,7 @@ export function MusicPlayer({ artist }: MusicPlayerProps) {
     const isSoundCloud = music.platform === 'soundcloud'
 
     return (
-      <motion.div
-        className="overflow-hidden rounded-[1.5rem] bg-[#151217] text-[#F5F5F5] shadow-[0_0_40px_rgba(88,40,120,0.12)]"
-        initial={{ opacity: 0, y: 18 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.45 }}
-      >
+      <div className="overflow-hidden rounded-[1.5rem] bg-[#151217] text-[#F5F5F5]">
         <div className="border-b border-white/10 px-4 py-3 sm:px-5">
           <p className="type-label text-[0.6rem] tracking-[0.14em] text-white/40 uppercase">
             {music.platform === 'soundcloud'
@@ -58,16 +51,13 @@ export function MusicPlayer({ artist }: MusicPlayerProps) {
                 : 'aspect-video w-full min-h-[200px]'
           }
         >
-          <iframe
+          <DeferredIframe
             title={music.title || `${artist.name} music`}
             src={src}
             className="h-full w-full border-0"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
-            referrerPolicy="strict-origin-when-cross-origin"
           />
         </div>
-      </motion.div>
+      </div>
     )
   }
 
@@ -89,13 +79,7 @@ function LegacyTrackList({
   if (!tracks.length) return null
 
   return (
-    <motion.div
-      className="overflow-hidden rounded-[1.5rem] bg-[#151217] text-[#F5F5F5] shadow-[0_0_40px_rgba(88,40,120,0.12)]"
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.45 }}
-    >
+    <div className="overflow-hidden rounded-[1.5rem] bg-[#151217] text-[#F5F5F5]">
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3 sm:px-5">
         {imageUrl ? (
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg">
@@ -185,7 +169,51 @@ function LegacyTrackList({
           )
         })}
       </ul>
-    </motion.div>
+    </div>
+  )
+}
+
+function DeferredIframe({
+  title,
+  src,
+  className,
+}: {
+  title: string
+  src: string
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setReady(true)
+          io.disconnect()
+        }
+      },
+      { rootMargin: '240px' },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  return (
+    <div ref={ref} className="h-full w-full">
+      {ready ? (
+        <iframe
+          title={title}
+          src={src}
+          className={className}
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      ) : null}
+    </div>
   )
 }
 

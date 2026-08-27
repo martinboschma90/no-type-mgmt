@@ -1,5 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/archivo-black/400.css'
 import './index.css'
 import App from './App.tsx'
 import { migrateArtistsV1toV2 } from '@/cms/api/publicArtistsFormat'
@@ -7,16 +10,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 
 migrateArtistsV1toV2()
-
-function loadFonts() {
-  const href =
-    'https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600&display=swap'
-  if (document.querySelector(`link[href="${href}"]`)) return
-  const link = document.createElement('link')
-  link.rel = 'stylesheet'
-  link.href = href
-  document.head.appendChild(link)
-}
 
 const root = document.getElementById('root')
 if (root) {
@@ -30,10 +23,3 @@ if (root) {
     </StrictMode>,
   )
 }
-
-requestAnimationFrame(() => {
-  loadFonts()
-  void import('@/cms/api/publicArtistsCache').then((m) => {
-    m.prefetchPublicArtists()
-  })
-})

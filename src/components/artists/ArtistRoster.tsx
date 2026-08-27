@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
 import { ViewToggle } from '@/components/artists/ViewToggle'
 import { ArtistGrid } from '@/components/artists/ArtistGrid'
 import { ArtistList } from '@/components/artists/ArtistList'
@@ -18,40 +17,16 @@ export function ArtistRoster({ artists }: ArtistRosterProps) {
       aria-label="Artists"
     >
       <div className="mx-auto max-w-[1600px]">
-        <motion.div
-          className="mb-5 flex items-center justify-between sm:mb-6"
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-        >
+        <div className="mb-5 flex items-center justify-between sm:mb-6">
           <ViewToggle value={view} onChange={setView} />
-        </motion.div>
-
-        <AnimatePresence mode="wait">
-          {view === 'grid' ? (
-            <motion.div
-              key="grid"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ArtistGrid artists={artists} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="list"
-              className="min-h-[40vh] pt-4"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ArtistList artists={artists} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </div>
+        {view === 'grid' ? (
+          <ArtistGrid artists={artists} />
+        ) : (
+          <div className="min-h-[40vh] pt-4">
+            <ArtistList artists={artists} />
+          </div>
+        )}
       </div>
     </section>
   )

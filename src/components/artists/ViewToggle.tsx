@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import type { ViewMode } from '@/types/artist'
 
 type ViewToggleProps = {
@@ -22,29 +21,20 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
       {options.map((option) => {
         const active = value === option.id
         return (
-          <motion.button
+          <button
             key={option.id}
             type="button"
             onClick={() => onChange(option.id)}
             aria-pressed={active}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
             className={[
-              'type-ui relative min-w-[5.5rem] rounded-full px-5 py-2.5 text-[0.7rem] tracking-[0.08em] transition-colors',
+              'type-ui relative min-w-[5.5rem] rounded-full px-5 py-2.5 text-[0.7rem] tracking-[0.08em] transition-colors active:scale-[0.97]',
               active
                 ? 'bg-accent text-[#f5f5f5]'
                 : 'border border-ink/70 bg-transparent text-ink hover:border-accent hover:bg-accent/15 hover:text-ink',
             ].join(' ')}
           >
-            {active ? (
-              <motion.span
-                layoutId="view-toggle-fill"
-                className="absolute inset-0 rounded-full bg-accent"
-                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-              />
-            ) : null}
             <span className="relative z-10">{option.label}</span>
-          </motion.button>
+          </button>
         )
       })}
     </div>

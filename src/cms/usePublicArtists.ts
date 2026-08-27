@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchPublicArtistBySlug } from '@/cms/api/publicRead'
 import {
   fetchPublicArtistsFromSupabaseCached,
+  getCachedPublicArtist,
   prefetchPublicArtists,
   readStoredPublicArtists,
   writeStoredPublicArtists,
@@ -45,15 +46,22 @@ export function usePublicArtists() {
 
 export function usePublicArtist(slug: string) {
   const [remoteArtist, setRemoteArtist] = useState<Artist | null | undefined>(
-    undefined,
+    () => {
+      if (!slug || !isSupabaseConfigured) return undefined
+      const cached = getCachedPublicArtist(slug)
+      return cached && isArtistVisible(cached) ? cached : undefined
+    },
   )
 
   useEffect(() => {
     let cancelled = false
-    setRemoteArtist(undefined)
+    const cached = getCachedPublicArtist(slug)
+    const visibleCached =
+      cached && isArtistVisible(cached) ? cached : null
+    setRemoteArtist(visibleCached ?? undefined)
 
     if (!isSupabaseConfigured) {
-      setRemoteArtist(null)
+      setRemoteArtist(visibleCached)
       return
     }
 
@@ -62,12 +70,12 @@ export function usePublicArtist(slug: string) {
         if (cancelled) return
         if (artist && isArtistVisible(artist)) {
           setRemoteArtist(artist)
-        } else {
+        } else if (!visibleCached) {
           setRemoteArtist(null)
         }
       })
       .catch(() => {
-        if (!cancelled) setRemoteArtist(null)
+        if (!cancelled && !visibleCached) setRemoteArtist(null)
       })
 
     return () => {

@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { Logo } from '@/components/ui/Logo'
 
 type BrandLoaderProps = {
@@ -14,17 +13,9 @@ export function BrandLoader({ label = 'Loading' }: BrandLoaderProps) {
       aria-live="polite"
       aria-label={label}
     >
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(88,40,120,0.2),transparent_55%)]"
-        aria-hidden
-      />
-      <motion.div
-        className="relative"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 52, ease: 'linear', repeat: Infinity }}
-      >
+      <div className="brand-mark-spin origin-center">
         <Logo variant="seal" height={160} title="" />
-      </motion.div>
+      </div>
       <span className="sr-only">{label}</span>
     </div>
   )

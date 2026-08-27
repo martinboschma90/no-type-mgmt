@@ -1,7 +1,7 @@
 import { artistFromRow, artistFromRosterRow, type ArtistRosterRow } from '@/cms/mappers/artist'
 import { teamMemberFromRow } from '@/cms/mappers/team'
 import { normalizeSiteContent } from '@/cms/mappers/site'
-import { fetchPublicCmsArtistBySlug } from '@/cms/api/cmsStore'
+import { fetchPublicCmsArtistBySlug } from '@/cms/api/publicCmsRead'
 import { restGet, publicStorageUrl } from '@/lib/publicRest'
 import { isSupabaseConfigured } from '@/lib/supabaseEnv'
 import type { ArtistRow, TeamMemberRow } from '@/lib/database.types'

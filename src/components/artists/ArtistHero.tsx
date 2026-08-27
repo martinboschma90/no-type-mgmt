@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { PillButton } from '@/components/ui/PillButton'
 import { SocialLinks } from '@/components/artists/SocialLinks'
 import type { Artist } from '@/types/artist'
@@ -42,12 +41,7 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
   return (
     <section className="px-4 pb-8 pt-20 sm:px-6 sm:pt-24 lg:px-8 lg:pb-12">
       <div className="mx-auto grid max-w-[1400px] grid-cols-1 items-start gap-5 sm:gap-8 lg:grid-cols-12 lg:gap-10">
-        <motion.div
-          className="relative w-full lg:col-span-5"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        >
+        <div className="relative w-full lg:col-span-5">
           <div
             className="relative w-full overflow-hidden rounded-[1.5rem] bg-card sm:rounded-[2rem]"
             style={{ aspectRatio: '3 / 4' }}
@@ -59,7 +53,7 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
                 className="absolute object-cover"
                 style={frame}
                 size="hero"
-                srcSetSizes={['card', 'hero', 'full']}
+                srcSetSizes={['card', 'hero']}
                 sizes="(max-width: 1024px) 92vw, 42vw"
                 loading="eager"
                 fetchPriority="high"
@@ -68,25 +62,15 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
               />
             ) : null}
           </div>
-        </motion.div>
+        </div>
 
         <div className="relative lg:col-span-7 lg:pt-10">
-          <motion.h1
-            className="type-display text-[clamp(2.5rem,11vw,5.75rem)] text-ink"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.45 }}
-          >
+          <h1 className="type-display text-[clamp(2.5rem,11vw,5.75rem)] text-ink">
             {artist.name}
-          </motion.h1>
+          </h1>
 
           {artistGenres(artist).length > 0 && (
-            <motion.div
-              className="mt-3 flex flex-wrap gap-2 sm:mt-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.15 }}
-            >
+            <div className="mt-3 flex flex-wrap gap-2 sm:mt-4">
               {artistGenres(artist).map((genre) => (
                 <span
                   key={genre}
@@ -95,37 +79,22 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
                   {genre}
                 </span>
               ))}
-            </motion.div>
+            </div>
           )}
 
           {artist.socials && (
-            <motion.div
-              className="mt-4 sm:mt-5"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-            >
+            <div className="mt-4 sm:mt-5">
               <SocialLinks links={artist.socials} />
-            </motion.div>
+            </div>
           )}
 
           {artist.bio && (
-            <motion.p
-              className="type-body mt-5 max-w-xl text-[0.95rem] text-ink/80 line-clamp-5 sm:mt-8 sm:text-base lg:line-clamp-none"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.28, duration: 0.45 }}
-            >
+            <p className="type-body mt-5 max-w-xl text-[0.95rem] text-ink/80 line-clamp-5 sm:mt-8 sm:text-base lg:line-clamp-none">
               {artist.bio}
-            </motion.p>
+            </p>
           )}
 
-          <motion.div
-            className="mt-6 sm:mt-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.4 }}
-          >
+          <div className="mt-6 sm:mt-8">
             <div className="flex flex-wrap items-center gap-2.5">
               <PillButton href={bookingHref}>Book now</PillButton>
               <PillButton
@@ -161,7 +130,7 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
                 <span aria-hidden>→</span>
               </a>
             ) : null}
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

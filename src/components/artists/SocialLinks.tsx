@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { motion } from 'framer-motion'
 import type { SocialLink } from '@/types/artist'
 
 const icons: Record<SocialLink['platform'], ReactNode> = {
@@ -61,12 +60,7 @@ export function SocialLinks({ links, className = '' }: SocialLinksProps) {
   return (
     <ul className={`flex flex-wrap items-center gap-2 ${className}`}>
       {active.map((link, i) => (
-        <motion.li
-          key={`${link.platform}-${i}`}
-          initial={{ opacity: 0, scale: 0.7 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.15 + i * 0.05 }}
-        >
+        <li key={`${link.platform}-${i}`}>
           <a
             href={link.url}
             target="_blank"
@@ -76,7 +70,7 @@ export function SocialLinks({ links, className = '' }: SocialLinksProps) {
           >
             {icons[link.platform]}
           </a>
-        </motion.li>
+        </li>
       ))}
     </ul>
   )

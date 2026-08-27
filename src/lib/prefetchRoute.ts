@@ -11,6 +11,11 @@ const warmed = new Set<string>()
 export function prefetchRoute(to: string) {
   const path = to.split('?')[0]
   if (warmed.has(path)) return
+  if (path.startsWith('/artists/') && path !== '/artists') {
+    warmed.add(path)
+    void import('@/pages/ArtistPage')
+    return
+  }
   const load = loaders[path]
   if (!load) return
   warmed.add(path)

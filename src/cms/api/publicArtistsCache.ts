@@ -2,7 +2,7 @@ import {
   PUBLIC_ARTISTS_STORAGE_KEY,
   PUBLIC_ARTISTS_STORAGE_KEY_V2,
 } from '@/cms/storageKeys'
-import { fetchPublicCmsArtistsRow } from '@/cms/api/cmsStore'
+import { fetchPublicCmsArtistsRow } from '@/cms/api/publicCmsRead'
 import {
   parsePublicArtistsPayload,
   publicArtistsToSlugMap,
@@ -86,6 +86,13 @@ export function fetchPublicArtistsFromSupabaseCached(
   })
 
   return publicInflight
+}
+
+export function getCachedPublicArtist(slug: string): Artist | null {
+  if (!slug) return null
+  const fromMemory = publicCached?.artists.find((artist) => artist.slug === slug)
+  if (fromMemory) return fromMemory
+  return readStoredPublicArtists()?.find((artist) => artist.slug === slug) ?? null
 }
 
 export function invalidatePublicArtistsCache() {

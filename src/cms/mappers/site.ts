@@ -1,5 +1,5 @@
 import {
-  createDefaultContent,
+  createDefaultSiteContent,
   type ContactItem,
   type FaqCategory,
   type FaqItem,
@@ -180,7 +180,7 @@ function asFaqCategories(
 
 /** Merge partial/jsonb site content with shipped defaults. */
 export function normalizeSiteContent(raw: unknown): SiteContent {
-  const defaults = createDefaultContent().site
+  const defaults = createDefaultSiteContent()
   if (!raw || typeof raw !== 'object') {
     return {
       ...defaults,
