@@ -35,7 +35,11 @@ export function ArtistPublishBar({
   return (
     <div className="space-y-2">
       <div
-        className="flex flex-wrap items-center gap-2 rounded-2xl border border-ink/15 bg-ink/[0.06] px-3 py-2.5 sm:gap-3 sm:px-4"
+        className="flex flex-wrap items-center gap-2 rounded-2xl border px-3 py-2.5 sm:gap-3 sm:px-4"
+        style={{
+          background: 'var(--cms-surface)',
+          borderColor: 'var(--cms-border)',
+        }}
         data-cms-publish-bar
         role="toolbar"
         aria-label="Artiest opslaan en publiceren"
@@ -45,7 +49,7 @@ export function ArtistPublishBar({
             'type-label inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.6rem] tracking-[0.12em] uppercase',
             published
               ? 'bg-emerald-500/20 text-ink'
-              : 'bg-ink/10 text-ink/70',
+              : 'bg-ink/12 text-ink',
           ].join(' ')}
         >
           <span
@@ -62,7 +66,7 @@ export function ArtistPublishBar({
             Niet opgeslagen
           </span>
         ) : (
-          <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
+          <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/70 uppercase">
             Alles opgeslagen
           </span>
         )}
@@ -85,7 +89,7 @@ export function ArtistPublishBar({
             href={`/artists/${artist.slug}`}
             target="_blank"
             rel="noreferrer"
-            className="type-label rounded-full border border-ink/20 px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/55 uppercase transition-colors hover:border-ink/40 hover:text-ink"
+            className="type-label rounded-full border border-ink/25 px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors hover:border-ink/45"
           >
             Live pagina ↗
           </a>
@@ -94,7 +98,7 @@ export function ArtistPublishBar({
               type="button"
               disabled={saving}
               onClick={onUnpublish}
-              className="type-label rounded-full px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
+              className="type-label rounded-full px-3 py-2.5 text-[0.65rem] tracking-[0.12em] text-ink/70 uppercase transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-45"
             >
               Depubliceren
             </button>

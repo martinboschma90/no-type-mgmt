@@ -9,12 +9,18 @@ type FieldProps = {
 export function Field({ label, hint, children }: FieldProps) {
   return (
     <label className="block">
-      <span className="type-label mb-2 block text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
+      <span
+        className="type-label mb-2 block text-[0.65rem] tracking-[0.14em] uppercase"
+        style={{ color: 'var(--cms-label)' }}
+      >
         {label}
       </span>
       {children}
       {hint ? (
-        <span className="mt-1.5 block text-[0.7rem] leading-snug text-ink/32">
+        <span
+          className="mt-1.5 block text-[0.7rem] leading-snug"
+          style={{ color: 'var(--cms-hint)' }}
+        >
           {hint}
         </span>
       ) : null}
@@ -22,8 +28,12 @@ export function Field({ label, hint, children }: FieldProps) {
   )
 }
 
-const controlClass =
-  'w-full rounded-lg border border-ink/12 bg-[var(--body-bg)] px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-accent/60'
+export const controlClass =
+  'w-full rounded-lg border px-3 py-2.5 type-body text-sm text-ink outline-none transition-colors placeholder:text-ink/40 focus:border-brand/70'
+export const controlStyle = {
+  background: 'var(--cms-input)',
+  borderColor: 'var(--cms-border)',
+} as const
 
 type TextInputProps = {
   label: string
@@ -39,6 +49,7 @@ export function TextInput({ label, value, onChange, hint, placeholder }: TextInp
       <input
         type="text"
         className={controlClass}
+        style={controlStyle}
         value={value}
         placeholder={placeholder}
         onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
@@ -60,6 +71,7 @@ export function TextArea({ label, value, onChange, hint, rows = 4 }: TextAreaPro
     <Field label={label} hint={hint}>
       <textarea
         className={`${controlClass} min-h-[6rem] resize-y`}
+        style={controlStyle}
         value={value}
         rows={rows}
         onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
@@ -103,7 +115,13 @@ export function EditorSection({
   const body = tabs ? activeTab?.children : children
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-ink/10 bg-[var(--body-bg)]">
+    <section
+      className="overflow-hidden rounded-2xl border"
+      style={{
+        background: 'var(--cms-surface)',
+        borderColor: 'var(--cms-border)',
+      }}
+    >
       <button
         type="button"
         className="flex w-full items-start justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-ink/[0.03]"
@@ -115,19 +133,22 @@ export function EditorSection({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="type-headline m-0 text-[0.95rem] text-ink">{title}</h2>
             {badge ? (
-              <span className="type-label rounded-full bg-ink/6 px-2 py-0.5 text-[0.55rem] tracking-[0.12em] text-ink/45 uppercase">
+              <span className="type-label rounded-full bg-ink/10 px-2 py-0.5 text-[0.55rem] tracking-[0.12em] text-ink/70 uppercase">
                 {badge}
               </span>
             ) : null}
           </div>
           {description ? (
-            <p className="type-body mt-1.5 max-w-prose text-[0.7rem] leading-snug text-ink/32">
+            <p
+              className="type-body mt-1.5 max-w-prose text-[0.7rem] leading-snug"
+              style={{ color: 'var(--cms-hint)' }}
+            >
               {description}
             </p>
           ) : null}
         </div>
         <span
-          className={`mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-ink/10 text-ink/50 transition-transform ${
+          className={`mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-ink/20 text-ink/70 transition-transform ${
             open ? 'rotate-180' : ''
           }`}
           aria-hidden
@@ -150,8 +171,8 @@ export function EditorSection({
                   className={[
                     'type-label rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.12em] uppercase transition-colors',
                     tab.id === (activeTab?.id ?? tabId)
-                      ? 'bg-ink text-ink-inverse'
-                      : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
+                      ? 'bg-brand text-[#111111]'
+                      : 'text-ink/70 hover:bg-ink/8 hover:text-ink',
                   ].join(' ')}
                 >
                   {tab.label}

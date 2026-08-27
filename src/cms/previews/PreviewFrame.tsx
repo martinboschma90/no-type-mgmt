@@ -25,10 +25,10 @@ export function PreviewFrame({ label, children }: PreviewFrameProps) {
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="type-label text-[0.65rem] tracking-[0.16em] text-ink/40 uppercase">
+          <p className="type-label text-[0.65rem] tracking-[0.16em] text-ink/70 uppercase">
             Live preview
           </p>
-          <p className="type-body mt-0.5 text-xs text-ink/45">
+          <p className="type-body mt-0.5 text-xs text-ink/70">
             {label} · {active.label}
           </p>
         </div>
@@ -47,8 +47,8 @@ export function PreviewFrame({ label, children }: PreviewFrameProps) {
                 className={[
                   'type-label rounded-full px-2.5 py-1.5 text-[0.55rem] tracking-[0.1em] uppercase transition-colors',
                   d.id === device
-                    ? 'bg-ink text-ink-inverse'
-                    : 'text-ink/40 hover:text-ink',
+                    ? 'bg-brand text-[#111111]'
+                    : 'text-ink/70 hover:text-ink',
                 ].join(' ')}
                 aria-pressed={d.id === device}
               >
@@ -59,7 +59,7 @@ export function PreviewFrame({ label, children }: PreviewFrameProps) {
           <button
             type="button"
             onClick={() => setNonce((n) => n + 1)}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/10 text-ink/45 transition-colors hover:border-ink/25 hover:text-ink"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/20 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
             aria-label="Refresh preview"
             title="Refresh"
           >
@@ -75,7 +75,7 @@ export function PreviewFrame({ label, children }: PreviewFrameProps) {
             href="/"
             target="_blank"
             rel="noreferrer"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/10 text-ink/45 transition-colors hover:border-ink/25 hover:text-ink"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/20 text-ink/70 transition-colors hover:border-ink/40 hover:text-ink"
             aria-label="Open site"
             title="Open site"
           >

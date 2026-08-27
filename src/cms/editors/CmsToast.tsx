@@ -16,7 +16,11 @@ export function CmsToast({ message, detail, onDismiss }: CmsToastProps) {
   return (
     <div
       role="status"
-      className="pointer-events-none fixed right-4 bottom-4 z-[90] max-w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-ink/12 bg-[var(--body-bg)] px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)] sm:right-6 sm:bottom-6"
+      className="pointer-events-none fixed right-4 bottom-4 z-[90] max-w-[min(20rem,calc(100vw-2rem))] rounded-2xl border px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)] sm:right-6 sm:bottom-6"
+      style={{
+        background: 'var(--cms-surface)',
+        borderColor: 'var(--cms-border)',
+      }}
     >
       <p className="type-headline m-0 text-sm text-ink">{message}</p>
       {detail ? (

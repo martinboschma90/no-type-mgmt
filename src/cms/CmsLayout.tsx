@@ -39,6 +39,9 @@ const siteTabs = [
   { to: '/cms/roster', label: 'Roster' },
 ] as const
 
+const cmsTabActive = 'bg-brand text-[#111111]'
+const cmsTabIdle = 'text-ink/70 hover:bg-ink/8 hover:text-ink'
+
 function useCmsPanels(): {
   mode: 'pages' | 'artists' | 'media' | 'settings'
   title: string
@@ -160,7 +163,7 @@ function formatSavedAt(ts: number | null) {
 
 function SidebarHeading({ children }: { children: string }) {
   return (
-    <p className="type-label px-2.5 pb-1.5 text-[0.55rem] tracking-[0.16em] text-ink/35 uppercase">
+    <p className="type-label px-2.5 pb-1.5 text-[0.55rem] tracking-[0.16em] text-ink/60 uppercase">
       {children}
     </p>
   )
@@ -228,17 +231,17 @@ export function CmsLayout() {
   }
 
   return (
-    <div className="flex h-svh overflow-hidden bg-[#ebe8e2] text-ink dark:bg-[#0c0b0d]">
+    <div className="cms-shell flex h-svh overflow-hidden bg-[#ebe8e2] text-ink dark:bg-[#121014]">
       <aside className="hidden min-h-0 w-[220px] shrink-0 flex-col border-r border-ink/8 bg-[var(--body-bg)] md:flex">
         <div className="border-b border-ink/8 px-4 py-5">
           <p className="type-label text-[0.6rem] tracking-[0.18em] text-brand uppercase">
             No Type
           </p>
           <h1 className="type-display m-0 mt-1 text-[1.65rem] leading-none text-ink">CMS</h1>
-          <p className="type-body mt-2 text-[0.7rem] text-ink/40">
+          <p className="type-body mt-2 text-[0.7rem] text-ink/65">
             {authRequired ? 'Admin · autosave' : 'Local · autosave'}
           </p>
-          <p className="mt-2 flex items-center gap-1.5 type-label text-[0.55rem] tracking-[0.12em] text-ink/45 uppercase">
+          <p className="mt-2 flex items-center gap-1.5 type-label text-[0.55rem] tracking-[0.12em] text-ink/70 uppercase">
             <span
               className={`h-1.5 w-1.5 rounded-full ${
                 contentSyncStatus === 'synced' ? 'bg-emerald-500' : 'bg-orange-400'
@@ -249,7 +252,7 @@ export function CmsLayout() {
           </p>
           {user?.email ? (
             <p
-              className="type-body mt-2 truncate text-[0.65rem] text-ink/50"
+              className="type-body mt-2 truncate text-[0.65rem] text-ink/70"
               title={user.email}
             >
               {user.email}
@@ -258,19 +261,26 @@ export function CmsLayout() {
         </div>
 
         <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-2" aria-label="CMS">
-          <div className="border-b border-ink/8 py-2">
+          <div className="border-b border-ink/12 py-2">
             <SidebarHeading>Pagina&apos;s</SidebarHeading>
-            <NavLink
-              to="/cms/home"
-              className={[
-                'type-label block rounded-lg px-2.5 py-2 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
-                pagesActive
-                  ? 'bg-accent/15 text-ink'
-                  : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
-              ].join(' ')}
-            >
-              Alle pagina&apos;s
-            </NavLink>
+            <ul className="space-y-0.5">
+              {siteTabs.map((tab) => {
+                const active = pathname.startsWith(tab.to)
+                return (
+                  <li key={tab.to}>
+                    <NavLink
+                      to={tab.to}
+                      className={[
+                        'type-label block rounded-lg px-2.5 py-1.5 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
+                        active ? cmsTabActive : cmsTabIdle,
+                      ].join(' ')}
+                    >
+                      {tab.label}
+                    </NavLink>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
 
           <div className="border-b border-ink/8 py-2">
@@ -278,12 +288,12 @@ export function CmsLayout() {
               <div className="min-w-0 flex-1">
                 <SidebarHeading>Artiesten</SidebarHeading>
               </div>
-              <span className="type-label mb-1 pr-1 text-[0.55rem] tracking-[0.12em] text-ink/35">
+              <span className="type-label mb-1 pr-1 text-[0.55rem] tracking-[0.12em] text-ink/55">
                 {content.artists.length}
               </span>
               <button
                 type="button"
-                className="mb-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink/40 transition-colors hover:bg-accent/10 hover:text-ink"
+                className="mb-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink/70 transition-colors hover:bg-ink/8 hover:text-ink"
                 aria-expanded={artistsOpen}
                 aria-label={artistsOpen ? 'Collapse artists' : 'Expand artists'}
                 onClick={() => setArtistsOpen((open) => !open)}
@@ -305,9 +315,7 @@ export function CmsLayout() {
               end
               className={[
                 'type-label mb-1 block rounded-lg px-2.5 py-1.5 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
-                isArtistsIndexPath(pathname)
-                  ? 'bg-accent/15 text-ink'
-                  : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
+                isArtistsIndexPath(pathname) ? cmsTabActive : cmsTabIdle,
               ].join(' ')}
             >
               Overzicht
@@ -326,8 +334,8 @@ export function CmsLayout() {
                         className={[
                           'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[0.75rem] transition-colors',
                           selected
-                            ? 'bg-ink/8 text-ink'
-                            : 'text-ink/55 hover:bg-accent/10 hover:text-ink',
+                            ? 'bg-ink/12 text-ink'
+                            : 'text-ink/75 hover:bg-ink/8 hover:text-ink',
                         ].join(' ')}
                       >
                         <span
@@ -352,13 +360,11 @@ export function CmsLayout() {
               to="/cms/media"
               className={[
                 'type-label flex items-center rounded-lg px-2.5 py-2 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
-                mediaActive
-                  ? 'bg-accent/15 text-ink'
-                  : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
+                mediaActive ? cmsTabActive : cmsTabIdle,
               ].join(' ')}
             >
               Bibliotheek
-              <span className="ml-2 opacity-55">{assets.length}</span>
+              <span className="ml-2 text-ink/70">{assets.length}</span>
               <MediaUnsyncedBadge count={unsyncedMediaCount} />
             </NavLink>
           </div>
@@ -369,9 +375,7 @@ export function CmsLayout() {
               to="/cms/settings"
               className={[
                 'type-label block rounded-lg px-2.5 py-2 text-[0.7rem] tracking-[0.12em] uppercase transition-colors',
-                settingsActive
-                  ? 'bg-accent/15 text-ink'
-                  : 'text-ink/50 hover:bg-accent/10 hover:text-ink',
+                settingsActive ? cmsTabActive : cmsTabIdle,
               ].join(' ')}
             >
               Instellingen
@@ -382,7 +386,7 @@ export function CmsLayout() {
         <div className="space-y-2 border-t border-ink/8 p-4">
           <a
             href="/"
-            className="type-label block rounded-xl bg-accent px-3 py-2.5 text-center text-[0.65rem] tracking-[0.12em] text-[#f5f5f5] uppercase transition-opacity hover:opacity-90"
+            className="type-label block rounded-xl bg-brand px-3 py-2.5 text-center text-[0.65rem] tracking-[0.12em] text-[#111111] uppercase transition-opacity hover:opacity-90"
           >
             View site
           </a>
@@ -390,7 +394,7 @@ export function CmsLayout() {
             <button
               type="button"
               onClick={() => void handleLogout()}
-              className="type-label w-full rounded-xl px-3 py-2 text-[0.65rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink"
+              className="type-label w-full rounded-xl px-3 py-2 text-[0.65rem] tracking-[0.12em] text-ink/65 uppercase transition-colors hover:text-ink"
             >
               Log out
             </button>
@@ -400,34 +404,35 @@ export function CmsLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col xl:flex-row">
         <section className="flex min-h-0 min-w-0 flex-1 flex-col border-ink/8 bg-[var(--body-bg)] xl:border-r">
-          <div className="shrink-0 border-b border-ink/8 px-4 py-3 sm:px-5">
+          <div className="shrink-0 border-b border-ink/12 px-4 py-3 sm:px-5">
             {panels.mode === 'pages' ? (
-              <div className="flex gap-1 overflow-x-auto pb-1">
-                {siteTabs.map((tab) => {
-                  const active = pathname.startsWith(tab.to)
-                  return (
-                    <NavLink
-                      key={tab.to}
-                      to={tab.to}
-                      className={[
-                        'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
-                        active
-                          ? 'bg-accent text-[#f5f5f5]'
-                          : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
-                      ].join(' ')}
-                    >
-                      {tab.label}
-                    </NavLink>
-                  )
-                })}
-              </div>
+              <>
+                <p className="type-headline hidden text-base text-ink md:block">{panels.title}</p>
+                <div className="flex gap-1 overflow-x-auto pb-1 md:hidden">
+                  {siteTabs.map((tab) => {
+                    const active = pathname.startsWith(tab.to)
+                    return (
+                      <NavLink
+                        key={tab.to}
+                        to={tab.to}
+                        className={[
+                          'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
+                          active ? cmsTabActive : cmsTabIdle,
+                        ].join(' ')}
+                      >
+                        {tab.label}
+                      </NavLink>
+                    )
+                  })}
+                </div>
+              </>
             ) : null}
 
             {panels.mode === 'artists' && artistSlug ? (
               <div className="space-y-2">
                 <Link
                   to="/cms/artists"
-                  className="type-label inline-flex text-[0.65rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:text-ink"
+                  className="type-label inline-flex text-[0.65rem] tracking-[0.12em] text-ink/70 uppercase transition-colors hover:text-ink"
                 >
                   ← Alle artiesten
                 </Link>
@@ -445,9 +450,7 @@ export function CmsLayout() {
                         aria-current={isActive ? 'page' : undefined}
                         className={[
                           'type-label shrink-0 rounded-full px-3.5 py-2 text-[0.65rem] tracking-[0.12em] uppercase transition-colors',
-                          isActive
-                            ? 'bg-accent text-[#f5f5f5]'
-                            : 'text-ink/45 hover:bg-accent/10 hover:text-ink',
+                          isActive ? cmsTabActive : cmsTabIdle,
                         ].join(' ')}
                       >
                         {tab.label}
@@ -471,30 +474,7 @@ export function CmsLayout() {
             ) : null}
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="type-label inline-flex items-center gap-1.5 rounded-full bg-brand/15 px-2.5 py-1 text-[0.55rem] tracking-[0.12em] text-ink uppercase">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-                {authRequired ? 'Admin' : 'Local'}
-              </span>
-              {user?.email ? (
-                <span
-                  className="type-body max-w-[10rem] truncate text-[0.7rem] text-ink/45 sm:max-w-[14rem]"
-                  title={user.email}
-                >
-                  {user.email}
-                </span>
-              ) : null}
-              <span className="type-label inline-flex items-center gap-1.5 text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    contentSyncStatus === 'synced'
-                      ? 'bg-emerald-500'
-                      : 'bg-orange-400'
-                  }`}
-                  aria-hidden
-                />
-                {contentSyncStatus === 'synced' ? 'Synced' : 'Pending'}
-              </span>
-              <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase">
+              <span className="type-label text-[0.55rem] tracking-[0.12em] text-ink/70 uppercase">
                 {formatSavedAt(savedAt)}
               </span>
               {artistSyncError ? (
@@ -515,14 +495,11 @@ export function CmsLayout() {
                   Site sync: {siteSyncError}
                 </span>
               ) : null}
-              <span className="type-label hidden text-[0.55rem] tracking-[0.12em] text-ink/35 uppercase sm:inline">
-                {panels.subtitle}
-              </span>
               {authRequired ? (
                 <button
                   type="button"
                   onClick={() => void handleLogout()}
-                  className="type-label text-[0.55rem] tracking-[0.12em] text-ink/40 uppercase transition-colors hover:text-ink md:hidden"
+                  className="type-label text-[0.55rem] tracking-[0.12em] text-ink/70 uppercase transition-colors hover:text-ink md:hidden"
                 >
                   Log out
                 </button>
@@ -531,7 +508,7 @@ export function CmsLayout() {
                 type="button"
                 onClick={togglePreview}
                 aria-pressed={previewOpen}
-                className="type-label ml-auto rounded-full border border-ink/12 px-3 py-1.5 text-[0.55rem] tracking-[0.12em] text-ink/45 uppercase transition-colors hover:border-ink/25 hover:text-ink"
+                className="type-label ml-auto rounded-full border border-ink/20 bg-[var(--cms-surface)] px-3 py-1.5 text-[0.55rem] tracking-[0.12em] text-ink uppercase transition-colors hover:border-ink/35"
               >
                 {previewOpen ? 'Verberg preview' : 'Toon preview'}
               </button>
@@ -544,9 +521,7 @@ export function CmsLayout() {
               className={() =>
                 [
                   'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
-                  pagesActive
-                    ? 'bg-accent text-[#f5f5f5]'
-                    : 'bg-ink/5 text-ink/50',
+                  pagesActive ? cmsTabActive : 'bg-ink/8 text-ink/70',
                 ].join(' ')
               }
             >
@@ -557,9 +532,7 @@ export function CmsLayout() {
               className={() =>
                 [
                   'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
-                  artistsActive
-                    ? 'bg-accent text-[#f5f5f5]'
-                    : 'bg-ink/5 text-ink/50',
+                  artistsActive ? cmsTabActive : 'bg-ink/8 text-ink/70',
                 ].join(' ')
               }
             >
@@ -570,9 +543,7 @@ export function CmsLayout() {
               className={() =>
                 [
                   'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
-                  mediaActive
-                    ? 'bg-accent text-[#f5f5f5]'
-                    : 'bg-ink/5 text-ink/50',
+                  mediaActive ? cmsTabActive : 'bg-ink/8 text-ink/70',
                 ].join(' ')
               }
             >
@@ -584,9 +555,7 @@ export function CmsLayout() {
               className={() =>
                 [
                   'type-label shrink-0 rounded-full px-3 py-1.5 text-[0.6rem] tracking-[0.1em] uppercase',
-                  settingsActive
-                    ? 'bg-accent text-[#f5f5f5]'
-                    : 'bg-ink/5 text-ink/50',
+                  settingsActive ? cmsTabActive : 'bg-ink/8 text-ink/70',
                 ].join(' ')
               }
             >

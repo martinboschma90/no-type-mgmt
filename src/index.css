@@ -238,3 +238,39 @@
   }
 }
 
+/* CMS-only contrast — does not change the public site */
+.cms-shell {
+  --cms-surface: #ffffff;
+  --cms-input: #f4f1eb;
+  --cms-border: rgb(17 17 17 / 0.16);
+  --cms-label: rgb(17 17 17 / 0.78);
+  --cms-muted: rgb(17 17 17 / 0.62);
+  --cms-hint: rgb(17 17 17 / 0.52);
+}
+
+[data-theme='dark'] .cms-shell {
+  --body-bg: #121014;
+  --cms-surface: #1c191f;
+  --cms-input: #141218;
+  --cms-border: rgb(245 245 245 / 0.32);
+  --cms-label: rgb(245 245 245 / 0.9);
+  --cms-muted: rgb(245 245 245 / 0.78);
+  --cms-hint: rgb(245 245 245 / 0.68);
+}
+
+/* Bump washed-out Tailwind ink opacities so labels stay readable */
+.cms-shell .text-ink\/35,
+.cms-shell .text-ink\/40 {
+  color: var(--cms-hint);
+}
+
+.cms-shell .text-ink\/45,
+.cms-shell .text-ink\/50,
+.cms-shell .text-ink\/55 {
+  color: var(--cms-muted);
+}
+
+.cms-shell .placeholder\:text-ink\/40::placeholder {
+  color: var(--cms-hint);
+}
+
