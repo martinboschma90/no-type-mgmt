@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useCms } from '@/cms/CmsContext'
 import { normalizeWhatsAppDigits } from '@/data/whatsapp'
+import { Logo } from '@/components/ui/Logo'
 
 export function StickyContactBar() {
   const { content } = useCms()
@@ -41,32 +42,31 @@ export function StickyContactBar() {
           : 'pointer-events-none translate-y-[calc(100%+1rem)] opacity-0'
       }`}
     >
-      <div className="relative mx-auto max-w-[1500px] overflow-hidden rounded-[1.5rem] border border-brand/25 bg-[#090909]/96 text-white shadow-[0_-12px_50px_rgba(0,0,0,0.28)] backdrop-blur-xl">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            background:
-              'radial-gradient(circle at 7% 15%, rgb(216 255 62 / 0.32), transparent 28%), radial-gradient(circle at 42% 125%, rgb(168 72 122 / 0.35), transparent 32%)',
-          }}
-          aria-hidden
-        />
-
-        <div className="relative grid min-h-16 grid-cols-3 sm:min-h-20">
-          <div className="flex items-center border-r border-white/10 px-3 sm:px-6">
-            <p className="type-body text-[9px] leading-[1.18] text-white/70 sm:text-xs">
-              <span className="type-ui font-semibold tracking-[0.04em] text-brand">
-                NOTYPE MGMT
+      <div className="mx-auto max-w-[1500px] overflow-hidden rounded-[1.5rem] bg-[#090909]/97 text-white shadow-[0_-12px_50px_rgba(0,0,0,0.3)] ring-1 ring-inset ring-white/10 backdrop-blur-xl">
+        <div className="grid min-h-16 grid-cols-3 sm:min-h-20">
+          <div className="flex items-center gap-3 px-3 sm:px-6">
+            <Logo
+              variant="wordmark"
+              height={18}
+              className="hidden shrink-0 sm:block"
+            />
+            <p className="type-body text-[9px] leading-[1.3] text-white/55 sm:text-[11px]">
+              <span className="type-headline text-[10px] text-brand sm:hidden">
+                NOTYPE
               </span>
-              <br />
+              <br className="sm:hidden" />
               Artist agency
-              <br className="sm:hidden" /> based in Groningen, Netherlands
+              <br />
+              Groningen, Netherlands
             </p>
           </div>
 
-          <div className="flex items-center justify-center border-r border-white/10 px-2 text-center sm:px-6">
+          <div className="flex items-center justify-center px-2 text-center sm:px-6">
             {email ? (
-              <div className="type-body text-[9px] leading-[1.25] text-white/75 sm:text-xs">
-                <span className="type-ui text-white">Contact &amp; bookings</span>
+              <div className="type-body text-[9px] leading-[1.3] text-white/55 sm:text-[11px]">
+                <span className="type-label text-[9px] tracking-[0.1em] text-white">
+                  Contact &amp; bookings
+                </span>
                 {email ? (
                   <>
                     <br />
@@ -80,7 +80,7 @@ export function StickyContactBar() {
                 ) : null}
                 {phone ? (
                   <>
-                    <span className="mx-1.5 text-white/25">·</span>
+                    <br />
                     <a
                       href={phoneDigits ? `tel:+${phoneDigits}` : undefined}
                       className="whitespace-nowrap transition-colors hover:text-brand"
@@ -103,11 +103,13 @@ export function StickyContactBar() {
                 href={instagram}
                 target="_blank"
                 rel="noreferrer"
-                className="type-body text-[9px] leading-[1.18] text-white/75 transition-colors hover:text-brand sm:text-xs"
+                className="type-body text-[9px] leading-[1.3] text-white/55 transition-colors hover:text-brand sm:text-[11px]"
               >
                 Follow us on
                 <br />
-                <span className="type-ui font-medium text-white">Instagram ↗</span>
+                <span className="type-label text-[9px] tracking-[0.1em] text-white">
+                  Instagram ↗
+                </span>
               </a>
             ) : (
               <span className="text-[9px] leading-[1.18] text-white/80 sm:text-xs">
