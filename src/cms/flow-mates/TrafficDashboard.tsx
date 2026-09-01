@@ -89,6 +89,13 @@ export function TrafficDashboard() {
         if (!response.ok) {
           throw new Error(payload?.error || 'Analytics kon niet worden geladen.')
         }
+        if (
+          !payload?.totals ||
+          !Array.isArray(payload.trend) ||
+          !Array.isArray(payload.pages)
+        ) {
+          throw new Error('Analytics gaf nog geen geldige gegevens terug.')
+        }
         return payload as TrafficData
       })
       .then(setData)

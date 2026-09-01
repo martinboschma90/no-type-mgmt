@@ -67,7 +67,7 @@ export function Footer() {
     site.legalLinks[0]
 
   return (
-    <footer className="mt-10 border-t border-ink/10 pt-12">
+    <footer className="mt-10 border-t border-white/10 bg-[#090909] pt-12 text-white [--color-accent:#d8ff3e] [--color-ink:#f5f5f5]">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
           {/* Brand */}
@@ -82,7 +82,7 @@ export function Footer() {
                 draggable={false}
               />
             ) : (
-              <Logo variant="auto" height={40} />
+              <Logo variant="wordmark" height={40} />
             )}
             <p className="type-label mt-5 whitespace-pre-line text-ink/50">
               {site.tagline}
@@ -126,6 +126,7 @@ export function Footer() {
             <div className="flex flex-col items-start gap-2.5">
               <PillButton
                 href={site.instagram}
+                variant="ghost"
                 target="_blank"
                 rel="noreferrer"
                 className="min-w-[10.5rem]"
@@ -135,6 +136,7 @@ export function Footer() {
               </PillButton>
               <PillButton
                 href={whatsappHref}
+                variant="ghost"
                 target="_blank"
                 rel="noreferrer"
                 className="min-w-[10.5rem]"

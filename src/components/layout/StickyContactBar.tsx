@@ -18,10 +18,14 @@ export function StickyContactBar() {
   useEffect(() => {
     const view = barRef.current?.ownerDocument.defaultView ?? window
     const document = barRef.current?.ownerDocument ?? window.document
+    const footer = document.querySelector('footer')
     let previousY = view.scrollY
     let footerInView = false
     const update = () => {
       const currentY = view.scrollY
+      footerInView = Boolean(
+        footer && footer.getBoundingClientRect().top <= view.innerHeight + 12,
+      )
       if (currentY <= 120 || footerInView) {
         setVisible(false)
       } else if (currentY < previousY - 3) {
@@ -31,7 +35,6 @@ export function StickyContactBar() {
       }
       previousY = currentY
     }
-    const footer = document.querySelector('footer')
     const observer =
       footer && view.IntersectionObserver
         ? new view.IntersectionObserver(
@@ -39,7 +42,7 @@ export function StickyContactBar() {
               footerInView = entry.isIntersecting
               if (footerInView) setVisible(false)
             },
-            { threshold: 0.05 },
+            { rootMargin: '0px 0px 96px 0px', threshold: 0 },
           )
         : null
     if (footer && observer) observer.observe(footer)

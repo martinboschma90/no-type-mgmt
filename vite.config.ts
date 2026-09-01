@@ -19,6 +19,15 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    server: {
+      proxy: {
+        '/api/analytics': {
+          target: 'https://notype-mgmt.com',
+          changeOrigin: true,
+          secure: true,
+        },
+      },
+    },
     build: {
       target: ['es2019', 'safari14'],
       cssCodeSplit: true,
