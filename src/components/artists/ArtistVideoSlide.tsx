@@ -1,5 +1,4 @@
 import type { Artist, ArtistVideo } from '@/types/artist'
-import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
 import {
   artistHasVideos,
   normalizeArtistVideos,
@@ -36,7 +35,6 @@ type ArtistVideoSlideProps = {
   showEmptyState?: boolean
   /** CMS live preview — muted autoplay on the active reel */
   previewMode?: boolean
-  previewFocus?: ArtistPreviewFocus
 }
 
 /**
@@ -47,7 +45,6 @@ export function ArtistVideoSlide({
   artist,
   showEmptyState = false,
   previewMode = false,
-  previewFocus,
 }: ArtistVideoSlideProps) {
   const artistVideos = normalizeArtistVideos(artist)
   const videos =
@@ -61,7 +58,6 @@ export function ArtistVideoSlide({
       videos={videos}
       showEmptyState={showEmptyState}
       previewMode={previewMode}
-      previewFocus={previewFocus}
     />
   )
 }

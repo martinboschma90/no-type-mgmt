@@ -56,6 +56,18 @@ function countryFlag(code?: string) {
   return String.fromCodePoint(127397 + first, 127397 + second)
 }
 
+const regionNames = new Intl.DisplayNames(['nl'], { type: 'region' })
+
+function countryName(code?: string) {
+  const country = code?.trim().toUpperCase()
+  if (!country || country.length !== 2 || country === 'ZZ') return 'Onbekend'
+  try {
+    return regionNames.of(country) ?? country
+  } catch {
+    return country
+  }
+}
+
 const deviceNames: Record<string, string> = {
   desktop: 'Desktop',
   mobile: 'Mobiel',

@@ -57,7 +57,6 @@ export function ArtistPageSections({
                 artist={artist}
                 previewMode={previewMode}
                 showEmptyState={previewMode}
-                previewFocus={previewMode ? previewFocus : undefined}
               />
             )
             return (

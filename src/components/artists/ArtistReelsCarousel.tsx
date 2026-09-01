@@ -6,7 +6,6 @@ import type { Artist, ArtistVideo } from '@/types/artist'
 import { MediaContext } from '@/cms/media/MediaContext'
 import { parseMediaRef } from '@/cms/media/refs'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
-import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
 
 const CINEMA_EASE = [0.22, 1, 0.36, 1] as const
 
@@ -39,10 +38,11 @@ function VideoTile({
     const blob = asset?.blob
 
     if (hostWindow && blob && hostWindow !== window) {
-      const url = hostWindow.URL.createObjectURL(blob)
+      const urlApi = hostWindow as unknown as typeof globalThis
+      const url = urlApi.URL.createObjectURL(blob)
       setPlayableUrl(url)
       return () => {
-        hostWindow.URL.revokeObjectURL(url)
+        urlApi.URL.revokeObjectURL(url)
       }
     }
 
@@ -146,13 +146,11 @@ export function ArtistReelsCarousel({
   videos,
   showEmptyState = false,
   previewMode = false,
-  previewFocus,
 }: {
   artist: Artist
   videos: ArtistVideo[]
   showEmptyState?: boolean
   previewMode?: boolean
-  previewFocus?: ArtistPreviewFocus
 }) {
   const sectionRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
