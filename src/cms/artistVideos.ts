@@ -35,6 +35,10 @@ export function normalizeArtistVideos(
       id: v.id || crypto.randomUUID(),
       videoUrl: v.videoUrl.trim(),
       clipUrl: v.clipUrl?.trim() || undefined,
+      clipBytes:
+        typeof v.clipBytes === 'number' && v.clipBytes > 0
+          ? v.clipBytes
+          : undefined,
       clipStart: Math.max(0, v.clipStart ?? 0),
       clipDuration: Math.max(2, v.clipDuration ?? 6),
       posterUrl: v.posterUrl?.trim() || undefined,
@@ -121,6 +125,12 @@ export function parseVideosColumn(value: unknown): ArtistVideo[] {
         : typeof row.clip_url === 'string'
           ? row.clip_url
           : ''
+    const clipBytesRaw =
+      typeof row.clipBytes === 'number'
+        ? row.clipBytes
+        : typeof row.clip_bytes === 'number'
+          ? row.clip_bytes
+          : 0
     const clipStart =
       typeof row.clipStart === 'number'
         ? row.clipStart
@@ -139,6 +149,7 @@ export function parseVideosColumn(value: unknown): ArtistVideo[] {
       id,
       videoUrl: videoUrl.trim(),
       ...(clipUrlRaw.trim() ? { clipUrl: clipUrlRaw.trim() } : {}),
+      ...(clipBytesRaw > 0 ? { clipBytes: clipBytesRaw } : {}),
       clipStart: Math.max(0, clipStart),
       clipDuration: Math.max(2, clipDuration),
       ...(posterRaw.trim() ? { posterUrl: posterRaw.trim() } : {}),

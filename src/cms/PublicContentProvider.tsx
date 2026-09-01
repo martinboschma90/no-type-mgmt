@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { CmsContext } from '@/cms/CmsContext'
 import {
   createDefaultSiteContent,
@@ -52,30 +53,44 @@ const noopAsync = async () => ({ error: null as string | null })
 /** Read-only site/team for the public app — no Auth, no supabase-js. */
 export function PublicContentProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<CmsContent>(initialPublicContent)
+  const { pathname } = useLocation()
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
     let cancelled = false
-    void Promise.all([fetchPublicSite(), fetchPublicTeam()])
-      .then(([site, team]) => {
+    void fetchPublicSite()
+      .then((site) => {
         if (cancelled) return
         if (site) storageSet(PUBLIC_SITE_STORAGE_KEY, JSON.stringify(site))
-        if (team && team.length > 0) {
-          storageSet(PUBLIC_TEAM_STORAGE_KEY, JSON.stringify(team))
-        }
         setContent((prev) => ({
           ...prev,
           site: site ?? prev.site,
-          team: team && team.length > 0 ? team : prev.team,
         }))
       })
       .catch((error) => {
-        console.warn('[public] site/team hydrate failed', error)
+        console.warn('[public] site hydrate failed', error)
       })
     return () => {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || pathname !== '/about') return
+    let cancelled = false
+    void fetchPublicTeam()
+      .then((team) => {
+        if (cancelled || !team || team.length === 0) return
+        storageSet(PUBLIC_TEAM_STORAGE_KEY, JSON.stringify(team))
+        setContent((prev) => ({ ...prev, team }))
+      })
+      .catch((error) => {
+        console.warn('[public] team hydrate failed', error)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [pathname])
 
   const value = useMemo(
     () => ({

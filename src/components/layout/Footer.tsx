@@ -78,6 +78,7 @@ export function Footer() {
                 alt={brandName}
                 height={40}
                 className="block h-10 w-auto max-w-full object-contain"
+                loading="lazy"
                 decoding="async"
                 draggable={false}
               />

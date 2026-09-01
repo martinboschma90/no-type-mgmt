@@ -168,6 +168,7 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
           kind: 'reel' as const,
           videoUrl: v.videoUrl.trim(),
           clipUrl: v.clipUrl?.trim() || '',
+          clipBytes: v.clipBytes ?? 0,
           clipStart: Math.max(0, v.clipStart ?? 0),
           clipDuration: Math.max(2, v.clipDuration ?? 6),
           posterUrl: v.posterUrl?.trim() || '',

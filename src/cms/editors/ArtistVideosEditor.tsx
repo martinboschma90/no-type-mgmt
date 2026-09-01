@@ -12,6 +12,7 @@ import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 import { useMedia } from '@/cms/media/MediaProvider'
 import { parseMediaRef, toMediaRef } from '@/cms/media/refs'
 import type { ArtistVideo } from '@/types/artist'
+import { isLiveVideoSizeAllowed } from '@/cms/media/videoLimits'
 
 function formatTime(seconds: number) {
   const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
@@ -38,10 +39,10 @@ function formatMegabytes(bytes: number) {
 
 function videoPerformanceScore(bytes: number) {
   const megabytes = bytes / (1024 * 1024)
-  if (megabytes <= 0.5) return 100
+  if (megabytes <= 0.35) return 100
   return Math.max(
     1,
-    Math.min(100, Math.round(100 - ((megabytes - 0.5) / 3.5) * 40)),
+    Math.min(100, Math.round(100 - ((megabytes - 0.35) / 1.65) * 30)),
   )
 }
 
@@ -162,6 +163,11 @@ function VideoMomentField({
     }
   }, [assets, resolvedClipUrl, video.clipUrl])
 
+  useEffect(() => {
+    if (!liveSize || liveSize === video.clipBytes) return
+    onChange({ clipBytes: liveSize })
+  }, [liveSize, onChange, video.clipBytes])
+
   function readDuration(element: HTMLVideoElement) {
     const mediaDuration =
       Number.isFinite(element.duration) && element.duration > 0
@@ -223,7 +229,7 @@ function VideoMomentField({
             maxStart,
           )
           if (Math.abs(nextStart - clipStart) < 0.05) return
-          onChange({ clipStart: nextStart, clipUrl: undefined })
+          onChange({ clipStart: nextStart, clipUrl: undefined, clipBytes: undefined })
         }}
       />
       <div className="min-w-0 self-center">
@@ -253,7 +259,7 @@ function VideoMomentField({
           }}
           onChange={(event) => {
             const next = Number(event.target.value)
-            onChange({ clipStart: next, clipUrl: undefined })
+            onChange({ clipStart: next, clipUrl: undefined, clipBytes: undefined })
             if (previewRef.current) previewRef.current.currentTime = next
           }}
           className="mt-3 h-1.5 w-full accent-neutral-700 disabled:opacity-40"
@@ -264,7 +270,7 @@ function VideoMomentField({
             value={clipStart}
             max={maxStart}
             onCommit={(nextStart) => {
-              onChange({ clipStart: nextStart, clipUrl: undefined })
+              onChange({ clipStart: nextStart, clipUrl: undefined, clipBytes: undefined })
               if (previewRef.current) previewRef.current.currentTime = nextStart
             }}
           />
@@ -277,7 +283,7 @@ function VideoMomentField({
                 10,
                 Math.max(2, nextEnd - clipStart),
               )
-              onChange({ clipDuration: nextDuration, clipUrl: undefined })
+              onChange({ clipDuration: nextDuration, clipUrl: undefined, clipBytes: undefined })
             }}
           />
         </div>
@@ -294,7 +300,7 @@ function VideoMomentField({
                 onChange({
                   clipDuration: seconds,
                   clipStart: nextStart,
-                  clipUrl: undefined,
+                  clipUrl: undefined, clipBytes: undefined,
                 })
               }}
               className={[
@@ -329,6 +335,7 @@ function VideoMomentField({
                 clipUrl: asset.publicUrl || toMediaRef(asset.id),
                 clipStart,
                 clipDuration,
+                clipBytes: asset.size,
               })
             } catch (reason) {
               setError(
@@ -350,9 +357,16 @@ function VideoMomentField({
         </button>
         {video.clipUrl ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-medium text-emerald-600">
-              Live fragment klaar
-            </span>
+            {liveSize && !isLiveVideoSizeAllowed(liveSize) ? (
+              <span className="text-[10px] font-medium text-red-600">
+                Te groot voor live ({formatMegabytes(liveSize)}). Max 2 MB —
+                maak het fragment opnieuw.
+              </span>
+            ) : (
+              <span className="text-[10px] font-medium text-emerald-600">
+                Live fragment klaar
+              </span>
+            )}
             {liveSize ? (
               <>
                 <span className="rounded-full bg-neutral-200 px-2 py-1 text-[10px] font-semibold tabular-nums text-neutral-700">
@@ -525,7 +539,7 @@ export function ArtistVideosEditor({
                     video.id,
                     completingOnlineSync
                       ? { videoUrl }
-                      : { videoUrl, clipUrl: undefined },
+                      : { videoUrl, clipUrl: undefined, clipBytes: undefined },
                   )
                 }}
                 hint="Reels-formaat 9:16. Alle clips spelen gedempt automatisch af."

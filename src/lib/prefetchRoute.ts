@@ -1,5 +1,6 @@
 /** Warm lazy route chunks on intent (hover / focus). */
 const loaders: Record<string, () => Promise<unknown>> = {
+  '/artists/:slug': () => import('@/pages/ArtistPage'),
   '/about': () => import('@/pages/AboutPage'),
   '/booking': () => import('@/pages/BookingPage'),
   '/faq': () => import('@/pages/FaqPage'),
@@ -13,6 +14,7 @@ export function prefetchRoute(to: string) {
   if (warmed.has(path)) return
   if (path.startsWith('/artists/') && path !== '/artists') {
     warmed.add(path)
+    void loaders['/artists/:slug']()
     return
   }
   const load = loaders[path]
@@ -21,10 +23,3 @@ export function prefetchRoute(to: string) {
   void load()
 }
 
-/** Download menu + inner pages while the roster is on screen. */
-export function prefetchPublicApp() {
-  prefetchRoute('/about')
-  prefetchRoute('/booking')
-  prefetchRoute('/faq')
-  prefetchRoute('/contact')
-}

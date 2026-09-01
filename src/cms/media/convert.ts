@@ -1,9 +1,13 @@
 /** Browser-side conversion: images → WebP, video → WebM when supported. */
 import fixWebmDuration from 'fix-webm-duration'
+import {
+  MAX_LIVE_VIDEO_BYTES,
+  MAX_STORED_VIDEO_BYTES,
+} from '@/cms/media/videoLimits'
+
+export { MAX_LIVE_VIDEO_BYTES, MAX_STORED_VIDEO_BYTES }
 
 const MAX_IMAGE_EDGE = 2400
-export const MAX_LIVE_VIDEO_BYTES = 4 * 1024 * 1024
-export const MAX_STORED_VIDEO_BYTES = 50 * 1024 * 1024
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -116,7 +120,7 @@ function tryGetReelCapture(video: HTMLVideoElement): {
   height: number
   stop: () => void
 } | null {
-  const maxEdge = 960
+  const maxEdge = 720
   const scale = Math.min(
     1,
     maxEdge / Math.max(video.videoWidth, video.videoHeight),
@@ -302,8 +306,9 @@ export async function convertVideoToWebm(
 
   try {
     const chunks: BlobPart[] = []
-    const audioBitsPerSecond = clip ? 64_000 : 128_000
+    const audioBitsPerSecond = clip ? 0 : 128_000
     const storedTargetBytes = 45 * 1024 * 1024
+    const liveTargetBytes = 1.7 * 1024 * 1024
     const storedVideoBitsPerSecond = Math.max(
       80_000,
       Math.min(
@@ -314,9 +319,16 @@ export async function convertVideoToWebm(
         ),
       ),
     )
+    const clipVideoBitsPerSecond = Math.max(
+      160_000,
+      Math.min(
+        420_000,
+        Math.floor((liveTargetBytes * 8) / Math.max(duration, 1)),
+      ),
+    )
     const recorder = new MediaRecorder(stream, {
       mimeType,
-      videoBitsPerSecond: clip ? 650_000 : storedVideoBitsPerSecond,
+      videoBitsPerSecond: clip ? clipVideoBitsPerSecond : storedVideoBitsPerSecond,
       audioBitsPerSecond,
     })
 
@@ -395,7 +407,7 @@ export async function convertVideoToWebm(
     if (blob.size > maxOutputBytes) {
       throw new Error(
         clip
-          ? 'Het live fragment is nog groter dan 4 MB. Kies een korter fragment.'
+          ? 'Het live fragment is nog groter dan 2 MB. Kies een korter fragment.'
           : 'De gecomprimeerde video is nog groter dan 50 MB.',
       )
     }

@@ -308,7 +308,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
           { startTime, duration },
         )
         if (converted.blob.size > MAX_LIVE_VIDEO_BYTES) {
-          throw new Error('Het live fragment kon niet onder 4 MB worden gebracht.')
+          throw new Error('Het live fragment kon niet onder 2 MB worden gebracht.')
         }
 
         const id = crypto.randomUUID()

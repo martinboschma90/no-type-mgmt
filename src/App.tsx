@@ -6,7 +6,10 @@ import { PublicContentProvider } from '@/cms/PublicContentProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { RouteFallback } from '@/components/ui/RouteFallback'
 import { HomePage } from '@/pages/HomePage'
-import { ArtistPage } from '@/pages/ArtistPage'
+
+const ArtistPage = lazy(() =>
+  import('@/pages/ArtistPage').then((m) => ({ default: m.ArtistPage })),
+)
 
 const AboutPage = lazy(() =>
   import('@/pages/AboutPage').then((m) => ({ default: m.AboutPage })),

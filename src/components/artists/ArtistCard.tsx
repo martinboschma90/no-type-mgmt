@@ -21,7 +21,7 @@ export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
   const { content } = useCms()
   const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
-  const priority = index < 4
+  const priority = index < 2
   const href = `/artists/${artist.slug}`
   const glowStyle = {
     ['--artist-card-glow' as string]: rosterGlowGradient(
@@ -39,12 +39,12 @@ export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
         to={href}
         onPointerEnter={() => prefetchRoute(href)}
         onFocus={() => prefetchRoute(href)}
-        className="artist-card group relative isolate block w-full overflow-hidden rounded-[1.5rem] bg-[#151217] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        className="artist-card group relative isolate block w-full overflow-hidden rounded-card bg-[#151217] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         style={glowStyle}
       >
         {imageUrl ? (
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 origin-center transition-transform duration-[600ms] ease-out will-change-transform group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
+          <div className="absolute inset-0 overflow-hidden rounded-[inherit]">
+            <div className="absolute inset-0 origin-center overflow-hidden rounded-[inherit] transition-transform duration-[600ms] ease-out will-change-transform group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100">
               <OptimizedImg
                 src={imageUrl}
                 alt={artist.imageAlt}

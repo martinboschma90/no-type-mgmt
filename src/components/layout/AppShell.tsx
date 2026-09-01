@@ -1,4 +1,11 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { GradientOverlay } from '@/components/layout/GradientOverlay'
 import { MenuOverlay } from '@/components/layout/MenuOverlay'
@@ -20,6 +27,8 @@ export function AppShell({
   showFooter = true,
 }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [footerReady, setFooterReady] = useState(false)
+  const footerBoundaryRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
@@ -27,6 +36,25 @@ export function AppShell({
       document.body.style.overflow = ''
     }
   }, [menuOpen])
+
+  useEffect(() => {
+    if (!showFooter) return
+    const boundary = footerBoundaryRef.current
+    if (!boundary || !window.IntersectionObserver) {
+      setFooterReady(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        setFooterReady(true)
+        observer.disconnect()
+      },
+      { rootMargin: '500px 0px', threshold: 0 },
+    )
+    observer.observe(boundary)
+    return () => observer.disconnect()
+  }, [showFooter])
 
   return (
     <>
@@ -40,9 +68,19 @@ export function AppShell({
         <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} />
         <main>{children}</main>
         {showFooter ? (
-          <Suspense fallback={null}>
-            <Footer />
-          </Suspense>
+          <>
+            <div
+              ref={footerBoundaryRef}
+              data-footer-boundary
+              className="h-px"
+              aria-hidden
+            />
+            {footerReady ? (
+              <Suspense fallback={null}>
+                <Footer />
+              </Suspense>
+            ) : null}
+          </>
         ) : null}
         <StickyContactBar />
       </div>

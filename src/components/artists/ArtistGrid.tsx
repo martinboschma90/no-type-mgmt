@@ -24,7 +24,7 @@ export function ArtistGrid({ artists }: ArtistGridProps) {
         : Array.from({ length: 8 }, (_, index) => (
             <div
               key={`roster-skel-${index}`}
-              className="w-full rounded-[1.5rem] bg-[#151217]"
+              className="w-full rounded-card bg-[#151217]"
               style={{ aspectRatio: '3 / 4' }}
               aria-hidden
             />

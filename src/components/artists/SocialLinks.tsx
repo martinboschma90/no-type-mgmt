@@ -68,7 +68,7 @@ export function SocialLinks({ links, className = '' }: SocialLinksProps) {
             target="_blank"
             rel="noreferrer"
             aria-label={link.label}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-brand bg-transparent text-brand transition-[color,background-color,border-color] duration-300 ease-out hover:border-transparent hover:bg-brand hover:text-[#111111]"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-fg bg-transparent text-brand-fg transition-[color,background-color,border-color] duration-300 ease-out hover:border-transparent hover:bg-brand hover:text-[#111111]"
           >
             {icons[link.platform]}
           </a>

@@ -31,12 +31,33 @@ function requestPlay(element: HTMLVideoElement) {
   })
 }
 
+function bindMobilePlayback(element: HTMLVideoElement) {
+  element.muted = true
+  element.defaultMuted = true
+  element.playsInline = true
+  element.setAttribute('muted', '')
+  element.setAttribute('playsinline', '')
+  element.setAttribute('webkit-playsinline', '')
+}
+
+function tileIsOnScreen(node: HTMLElement) {
+  const rect = node.getBoundingClientRect()
+  return (
+    rect.bottom > 40 &&
+    rect.top < window.innerHeight - 40 &&
+    rect.right > 20 &&
+    rect.left < window.innerWidth - 20
+  )
+}
+
 function VideoTile({
   video,
   allowSourceFallback,
+  eager = false,
 }: {
   video: ArtistVideo
   allowSourceFallback: boolean
+  eager?: boolean
 }) {
   const media = useContext(MediaContext)
   const [preferClip, setPreferClip] = useState(Boolean(video.clipUrl))
@@ -45,7 +66,8 @@ function VideoTile({
   const resolvedUrl = useResolvedMediaUrl(sourceRef)
   const articleRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [active, setActive] = useState(false)
+  const [shouldLoad, setShouldLoad] = useState(eager)
+  const [active, setActive] = useState(eager)
   const mediaId = parseMediaRef(sourceRef)
   const localUrl = media?.assets.find(
     (item) => item.id === mediaId || item.publicUrl === sourceRef,
@@ -63,26 +85,43 @@ function VideoTile({
     const node = articleRef.current
     if (!node || !videoUrl) return
 
+    const sync = (visible: boolean) => {
+      if (visible) setShouldLoad(true)
+      setActive(visible)
+    }
+
+    if (eager || tileIsOnScreen(node)) sync(true)
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setActive(entry.isIntersecting)
-        const element = videoRef.current
-        if (!element) return
-        if (!entry.isIntersecting) {
-          pauseVideo(element)
-        } else if (element.readyState >= HTMLMediaElement.HAVE_METADATA) {
-          requestPlay(element)
-        }
+        sync(entry.isIntersecting || entry.intersectionRatio > 0)
       },
-      { rootMargin: '80px', threshold: 0.2 },
+      { root: null, rootMargin: '280px 80px', threshold: 0 },
     )
     observer.observe(node)
+
+    const fallback = window.setTimeout(() => {
+      if (tileIsOnScreen(node)) sync(true)
+    }, 200)
+
     return () => {
       observer.disconnect()
+      window.clearTimeout(fallback)
       const element = videoRef.current
       if (element) releaseVideo(element)
     }
-  }, [videoUrl])
+  }, [eager, videoUrl])
+
+  useEffect(() => {
+    const element = videoRef.current
+    if (!element) return
+    bindMobilePlayback(element)
+    if (!active) {
+      pauseVideo(element)
+    } else if (element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      requestPlay(element)
+    }
+  }, [active, shouldLoad, videoUrl])
 
   return (
     <article
@@ -90,24 +129,33 @@ function VideoTile({
       className="relative w-full overflow-hidden rounded-[1.35rem] bg-[#121014] shadow-2xl"
       style={{ aspectRatio: '9 / 16' }}
     >
-      {active && videoUrl ? (
+      {shouldLoad && videoUrl ? (
         <video
           key={videoUrl}
-          ref={videoRef}
+          ref={(element) => {
+            videoRef.current = element
+            if (element) bindMobilePlayback(element)
+          }}
           src={videoUrl}
           className="absolute inset-0 h-full w-full object-cover object-center"
           muted
+          autoPlay
           playsInline
           loop
-          preload="metadata"
+          preload="auto"
           onLoadedMetadata={(event) => {
             const element = event.currentTarget
-            element.currentTime = Math.min(
-              clipStart,
-              Math.max(0, element.duration - 0.1),
-            )
+            bindMobilePlayback(element)
+            if (clipStart > 0.08 && Number.isFinite(element.duration)) {
+              element.currentTime = Math.min(
+                clipStart,
+                Math.max(0, element.duration - 0.1),
+              )
+            }
             requestPlay(element)
           }}
+          onLoadedData={(event) => requestPlay(event.currentTarget)}
+          onCanPlay={(event) => requestPlay(event.currentTarget)}
           onTimeUpdate={(event) => {
             const element = event.currentTarget
             const clipEnd = Math.min(element.duration, clipStart + clipDuration)
@@ -121,22 +169,9 @@ function VideoTile({
             if (element) pauseVideo(element)
             if (preferClip && video.clipUrl && allowSourceFallback) {
               setPreferClip(false)
-            } else if (element) {
-              pauseVideo(element)
             }
           }}
         />
-      ) : null}
-      <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10"
-        aria-hidden
-      />
-      {video.title ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
-          <p className="type-label min-w-0 truncate text-[0.6rem] tracking-[0.14em] text-white/80 uppercase">
-            {video.title}
-          </p>
-        </div>
       ) : null}
     </article>
   )
@@ -223,11 +258,9 @@ export function ArtistReelsCarousel({
         className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"
       >
         <motion.div
-          initial={previewMode ? false : { opacity: 0, y: 22 }}
-          animate={previewMode ? { opacity: 1, y: 0 } : undefined}
-          whileInView={previewMode ? undefined : { opacity: 1, y: 0 }}
-          viewport={previewMode ? undefined : { once: true, amount: 0.12 }}
-          transition={{ duration: 0.7, ease: CINEMA_EASE }}
+          initial={previewMode ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.45, ease: CINEMA_EASE }}
         >
           <div className="mb-5 flex items-end justify-between gap-4">
             <div>
@@ -255,7 +288,9 @@ export function ArtistReelsCarousel({
               ref={trackRef}
               className={
                 videos.length === 1
-                  ? 'flex justify-center overflow-x-auto px-3 py-3 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                  ? 'flex justify-start overflow-x-auto px-3 py-3 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                  : videos.length === 2
+                    ? 'flex snap-x snap-mandatory justify-start gap-3 overflow-x-auto px-3 py-3 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
                   : 'grid cursor-grab grid-flow-col auto-cols-[min(62vw,17.5rem)] grid-rows-1 items-start gap-3 overflow-x-auto overscroll-x-contain px-3 py-3 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] [scrollbar-width:none] active:cursor-grabbing sm:auto-cols-[17.5rem] sm:px-6 lg:auto-cols-[17.5rem] lg:px-8 [&::-webkit-scrollbar]:hidden'
               }
               onMouseLeave={() => {
@@ -263,10 +298,12 @@ export function ArtistReelsCarousel({
                 setIsInteracting(false)
               }}
               onWheel={(event) => {
-                event.preventDefault()
-                event.currentTarget.scrollLeft += event.deltaX + event.deltaY
+                if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+                  event.currentTarget.scrollLeft += event.deltaX + event.deltaY
+                }
               }}
               onPointerDown={(event) => {
+                if (event.pointerType !== 'mouse') return
                 dragRef.current = {
                   pointerId: event.pointerId,
                   startX: event.clientX,
@@ -289,18 +326,19 @@ export function ArtistReelsCarousel({
                 }
               }}
             >
-              {videos.map((video) => (
+              {videos.map((video, index) => (
                 <div
                   key={video.id}
                   className={
-                    videos.length === 1
-                      ? 'w-[min(72vw,17.5rem)] shrink-0'
+                    videos.length <= 2
+                      ? 'w-[min(72vw,17.5rem)] shrink-0 snap-start'
                       : 'w-full min-w-0 shrink-0'
                   }
                 >
                   <VideoTile
                     video={video}
-                    allowSourceFallback={previewMode}
+                    allowSourceFallback
+                    eager={index < 2}
                   />
                 </div>
               ))}

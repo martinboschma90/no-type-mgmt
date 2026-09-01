@@ -75,7 +75,10 @@ export function RelatedArtists({
         className="grid snap-x snap-mandatory grid-flow-col auto-cols-[76%] gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] sm:auto-cols-[46%] sm:gap-4 lg:auto-cols-[calc((100%-3rem)/4)] [&::-webkit-scrollbar]:hidden"
       >
         {related.map((candidate, index) => (
-          <div key={candidate.id} className="snap-start">
+          <div
+            key={candidate.id}
+            className="overflow-hidden rounded-card snap-start"
+          >
             <ArtistCard artist={candidate} index={index + 4} />
           </div>
         ))}

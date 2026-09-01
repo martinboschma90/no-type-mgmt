@@ -4,7 +4,6 @@ import { Hero } from '@/components/hero/Hero'
 import { ArtistRoster } from '@/components/artists/ArtistRoster'
 import { usePublicArtists } from '@/cms/usePublicArtists'
 import { useCms } from '@/cms/CmsContext'
-import { prefetchPublicApp } from '@/lib/prefetchRoute'
 
 export function HomePage() {
   const { artists } = usePublicArtists()
@@ -19,10 +18,6 @@ export function HomePage() {
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  useEffect(() => {
-    prefetchPublicApp()
   }, [])
 
   return (

@@ -18,7 +18,9 @@ export function StickyContactBar() {
   useEffect(() => {
     const view = barRef.current?.ownerDocument.defaultView ?? window
     const document = barRef.current?.ownerDocument ?? window.document
-    const footer = document.querySelector('footer')
+    const footer =
+      document.querySelector('[data-footer-boundary]') ??
+      document.querySelector('footer')
     let previousY = view.scrollY
     let footerInView = false
     const update = () => {

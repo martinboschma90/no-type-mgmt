@@ -56,6 +56,8 @@ export type ArtistVideo = {
   videoUrl: string
   /** Generated short file used by the public page; original stays in Storage. */
   clipUrl?: string
+  /** Byte size of the generated live clip, when known. */
+  clipBytes?: number
   /** Start of the short loop shown on the artist page, in seconds. */
   clipStart?: number
   /** Length of the visible loop, in seconds. */

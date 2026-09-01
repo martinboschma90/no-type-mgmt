@@ -4,9 +4,10 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Yellow — visual brand highlight / artist glow */
+  /* Yellow — fill / highlight. brand-fg is the readable line/icon color. */
   --color-brand: #d8ff3e;
   --color-brand-dim: #c2e638;
+  --color-brand-fg: #3d480c;
   --color-more: #d8ff3e;
 
   /* Deep purple-rose / magenta — interaction & hover feedback */
@@ -45,6 +46,7 @@
   --nav-chip-hover: rgb(17 17 17 / 0.1);
   --glow-purple: rgb(88 40 120 / 0.08);
   --glow-purple-strong: rgb(88 40 120 / 0.12);
+  --color-brand-fg: #3d480c;
 }
 
 /* Dark — underground label */
@@ -63,6 +65,7 @@
   --nav-chip-hover: rgb(245 245 245 / 0.14);
   --glow-purple: rgb(88 40 120 / 0.14);
   --glow-purple-strong: rgb(88 40 120 / 0.2);
+  --color-brand-fg: #d8ff3e;
 }
 
 @layer base {
@@ -175,6 +178,13 @@
   .artist-card__img {
     filter: brightness(0.96) contrast(1.05) saturate(0.94);
   }
+
+  /* clip-path keeps rounded corners even when photos use transform/filter */
+  .artist-card {
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    clip-path: inset(0 round var(--radius-card));
+  }
 }
 
 /* Superform-style flowing glow — outside Tailwind layers so it always ships.
@@ -210,32 +220,6 @@
   animation: artistCardGlowFlow 12s ease infinite;
 }
 
-.artist-hero__glow {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  z-index: 1;
-  height: 64%;
-  pointer-events: none;
-  opacity: 0.18;
-  background: var(
-    --artist-hero-glow,
-    linear-gradient(45deg, #eaff8a, #d8ff3e, #a8487a, #86355f)
-  );
-  background-size: 300% 100%;
-  mix-blend-mode: screen;
-  filter: saturate(1.2);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 48%, transparent 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 48%, transparent 100%);
-  transition: opacity 0.6s ease;
-}
-
-.artist-hero-card:hover .artist-hero__glow,
-.artist-hero-card:focus-within .artist-hero__glow {
-  opacity: 0.95;
-  animation: artistCardGlowFlow 12s ease infinite;
-}
-
 @keyframes artistCardGlowFlow {
   0% {
     background-position: 0% 50%;
@@ -264,9 +248,7 @@
   }
 
   .artist-card:hover .artist-card__glow,
-  .artist-card:focus-visible .artist-card__glow,
-  .artist-hero-card:hover .artist-hero__glow,
-  .artist-hero-card:focus-within .artist-hero__glow {
+  .artist-card:focus-visible .artist-card__glow {
     animation: none;
   }
 }
@@ -314,6 +296,7 @@
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --color-brand: #171717;
   --color-brand-dim: #404040;
+  --color-brand-fg: #171717;
   --color-more: #171717;
   --color-accent: #171717;
   --color-accent-dim: #525252;
@@ -513,5 +496,13 @@
   --color-more: #d8ff3e;
   --color-accent: #a8487a;
   --color-accent-dim: #86355f;
+}
+
+[data-cms] [data-cms-preview][data-theme='light'] {
+  --color-brand-fg: #3d480c;
+}
+
+[data-cms] [data-cms-preview][data-theme='dark'] {
+  --color-brand-fg: #d8ff3e;
 }
 

@@ -1,9 +1,11 @@
+import { useEffect, useMemo, useState } from 'react'
 import type { Artist } from '@/types/artist'
 import {
   artistHasVideos,
   normalizeArtistVideos,
 } from '@/cms/artistVideos'
 import { ArtistReelsCarousel } from '@/components/artists/ArtistReelsCarousel'
+import { isLiveVideoSizeAllowed } from '@/cms/media/videoLimits'
 
 type ArtistVideoSlideProps = {
   artist: Artist
@@ -11,6 +13,17 @@ type ArtistVideoSlideProps = {
   showEmptyState?: boolean
   /** CMS live preview — muted autoplay on the active reel */
   previewMode?: boolean
+}
+
+async function readClipBytes(url: string) {
+  if (!/^https?:\/\//i.test(url)) return null
+  try {
+    const response = await fetch(url, { method: 'HEAD' })
+    const size = Number(response.headers.get('content-length') || 0)
+    return response.ok && size > 0 ? size : null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -23,16 +36,52 @@ export function ArtistVideoSlide({
   previewMode = false,
 }: ArtistVideoSlideProps) {
   const sourceVideos = normalizeArtistVideos(artist)
-  const videos = previewMode
-    ? sourceVideos
-    : sourceVideos.filter((video) => Boolean(video.clipUrl))
+  const clipKey = sourceVideos
+    .map((video) => `${video.id}:${video.clipUrl ?? ''}:${video.clipBytes ?? ''}`)
+    .join('|')
+  const previewVideos = useMemo(
+    () => sourceVideos,
+    // clipKey captures the live-relevant fields
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [clipKey],
+  )
+  const [liveVideos, setLiveVideos] = useState(
+    previewMode ? previewVideos : [],
+  )
+
+  useEffect(() => {
+    if (previewMode) {
+      setLiveVideos(previewVideos)
+      return
+    }
+
+    const withClip = previewVideos.filter((video) => Boolean(video.clipUrl))
+    let cancelled = false
+
+    void Promise.all(
+      withClip.map(async (video) => {
+        if (isLiveVideoSizeAllowed(video.clipBytes ?? 0)) return video
+        const size = await readClipBytes(video.clipUrl ?? '')
+        if (size != null && isLiveVideoSizeAllowed(size)) return video
+        return null
+      }),
+    ).then((rows) => {
+      if (cancelled) return
+      setLiveVideos(rows.filter((row) => row != null))
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [previewMode, previewVideos])
 
   if (!artistHasVideos(artist) && !showEmptyState) return null
+  if (!previewMode && liveVideos.length === 0 && !showEmptyState) return null
 
   return (
     <ArtistReelsCarousel
       artist={artist}
-      videos={videos}
+      videos={previewMode ? previewVideos : liveVideos}
       showEmptyState={showEmptyState}
       previewMode={previewMode}
     />

@@ -8,7 +8,6 @@ import { artistGenres } from '@/cms/artistGenres'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import { OptimizedImg } from '@/components/ui/OptimizedImg'
-import { rosterGlowGradient } from '@/cms/rosterGlow'
 import { isMusicEmbedActive } from '@/cms/artistMusic'
 import {
   artistBookingWhatsAppMessage,
@@ -48,14 +47,6 @@ export function ArtistHero({ artist, previewFocus }: ArtistHeroProps) {
   const bio = artist.bio?.trim() ?? ''
   const bioNeedsToggle = bio.length > 220
   const [bioOpen, setBioOpen] = useState(false)
-  const glowStyle = {
-    ['--artist-hero-glow' as string]: rosterGlowGradient(
-      content.site.rosterGlowPreset,
-      content.site.rosterGlowCustom,
-      content.site.rosterGlowSecondary,
-      content.site.rosterGlowCustomSecondary,
-    ),
-  }
 
   useEffect(() => {
     if (previewFocus !== 'hero') return
@@ -91,8 +82,8 @@ export function ArtistHero({ artist, previewFocus }: ArtistHeroProps) {
 
         <div className="relative order-2 w-full lg:col-span-5 lg:col-start-1 lg:row-span-3 lg:row-start-1">
           <div
-            className="artist-hero-card group relative w-full overflow-hidden rounded-[1.5rem] bg-card sm:rounded-[2rem]"
-            style={{ aspectRatio: '3 / 4', ...glowStyle }}
+            className="relative w-full overflow-hidden rounded-[1.5rem] bg-card sm:rounded-[2rem]"
+            style={{ aspectRatio: '3 / 4' }}
           >
             {imageUrl ? (
               <OptimizedImg
@@ -109,7 +100,6 @@ export function ArtistHero({ artist, previewFocus }: ArtistHeroProps) {
                 draggable={false}
               />
             ) : null}
-            <div className="artist-hero__glow" aria-hidden />
           </div>
         </div>
 
