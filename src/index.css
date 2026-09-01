@@ -215,19 +215,25 @@
   inset-inline: 0;
   bottom: 0;
   z-index: 1;
-  height: 58%;
+  height: 64%;
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 0.18;
   background: var(
     --artist-hero-glow,
     linear-gradient(45deg, #eaff8a, #d8ff3e, #a8487a, #86355f)
   );
   background-size: 300% 100%;
   mix-blend-mode: screen;
-  filter: saturate(1.15);
-  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 42%, transparent 100%);
-  mask-image: linear-gradient(to top, #000 0%, #000 42%, transparent 100%);
-  animation: artistCardGlowFlow 14s ease infinite;
+  filter: saturate(1.2);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 48%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 48%, transparent 100%);
+  transition: opacity 0.6s ease;
+}
+
+.artist-hero-card:hover .artist-hero__glow,
+.artist-hero-card:focus-within .artist-hero__glow {
+  opacity: 0.95;
+  animation: artistCardGlowFlow 12s ease infinite;
 }
 
 @keyframes artistCardGlowFlow {
@@ -258,7 +264,9 @@
   }
 
   .artist-card:hover .artist-card__glow,
-  .artist-card:focus-visible .artist-card__glow {
+  .artist-card:focus-visible .artist-card__glow,
+  .artist-hero-card:hover .artist-hero__glow,
+  .artist-hero-card:focus-within .artist-hero__glow {
     animation: none;
   }
 }
