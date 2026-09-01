@@ -1,0 +1,150 @@
+export type ViewMode = 'grid' | 'list'
+
+export type SocialPlatform =
+  | 'website'
+  | 'instagram'
+  | 'tiktok'
+  | 'facebook'
+  | 'soundcloud'
+  | 'spotify'
+  | 'youtube'
+
+export type SocialLink = {
+  platform: SocialPlatform
+  url: string
+  label: string
+}
+
+export type Track = {
+  id: string
+  title: string
+  credit?: string
+  duration: string
+}
+
+/** Per-artist music embed (stored inside tracks jsonb, migration-safe). */
+export type MusicPlatform = 'soundcloud' | 'spotify' | 'custom'
+
+export type ArtistMusic = {
+  platform: MusicPlatform
+  /** Track/playlist URL or ready-made embed src. */
+  embedUrl: string
+  title: string
+  visible: boolean
+}
+
+export type ArtistSectionId = 'hero' | 'video' | 'instagram' | 'tracks'
+
+/** Instagram profile + up to 6 post/reel permalinks for the artist-page carousel. */
+export type ArtistInstagramFeed = {
+  /** Profile URL (`instagram.com/handle`). Falls back to socials Instagram. */
+  profileUrl: string
+  /** Post or reel permalinks — empty slots are ignored on the public page. */
+  posts: string[]
+  visible: boolean
+}
+
+export type ArtistSectionConfig = {
+  id: ArtistSectionId
+  visible: boolean
+}
+
+/** Short vertical clip in the artist-page filmstrip. */
+export type ArtistVideo = {
+  id: string
+  /** Media ref (`media://…`) or absolute URL. */
+  videoUrl: string
+  /** Generated short file used by the public page; original stays in Storage. */
+  clipUrl?: string
+  /** Start of the short loop shown on the artist page, in seconds. */
+  clipStart?: number
+  /** Length of the visible loop, in seconds. */
+  clipDuration?: number
+  /** Optional poster / thumbnail before playback. */
+  posterUrl?: string
+  title?: string
+  /** `film` = landscape tile under bio; omit / `reel` = 9:16 carousel. */
+  kind?: 'reel' | 'film'
+  /** Optional pill on the film tile (e.g. Live, Studio). */
+  label?: string
+}
+
+/** Landscape film tile under the artist bio (House of Yellow-style row of 3). */
+export type ArtistFilm = {
+  id: string
+  videoUrl: string
+  posterUrl?: string
+  title?: string
+  label?: string
+}
+
+/** CMS publish workflow — public site only shows `published`. */
+export type ArtistStatus = 'draft' | 'published'
+
+export type Artist = {
+  id: string
+  name: string
+  slug: string
+  genre?: string
+  /** Multiple genres for profile chips. `genre` stays the first / legacy value. */
+  genres?: string[]
+  imageUrl: string
+  imageAlt: string
+  /**
+   * Legacy / serialized object-position (`50% 32%` or old preset id).
+   * Prefer `imageFocusX` / `imageFocusY` for art direction.
+   */
+  imageFocus?: string
+  /** object-position X percent (0–100) — per-artist art direction. */
+  imageFocusX?: number
+  /** object-position Y percent (0–100) — per-artist art direction. */
+  imageFocusY?: number
+  /** Zoom factor for portrait crop (1 = cover, >1 = tighter editorial crop). */
+  imageScale?: number
+  /** Bumps with campaign seed revisions — triggers re-apply of hand-tuned framing. */
+  artDirectionVersion?: number
+  /** Optional centered video slide (WebM via CMS media library). */
+  videoUrl?: string
+  /**
+   * Artist videos — 1–8 short vertical clips.
+   * Prefer this over legacy `videoUrl`. Empty → fall back to `videoUrl`.
+   */
+  videos?: ArtistVideo[]
+  /**
+   * Landscape films under the bio — up to 3, shown in a row on desktop.
+   * Stored in the same `videos` jsonb column with `kind: 'film'`.
+   */
+  films?: ArtistFilm[]
+  bio?: string
+  socials?: SocialLink[]
+  /** Legacy playlist rows — kept for compatibility. */
+  tracks?: Track[]
+  /**
+   * Flexible music embed (SoundCloud / Spotify / custom).
+   * Persisted inside the `tracks` jsonb column alongside the track list.
+   */
+  music?: ArtistMusic
+  instagramFeed?: ArtistInstagramFeed
+  presskitUrl?: string
+  /** Page layout order + visibility — editable via CMS drag & drop. */
+  sections?: ArtistSectionConfig[]
+  /**
+   * Publish status. Prefer this over `visible`.
+   * Missing → inferred from `visible` for legacy content.
+   */
+  status?: ArtistStatus
+  /** First (or last) publish time — ISO string. */
+  publishedAt?: string
+  /**
+   * Legacy public visibility — kept in sync with `status` for RLS.
+   * `undefined` / missing = treated as published when status is also missing.
+   */
+  visible?: boolean
+}
+
+export type TeamMember = {
+  id: string
+  name: string
+  role: string
+  imageUrl: string
+}

@@ -1,0 +1,498 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/archivo-black/400.css';
+@import 'tailwindcss';
+
+@theme {
+  /* Yellow — visual brand highlight / artist glow */
+  --color-brand: #d8ff3e;
+  --color-brand-dim: #c2e638;
+  --color-more: #d8ff3e;
+
+  /* Deep purple-rose / magenta — interaction & hover feedback */
+  --color-accent: #a8487a;
+  --color-accent-dim: #86355f;
+
+  /* Themed surfaces — Tailwind baseline = light; dark via [data-theme] */
+  --color-ink: #111111;
+  --color-ink-inverse: #f5f5f5;
+  --color-ink-deep: #0a0a0a;
+  --color-ink-muted: #6b6b6b;
+  --color-cream: #f5f3ef;
+  --color-cream-dark: #ebe8e2;
+  --color-card: #ffffff;
+  --color-secondary: #ffffff;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Archivo Black', 'Inter', ui-sans-serif, sans-serif;
+  --radius-card: 2rem;
+}
+
+/* Light — warm paper, white cards, lime accent */
+:root,
+[data-theme='light'] {
+  --color-ink: #111111;
+  --color-ink-inverse: #f5f5f5;
+  --color-ink-deep: #0a0a0a;
+  --color-ink-muted: #6b6b6b;
+  --color-cream: #f5f3ef;
+  --color-cream-dark: #ebe8e2;
+  --color-card: #ffffff;
+  --color-secondary: #ffffff;
+  --body-bg: #f5f3ef;
+  --menu-bg: rgb(245 243 239 / 0.94);
+  --nav-chip: rgb(17 17 17 / 0.06);
+  --nav-chip-hover: rgb(17 17 17 / 0.1);
+  --glow-purple: rgb(88 40 120 / 0.08);
+  --glow-purple-strong: rgb(88 40 120 / 0.12);
+}
+
+/* Dark — underground label */
+[data-theme='dark'] {
+  --color-ink: #f5f5f5;
+  --color-ink-inverse: #090909;
+  --color-ink-deep: #050505;
+  --color-ink-muted: #9a9a9a;
+  --color-cream: #090909;
+  --color-cream-dark: #151217;
+  --color-card: #151217;
+  --color-secondary: #151217;
+  --body-bg: #090909;
+  --menu-bg: rgb(9 9 9 / 0.94);
+  --nav-chip: rgb(245 245 245 / 0.08);
+  --nav-chip-hover: rgb(245 245 245 / 0.14);
+  --glow-purple: rgb(88 40 120 / 0.14);
+  --glow-purple-strong: rgb(88 40 120 / 0.2);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100svh;
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-optical-sizing: auto;
+    letter-spacing: -0.011em;
+    line-height: 1.5;
+    color: var(--color-ink);
+    background-color: var(--body-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.35s ease, color 0.25s ease;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100svh;
+    position: relative;
+    z-index: 1;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.25s ease;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+    color: var(--color-ink);
+  }
+}
+
+@layer utilities {
+  /* Campaign display — Archivo Black, Nike / fashion scale */
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: normal;
+    font-synthesis: none;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    line-height: 0.88;
+  }
+
+  .type-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: normal;
+    font-synthesis: none;
+    text-transform: uppercase;
+    letter-spacing: -0.035em;
+    line-height: 0.86;
+  }
+
+  .type-headline {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: normal;
+    font-synthesis: none;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    line-height: 0.92;
+  }
+
+  /* Editorial / UI labels */
+  .type-label {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .type-ui {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .type-body {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: -0.011em;
+    line-height: 1.65;
+  }
+
+  /* Roster campaign crop — slight grade so mixed source photos read as one set */
+  .artist-card__img {
+    filter: brightness(0.96) contrast(1.05) saturate(0.94);
+  }
+}
+
+/* Superform-style flowing glow — outside Tailwind layers so it always ships.
+   Color stops come from CMS via --artist-card-glow (inline on the card). */
+.artist-card__glow {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 64%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.18;
+  background: var(
+    --artist-card-glow,
+    linear-gradient(45deg, #eaff8a, #d8ff3e, #c4a06a, #a8487a, #86355f)
+  );
+  background-size: 300% 100%;
+  mix-blend-mode: screen;
+  filter: saturate(1.2);
+  -webkit-mask-image: linear-gradient(
+    to top,
+    #000 0%,
+    #000 48%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to top, #000 0%, #000 48%, transparent 100%);
+  transition: opacity 0.6s ease;
+}
+
+.artist-card:hover .artist-card__glow,
+.artist-card:focus-visible .artist-card__glow {
+  opacity: 0.95;
+  animation: artistCardGlowFlow 12s ease infinite;
+}
+
+.artist-hero__glow {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 58%;
+  pointer-events: none;
+  opacity: 0.7;
+  background: var(
+    --artist-hero-glow,
+    linear-gradient(45deg, #eaff8a, #d8ff3e, #a8487a, #86355f)
+  );
+  background-size: 300% 100%;
+  mix-blend-mode: screen;
+  filter: saturate(1.15);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 42%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 42%, transparent 100%);
+  animation: artistCardGlowFlow 14s ease infinite;
+}
+
+@keyframes artistCardGlowFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes brand-mark-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.brand-mark-spin {
+  animation: brand-mark-spin 52s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-mark-spin {
+    animation: none;
+  }
+
+  .artist-card:hover .artist-card__glow,
+  .artist-card:focus-visible .artist-card__glow {
+    animation: none;
+  }
+}
+
+/* CMS-only contrast — does not change the public site */
+.cms-shell {
+  --cms-surface: #ffffff;
+  --cms-input: #f4f1eb;
+  --cms-border: rgb(17 17 17 / 0.16);
+  --cms-label: rgb(17 17 17 / 0.78);
+  --cms-muted: rgb(17 17 17 / 0.62);
+  --cms-hint: rgb(17 17 17 / 0.52);
+}
+
+[data-cms-theme='dark'] .cms-shell {
+  --body-bg: #121014;
+  --cms-surface: #1c191f;
+  --cms-input: #141218;
+  --cms-border: rgb(245 245 245 / 0.32);
+  --cms-label: rgb(245 245 245 / 0.9);
+  --cms-muted: rgb(245 245 245 / 0.78);
+  --cms-hint: rgb(245 245 245 / 0.68);
+}
+
+/* Bump washed-out Tailwind ink opacities so labels stay readable */
+.cms-shell .text-ink\/35,
+.cms-shell .text-ink\/40 {
+  color: var(--cms-hint);
+}
+
+.cms-shell .text-ink\/45,
+.cms-shell .text-ink\/50,
+.cms-shell .text-ink\/55 {
+  color: var(--cms-muted);
+}
+
+.cms-shell .placeholder\:text-ink\/40::placeholder {
+  color: var(--cms-hint);
+}
+
+/* Flow Mates chrome — Frame CMS look, not Notype lime/magenta */
+[data-cms] {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-brand: #171717;
+  --color-brand-dim: #404040;
+  --color-more: #171717;
+  --color-accent: #171717;
+  --color-accent-dim: #525252;
+  --body-bg: #fafaf8;
+}
+
+.cms-theme-root,
+.cms-layout {
+  background: #fafaf8;
+}
+
+[data-cms-theme='dark'] {
+  color-scheme: dark;
+  --body-bg: #090909;
+  background: #090909;
+  color: #f5f5f5;
+}
+
+[data-cms-theme='dark'] .cms-layout,
+[data-cms-theme='dark'] .bg-neutral-50 {
+  background-color: #090909;
+}
+
+[data-cms-theme='dark'] .bg-white,
+[data-cms-theme='dark'] .bg-white\/90,
+[data-cms-theme='dark'] .bg-white\/95 {
+  background-color: #1b1b1b;
+}
+
+[data-cms-theme='dark'] .bg-neutral-50\/60,
+[data-cms-theme='dark'] .bg-neutral-50\/80,
+[data-cms-theme='dark'] .bg-neutral-100 {
+  background-color: #242424;
+}
+
+[data-cms-theme='dark'] .bg-neutral-900 {
+  background-color: #292929;
+}
+
+[data-cms-theme='dark'] .cms-media-sidebar {
+  background-color: #141414;
+}
+
+[data-cms-theme='dark'] .text-neutral-900 {
+  color: #f5f5f5;
+}
+
+[data-cms-theme='dark'] .cms-layout :is(h1, h2, h3, h4) {
+  color: #ffffff;
+}
+
+[data-cms-theme='dark'] .text-neutral-800,
+[data-cms-theme='dark'] .text-neutral-700 {
+  color: #e5e5e5;
+}
+
+[data-cms-theme='dark'] .text-neutral-600,
+[data-cms-theme='dark'] .text-neutral-500 {
+  color: #a3a3a3;
+}
+
+[data-cms-theme='dark'] .text-neutral-400 {
+  color: #737373;
+}
+
+[data-cms-theme='dark'] .cms-artist-editor [class~='text-ink'] {
+  color: #f5f5f5;
+}
+
+[data-cms-theme='dark'] .cms-artist-editor [class*='text-ink/'] {
+  color: #a3a3a3;
+}
+
+[data-cms-theme='dark'] .cms-artist-editor [class*='border-ink/'] {
+  border-color: #363636;
+}
+
+[data-cms-theme='dark'] .border-neutral-200,
+[data-cms-theme='dark'] .border-neutral-200\/70,
+[data-cms-theme='dark'] .border-neutral-200\/80,
+[data-cms-theme='dark'] .border-neutral-300 {
+  border-color: #363636;
+}
+
+[data-cms-theme='dark'] aside.bg-white {
+  background-color: #101010;
+}
+
+[data-cms-theme='dark'] .cms-page-tabs {
+  background-color: rgb(9 9 9 / 0.96);
+}
+
+[data-cms-theme='dark'] input,
+[data-cms-theme='dark'] textarea,
+[data-cms-theme='dark'] select {
+  border-color: #333333;
+  background: #171717;
+  color: #f5f5f5;
+}
+
+[data-cms-theme='dark'] input::placeholder,
+[data-cms-theme='dark'] textarea::placeholder {
+  color: #737373;
+}
+
+[data-cms-theme='dark'] .hover\:bg-neutral-100:hover,
+[data-cms-theme='dark'] .hover\:bg-neutral-50:hover,
+[data-cms-theme='dark'] .hover\:bg-white:hover {
+  background-color: #242424;
+}
+
+[data-cms-theme='dark'] .hover\:text-neutral-900:hover {
+  color: #ffffff;
+}
+
+[data-cms-theme='dark'] .cms-primary-action {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #111111;
+}
+
+[data-cms-theme='dark'] .cms-primary-action:hover {
+  background: #e5e5e5;
+}
+
+[data-cms-theme='dark'] .cms-secondary-action {
+  border-color: #404040;
+  background: #242424;
+  color: #f5f5f5;
+}
+
+[data-cms-theme='dark'] .cms-secondary-action:hover,
+[data-cms-theme='dark'] .cms-ghost-action:hover {
+  background: #303030;
+}
+
+[data-cms-theme='dark'] .cms-action-card:hover {
+  border-color: #4a4a4a;
+  background: #222222;
+}
+
+[data-cms-theme='dark'] .border-emerald-200\/70 {
+  border-color: #275c46;
+}
+
+[data-cms-theme='dark'] .bg-emerald-50\/80 {
+  background-color: #153428;
+}
+
+[data-cms-theme='dark'] .text-emerald-700 {
+  color: #6ee7b7;
+}
+
+[data-cms-theme='dark'] .hover\:bg-emerald-100:hover {
+  background-color: #1d4937;
+}
+
+/* Compact Flow Mates editor typography; previews keep the public Notype face. */
+[data-cms] .cms-editor-pane :where(.type-display, .type-headline) {
+  font-family: inherit;
+  font-weight: 600;
+  font-style: normal;
+  font-synthesis: auto;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+[data-cms] .cms-editor-pane .text-sm,
+[data-cms] .cms-editor-pane input,
+[data-cms] .cms-editor-pane textarea,
+[data-cms] .cms-editor-pane select {
+  font-size: 0.78rem;
+}
+
+[data-cms] .cms-editor-pane .text-xs {
+  font-size: 0.69rem;
+}
+
+[data-cms] .cms-editor-pane h3 {
+  font-size: 0.8rem;
+}
+
+[data-cms] [data-cms-preview] {
+  --color-brand: #d8ff3e;
+  --color-brand-dim: #c2e638;
+  --color-more: #d8ff3e;
+  --color-accent: #a8487a;
+  --color-accent-dim: #86355f;
+}
+

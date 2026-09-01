@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="nl" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/brand/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/brand/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090909" />
+    <meta
+      name="description"
+      content="NOTYPE MGMT — premium artist management for crossover dance & pop."
+    />
+    <style>
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: #090909;
+        color: #f5f5f5;
+      }
+      html[data-theme='light'] {
+        background: #f5f3ef;
+        color: #111111;
+      }
+      #root { min-height: 100vh; }
+    </style>
+    <link rel="preload" as="image" href="/brand/notype-wordmark.svg" type="image/svg+xml" />
+    <title>NOTYPE MGMT</title>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('notype-theme')
+          if (t !== 'light' && t !== 'dark') t = 'dark'
+          document.documentElement.dataset.theme = t
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark'
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!--public-boot-->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
