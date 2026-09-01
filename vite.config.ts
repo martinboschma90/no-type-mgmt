@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api/analytics': {
-          target: 'https://notype-mgmt.com',
+          target: 'https://no-type-mgmt.vercel.app',
           changeOrigin: true,
           secure: true,
         },

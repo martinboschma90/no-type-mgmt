@@ -51,19 +51,19 @@ function StatusCard({
   tone?: string
 }) {
   return (
-    <div className="cms-status-card rounded-xl border border-neutral-200 bg-white p-4">
+    <div className="cms-status-card rounded-xl border border-neutral-200 bg-white p-3">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
           {label}
         </p>
         <span
-          className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${toneMap[tone] ?? toneMap.neutral}`}
+          className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${toneMap[tone] ?? toneMap.neutral}`}
         >
           <Icon className="h-3.5 w-3.5" />
         </span>
       </div>
-      <p className="mt-2.5 truncate text-lg font-semibold tracking-tight text-neutral-900">{value}</p>
-      <p className="mt-1 truncate text-xs text-neutral-500">{hint}</p>
+      <p className="mt-2 truncate text-base font-semibold tracking-tight text-neutral-900">{value}</p>
+      <p className="mt-0.5 truncate text-[10px] text-neutral-500">{hint}</p>
     </div>
   )
 }
@@ -84,16 +84,16 @@ function ActionTile({
   return (
     <Link
       to={to}
-      className="cms-action-card group relative flex flex-col rounded-xl border border-neutral-200 bg-white p-4 transition-colors duration-200 hover:border-neutral-400"
+      className="cms-action-card group relative flex flex-col rounded-xl border border-neutral-200 bg-white p-3 transition-colors duration-200 hover:border-neutral-400"
     >
       <div
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${accent}`}
+        className={`inline-flex h-7 w-7 items-center justify-center rounded-md ${accent}`}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4 w-4" />
       </div>
-      <h3 className="mt-4 text-base font-semibold tracking-tight text-neutral-900">{label}</h3>
+      <h3 className="mt-2.5 text-sm font-semibold tracking-tight text-neutral-900">{label}</h3>
       <p className="mt-1 text-xs leading-relaxed text-neutral-500">{description}</p>
-      <div className="mt-5 inline-flex items-center gap-1 text-xs font-medium text-neutral-700 transition group-hover:gap-2 group-hover:text-neutral-900">
+      <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-neutral-700 transition group-hover:gap-2 group-hover:text-neutral-900">
         Openen <ArrowUpRight className="h-3.5 w-3.5" />
       </div>
     </Link>
@@ -110,11 +110,11 @@ export function DashboardHome() {
 
   return (
     <>
-      <div className="relative mb-6 overflow-hidden rounded-xl border border-neutral-200 bg-[#181818] p-7 text-white sm:p-8">
-        <div className="relative flex flex-wrap items-center justify-between gap-6">
+      <div className="relative mb-4 overflow-hidden rounded-xl border border-neutral-200 bg-[#181818] p-5 text-white">
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div className="max-w-xl">
-            <h2 className="text-2xl font-semibold tracking-tight">Welkom terug.</h2>
-            <p className="mt-2 text-sm text-white/70 sm:text-base">
+            <h2 className="text-xl font-semibold tracking-tight">Welkom terug.</h2>
+            <p className="mt-1 text-xs text-white/70">
               Bewerk content en houd de website up-to-date — alles op één plek.
             </p>
           </div>
@@ -138,7 +138,7 @@ export function DashboardHome() {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
         <StatusCard
           icon={CheckCircle2}
           label="Website status"
@@ -167,9 +167,6 @@ export function DashboardHome() {
           hint="artist pages"
           tone="rose"
         />
-      </div>
-
-      <div className="mb-8 grid gap-3 sm:grid-cols-3">
         <StatusCard
           icon={FolderOpen}
           label="Mediabibliotheek"
@@ -195,13 +192,13 @@ export function DashboardHome() {
 
       <TrafficDashboard />
 
-      <div className="mb-3">
-        <h3 className="text-base font-semibold tracking-tight text-neutral-900">Snelle acties</h3>
+      <div className="mb-2">
+        <h3 className="text-sm font-semibold tracking-tight text-neutral-900">Snelle acties</h3>
         <p className="text-xs text-neutral-500">
           Ga direct naar de onderdelen die je het vaakst bewerkt.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <ActionTile
           to="/cms/home"
           label="Homepage"

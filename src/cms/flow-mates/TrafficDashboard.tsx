@@ -72,6 +72,7 @@ export function TrafficDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -116,8 +117,8 @@ export function TrafficDashboard() {
   )
 
   return (
-    <section className="mb-8 overflow-hidden rounded-xl border border-neutral-200 bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-4 sm:px-5">
+    <section className="mb-4 overflow-hidden rounded-xl border border-neutral-200 bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-neutral-500" />
@@ -129,29 +130,40 @@ export function TrafficDashboard() {
             Alleen openbare pagina’s, gemeten door Vercel Analytics.
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1">
-          {periods.map((period) => (
+        <div className="flex items-center gap-2">
+          {data ? (
             <button
-              key={period}
               type="button"
-              onClick={() => setDays(period)}
-              className={[
-                'rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors',
-                days === period
-                  ? 'bg-white text-neutral-900 shadow-sm'
-                  : 'text-neutral-500 hover:text-neutral-900',
-              ].join(' ')}
+              onClick={() => setExpanded((value) => !value)}
+              className="text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-900"
             >
-              {period} dagen
+              {expanded ? 'Details sluiten' : 'Details tonen'}
             </button>
-          ))}
+          ) : null}
+          <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1">
+            {periods.map((period) => (
+              <button
+                key={period}
+                type="button"
+                onClick={() => setDays(period)}
+                className={[
+                  'rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors',
+                  days === period
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-900',
+                ].join(' ')}
+              >
+                {period} dagen
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {loading ? <TrafficLoading /> : null}
 
       {!loading && error ? (
-        <div className="flex min-h-48 flex-col items-center justify-center px-6 py-10 text-center">
+        <div className="flex min-h-24 flex-col items-center justify-center px-4 py-4 text-center">
           <p className="max-w-lg text-sm font-medium text-neutral-800">{error}</p>
           <p className="mt-1 max-w-lg text-xs leading-relaxed text-neutral-500">
             Voeg de servervariabelen toe in Vercel en plaats de site daarna opnieuw online.
@@ -159,7 +171,7 @@ export function TrafficDashboard() {
           <button
             type="button"
             onClick={() => setReloadKey((value) => value + 1)}
-            className="cms-secondary-action mt-4 inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-700"
+            className="cms-secondary-action mt-2 inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Opnieuw proberen
@@ -175,6 +187,7 @@ export function TrafficDashboard() {
               label="Bezoeken"
               value={number(data.totals.pageviews)}
               delta={change(data.totals.pageviews, data.previous.pageviews)}
+              compact={!expanded}
             />
             <TrafficMetric
               icon={<Users className="h-4 w-4" />}
@@ -182,10 +195,13 @@ export function TrafficDashboard() {
               value={number(data.totals.visitors)}
               delta={change(data.totals.visitors, data.previous.visitors)}
               border
+              compact={!expanded}
             />
           </div>
 
-          <div className="grid xl:grid-cols-[1.5fr_1fr]">
+          {expanded ? (
+            <>
+              <div className="grid xl:grid-cols-[1.5fr_1fr]">
             <div className="border-b border-neutral-200 p-4 sm:p-5 xl:border-b-0 xl:border-r">
               <p className="mb-5 text-xs font-semibold text-neutral-700">Bezoeken per dag</p>
               <div className="flex h-44 items-end gap-1">
@@ -213,9 +229,9 @@ export function TrafficDashboard() {
               rows={data.pages}
               label={(row) => row.requestPath || '/'}
             />
-          </div>
+              </div>
 
-          <div className="grid border-t border-neutral-200 md:grid-cols-3">
+              <div className="grid border-t border-neutral-200 md:grid-cols-3">
             <RankedList
               icon={<Globe2 className="h-3.5 w-3.5" />}
               title="Verkeersbronnen"
@@ -242,7 +258,9 @@ export function TrafficDashboard() {
               compact
               border
             />
-          </div>
+              </div>
+            </>
+          ) : null}
         </>
       ) : null}
     </section>
@@ -255,22 +273,24 @@ function TrafficMetric({
   value,
   delta,
   border = false,
+  compact = false,
 }: {
   icon: React.ReactNode
   label: string
   value: string
   delta: string
   border?: boolean
+  compact?: boolean
 }) {
   const positive = !delta.startsWith('-')
   return (
-    <div className={`p-4 sm:p-5 ${border ? 'sm:border-l sm:border-neutral-200' : ''}`}>
+    <div className={`${compact ? 'px-4 py-3' : 'p-4 sm:p-5'} ${border ? 'sm:border-l sm:border-neutral-200' : ''}`}>
       <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
         {icon}
         {label}
       </div>
       <div className="mt-2 flex items-end gap-2">
-        <span className="text-2xl font-semibold tracking-tight text-neutral-900">{value}</span>
+        <span className={`${compact ? 'text-xl' : 'text-2xl'} font-semibold tracking-tight text-neutral-900`}>{value}</span>
         <span
           className={`mb-0.5 text-[11px] font-medium ${
             positive ? 'text-emerald-600' : 'text-red-500'
@@ -279,7 +299,9 @@ function TrafficMetric({
           {delta}
         </span>
       </div>
-      <p className="mt-1 text-[10px] text-neutral-400">ten opzichte van vorige periode</p>
+      {!compact ? (
+        <p className="mt-1 text-[10px] text-neutral-400">ten opzichte van vorige periode</p>
+      ) : null}
     </div>
   )
 }

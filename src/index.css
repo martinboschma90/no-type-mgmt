@@ -308,6 +308,10 @@
 }
 
 /* Flow Mates chrome — Frame CMS look, not Notype lime/magenta */
+.cms-compact-root {
+  font-size: 14px;
+}
+
 [data-cms] {
   color-scheme: light;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
