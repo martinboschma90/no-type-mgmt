@@ -56,8 +56,8 @@ export function PublicContentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return
     let cancelled = false
-    void Promise.all([fetchPublicSite(), fetchPublicTeam()]).then(
-      ([site, team]) => {
+    void Promise.all([fetchPublicSite(), fetchPublicTeam()])
+      .then(([site, team]) => {
         if (cancelled) return
         if (site) storageSet(PUBLIC_SITE_STORAGE_KEY, JSON.stringify(site))
         if (team && team.length > 0) {
@@ -68,8 +68,10 @@ export function PublicContentProvider({ children }: { children: ReactNode }) {
           site: site ?? prev.site,
           team: team && team.length > 0 ? team : prev.team,
         }))
-      },
-    )
+      })
+      .catch((error) => {
+        console.warn('[public] site/team hydrate failed', error)
+      })
     return () => {
       cancelled = true
     }

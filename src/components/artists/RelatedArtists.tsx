@@ -15,6 +15,10 @@ export function RelatedArtists({
   const genres = new Set(artistGenres(artist).map((genre) => genre.toLowerCase()))
   const related = visibleArtists(artists)
     .filter((candidate) => candidate.id !== artist.id && candidate.slug !== artist.slug)
+    .filter((candidate) => {
+      const url = candidate.imageUrl?.trim() ?? ''
+      return url.startsWith('http://') || url.startsWith('https://')
+    })
     .map((candidate, index) => ({
       artist: candidate,
       index,

@@ -9,6 +9,8 @@ import {
 } from 'react'
 import { useAuth } from '@/cms/auth/AuthProvider'
 import {
+  MAX_LIVE_VIDEO_BYTES,
+  MAX_STORED_VIDEO_BYTES,
   convertImageToWebp,
   convertVideoToWebm,
   isImageFile,
@@ -48,17 +50,28 @@ async function syncAssetToSupabase(
   >,
 ): Promise<string | null> {
   if (!isSupabaseConfigured) return null
-  return publishMediaAssetToSupabase({
-    id: asset.id,
-    name: asset.name,
-    kind: asset.kind,
-    mimeType: asset.mimeType,
-    size: asset.size,
-    width: asset.width,
-    height: asset.height,
-    duration: asset.duration,
-    blob: asset.blob,
-  })
+
+  let upload = asset
+  if (
+    asset.kind === 'video' &&
+    (!asset.mimeType.includes('webm') || asset.size > MAX_STORED_VIDEO_BYTES)
+  ) {
+    const converted = await convertVideoToWebm(
+      new File([asset.blob], asset.name, { type: asset.mimeType }),
+    )
+    upload = {
+      ...asset,
+      name: `${baseName(asset.name)}.webm`,
+      mimeType: converted.blob.type || 'video/webm',
+      size: converted.blob.size,
+      width: converted.width,
+      height: converted.height,
+      duration: converted.duration,
+      blob: converted.blob,
+    }
+  }
+
+  return publishMediaAssetToSupabase(upload)
 }
 
 export function MediaProvider({ children }: { children: ReactNode }) {
@@ -66,6 +79,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   const [assets, setAssets] = useState<MediaAsset[]>([])
   const [ready, setReady] = useState(false)
   const [syncingRemote, setSyncingRemote] = useState(false)
+  const [syncRetry, setSyncRetry] = useState(0)
   const [uploading, setUploading] = useState<MediaUploadProgress | null>(null)
   const syncedIds = useRef(new Set<string>())
   const assetsRef = useRef(assets)
@@ -100,7 +114,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured || !authReady || !user || !ready) return
 
-    let cancelled = false
+    let retryTimer = 0
 
     ;(async () => {
       const pending = assetsRef.current.filter(
@@ -109,24 +123,41 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       if (pending.length === 0) return
 
       setSyncingRemote(true)
+      let retryNeeded = false
       for (const asset of pending) {
-        if (cancelled) break
         syncedIds.current.add(asset.id)
-        const publicUrl = await syncAssetToSupabase(asset)
-        if (!publicUrl || cancelled) continue
-        setAssets((prev) =>
-          prev.map((a) => (a.id === asset.id ? { ...a, publicUrl } : a)),
+        try {
+          const publicUrl = await syncAssetToSupabase(asset)
+          if (!publicUrl) {
+            syncedIds.current.delete(asset.id)
+            retryNeeded = true
+            continue
+          }
+          const { url: _url, ...storedAsset } = asset
+          await idbPutAsset({ ...storedAsset, publicUrl })
+          setAssets((prev) =>
+            prev.map((a) => (a.id === asset.id ? { ...a, publicUrl } : a)),
+          )
+        } catch {
+          syncedIds.current.delete(asset.id)
+          retryNeeded = true
+        }
+      }
+      setSyncingRemote(false)
+      if (retryNeeded) {
+        retryTimer = window.setTimeout(
+          () => setSyncRetry((value) => value + 1),
+          5000,
         )
       }
-      if (!cancelled) setSyncingRemote(false)
     })().catch(() => {
-      if (!cancelled) setSyncingRemote(false)
+      setSyncingRemote(false)
     })
 
     return () => {
-      cancelled = true
+      window.clearTimeout(retryTimer)
     }
-  }, [authReady, user, ready, assets.length])
+  }, [authReady, user, ready, assets.length, syncRetry])
 
   const uploadFiles = useCallback(async (files: FileList | File[]) => {
     const list = Array.from(files)
@@ -159,6 +190,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
           const publicUrl = await syncAssetToSupabase(meta)
           if (publicUrl) syncedIds.current.add(id)
           const asset = toAsset({ ...meta, publicUrl: publicUrl ?? undefined })
+          if (publicUrl) await idbPutAsset({ ...meta, publicUrl })
           created.push(asset)
           setAssets((prev) => [asset, ...prev])
         } else if (isVideoFile(file)) {
@@ -177,6 +209,14 @@ export function MediaProvider({ children }: { children: ReactNode }) {
               })
             },
           )
+          if (!Number.isFinite(duration) || duration <= 0) {
+            throw new Error(
+              'De videoduur kon niet worden gelezen. Exporteer opnieuw als MP4 en probeer nogmaals.',
+            )
+          }
+          if (blob.size > MAX_STORED_VIDEO_BYTES) {
+            throw new Error('De video kon niet onder 50 MB worden gebracht.')
+          }
           const mimeType = blob.type || 'video/webm'
           const ext =
             mimeType.includes('webm')
@@ -207,6 +247,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
           const publicUrl = await syncAssetToSupabase(meta)
           if (publicUrl) syncedIds.current.add(id)
           const asset = toAsset({ ...meta, publicUrl: publicUrl ?? undefined })
+          if (publicUrl) await idbPutAsset({ ...meta, publicUrl })
           created.push(asset)
           setAssets((prev) => [asset, ...prev])
         } else {
@@ -266,6 +307,9 @@ export function MediaProvider({ children }: { children: ReactNode }) {
             }),
           { startTime, duration },
         )
+        if (converted.blob.size > MAX_LIVE_VIDEO_BYTES) {
+          throw new Error('Het live fragment kon niet onder 4 MB worden gebracht.')
+        }
 
         const id = crypto.randomUUID()
         const meta = {
@@ -286,6 +330,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
         const publicUrl = await syncAssetToSupabase(meta)
         if (publicUrl) syncedIds.current.add(id)
         const asset = toAsset({ ...meta, publicUrl: publicUrl ?? undefined })
+        if (publicUrl) await idbPutAsset({ ...meta, publicUrl })
         setAssets((previous) => [asset, ...previous])
         setUploading({ fileName: clipName, stage: 'done' })
         window.setTimeout(() => setUploading(null), 1200)

@@ -447,8 +447,8 @@ export function CmsLayout() {
               </div>
             ) : (
               <EditorPreviewLayout>
-              <div className="cms-editor-pane min-w-0 pr-1">
-                <div className="mb-5 border-b border-neutral-200/70 pb-5">
+              <div className="cms-editor-pane sticky top-[var(--cms-editor-sticky-top,0px)] flex h-[calc(100dvh-var(--cms-editor-sticky-top,0px)-1.5rem)] min-h-0 min-w-0 flex-col self-start pr-1">
+                <div className="shrink-0 border-b border-neutral-200/70 pb-4">
                   <h1
                     className="text-2xl font-medium tracking-tight text-neutral-900 sm:text-[1.75rem]"
                     style={{ letterSpacing: '-0.01em' }}
@@ -463,7 +463,8 @@ export function CmsLayout() {
                   </p>
                 </div>
                 {panels.mode === 'artists' && artistSlug ? (
-                  <div className="cms-artist-tabs sticky top-12 z-20 mb-4 rounded-xl border border-neutral-200 bg-white p-2.5 lg:top-0">
+                  <div className="cms-artist-tabs shrink-0 bg-[#fafaf8] py-3">
+                    <div className="rounded-xl border border-neutral-200 bg-white p-2.5 shadow-sm">
                     <div className="mb-2 flex items-center justify-between gap-3 px-1">
                       <Link
                         to="/cms/artists"
@@ -503,8 +504,10 @@ export function CmsLayout() {
                         )
                       })}
                     </div>
+                    </div>
                   </div>
                 ) : null}
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-3">
                 {panels.mode === 'artists' && artistSlug ? null : (
                   <EditorTopBar
                     mode="auto-save"
@@ -526,6 +529,7 @@ export function CmsLayout() {
                     <panels.Page slot="editor" />
                   </Suspense>
                 </EditorAccordionScope>
+                </div>
               </div>
               <div className="min-h-0 min-w-0 flex-1">
                 <Suspense fallback={<RouteFallback compact />}>

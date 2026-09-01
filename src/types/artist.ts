@@ -33,7 +33,7 @@ export type ArtistMusic = {
   visible: boolean
 }
 
-export type ArtistSectionId = 'hero' | 'video' | 'instagram' | 'tracks'
+export type ArtistSectionId = 'hero' | 'video' | 'instagram' | 'tracks' | 'related'
 
 /** Instagram profile + up to 6 post/reel permalinks for the artist-page carousel. */
 export type ArtistInstagramFeed = {

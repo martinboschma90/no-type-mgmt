@@ -1,5 +1,15 @@
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
+function safeStorageName(name: string) {
+  const cleaned = name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+  return cleaned || 'media-file'
+}
+
 /** Upload a local library blob to the public `media` bucket + media_assets row. */
 export async function publishMediaAssetToSupabase(input: {
   id: string
@@ -14,7 +24,7 @@ export async function publishMediaAssetToSupabase(input: {
 }): Promise<string | null> {
   if (!isSupabaseConfigured || !supabase) return null
 
-  const storagePath = `library/${input.id}/${input.name}`
+  const storagePath = `library/${input.id}/${safeStorageName(input.name)}`
 
   const { error: uploadError } = await supabase.storage
     .from('media')

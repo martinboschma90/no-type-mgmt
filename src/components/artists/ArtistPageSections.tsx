@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { ArtistHero } from '@/components/artists/ArtistHero'
 import { ArtistVideoSlide } from '@/components/artists/ArtistVideoSlide'
+import { RelatedArtists } from '@/components/artists/RelatedArtists'
 import { isInstagramFeedActive } from '@/cms/artistInstagram'
 import { artistHasVideos } from '@/cms/artistVideos'
 import { normalizeArtistSections } from '@/cms/artistSections'
@@ -14,6 +15,7 @@ const ArtistInstagramCarousel = lazy(() =>
 
 type ArtistPageSectionsProps = {
   artist: Artist
+  artists?: Artist[]
   previewMode?: boolean
   previewFocus?: ArtistPreviewFocus
 }
@@ -25,6 +27,7 @@ function LazySection({ children }: { children: ReactNode }) {
 /** Renders artist page blocks in CMS-defined order. */
 export function ArtistPageSections({
   artist,
+  artists = [],
   previewMode = false,
   previewFocus = 'hero',
 }: ArtistPageSectionsProps) {
@@ -77,6 +80,14 @@ export function ArtistPageSections({
           }
           case 'tracks':
             return null
+          case 'related':
+            return (
+              <RelatedArtists
+                key="related"
+                artist={artist}
+                artists={artists}
+              />
+            )
           default:
             return null
         }

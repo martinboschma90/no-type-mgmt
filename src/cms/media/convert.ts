@@ -1,6 +1,9 @@
 /** Browser-side conversion: images → WebP, video → WebM when supported. */
+import fixWebmDuration from 'fix-webm-duration'
 
 const MAX_IMAGE_EDGE = 2400
+export const MAX_LIVE_VIDEO_BYTES = 4 * 1024 * 1024
+export const MAX_STORED_VIDEO_BYTES = 50 * 1024 * 1024
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -107,6 +110,56 @@ function tryGetCaptureStream(video: HTMLVideoElement): MediaStream | null {
   }
 }
 
+function tryGetReelCapture(video: HTMLVideoElement): {
+  stream: MediaStream
+  width: number
+  height: number
+  stop: () => void
+} | null {
+  const maxEdge = 960
+  const scale = Math.min(
+    1,
+    maxEdge / Math.max(video.videoWidth, video.videoHeight),
+  )
+  const width = Math.max(2, Math.round(video.videoWidth * scale))
+  const height = Math.max(2, Math.round(video.videoHeight * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d', { alpha: false })
+  if (!context || typeof canvas.captureStream !== 'function') return null
+
+  const draw = () => {
+    try {
+      context.drawImage(video, 0, 0, width, height)
+    } catch {
+      /* keep the previous valid frame */
+    }
+  }
+  draw()
+  const timer = window.setInterval(draw, 1000 / 24)
+  const stream = canvas.captureStream(24)
+
+  return {
+    stream,
+    width,
+    height,
+    stop: () => {
+      window.clearInterval(timer)
+    },
+  }
+}
+
+function waitForVideoFrame(video: HTMLVideoElement): Promise<void> {
+  return new Promise((resolve) => {
+    if ('requestVideoFrameCallback' in video) {
+      video.requestVideoFrameCallback(() => resolve())
+      return
+    }
+    window.setTimeout(resolve, 80)
+  })
+}
+
 function guessVideoMime(file: File): string {
   if (file.type) return file.type
   const name = file.name.toLowerCase()
@@ -164,18 +217,31 @@ export async function convertVideoToWebm(
   onProgress?: (ratio: number) => void,
   clip?: { startTime: number; duration: number },
 ): Promise<{ blob: Blob; width: number; height: number; duration: number }> {
-  // Already WebM — store as-is
-  if (
-    !clip &&
-    (file.type === 'video/webm' || file.name.toLowerCase().endsWith('.webm'))
-  ) {
-    return readVideoMeta(file)
+  const originalMeta = !clip ? await readVideoMeta(file) : null
+
+  const maxOutputBytes = clip
+    ? MAX_LIVE_VIDEO_BYTES
+    : MAX_STORED_VIDEO_BYTES
+
+  // A suitable WebM can be stored directly. Larger WebM and other formats are
+  // compressed, bounded to short uploads for stability.
+  if (!clip) {
+    if (
+      (file.type === 'video/webm' ||
+        file.name.toLowerCase().endsWith('.webm')) &&
+      file.size <= MAX_STORED_VIDEO_BYTES
+    ) {
+      onProgress?.(1)
+      return originalMeta!
+    }
+    if (!originalMeta?.duration || !Number.isFinite(originalMeta.duration)) {
+      throw new Error('De videoduur kon niet worden gelezen.')
+    }
   }
 
   const mimeType = pickWebmMime()
   if (!mimeType) {
-    onProgress?.(1)
-    return readVideoMeta(file)
+    throw new Error('Deze browser ondersteunt geen WebM-opname.')
   }
 
   const sourceUrl = URL.createObjectURL(file)
@@ -191,7 +257,7 @@ export async function convertVideoToWebm(
   } catch {
     URL.revokeObjectURL(sourceUrl)
     onProgress?.(1)
-    return readVideoMeta(file)
+    throw new Error('De video kon niet worden voorbereid.')
   }
 
   const width = video.videoWidth
@@ -207,7 +273,7 @@ export async function convertVideoToWebm(
   if (!width || !height) {
     URL.revokeObjectURL(sourceUrl)
     onProgress?.(1)
-    return readVideoMeta(file)
+    throw new Error('De videoresolutie kon niet worden gelezen.')
   }
 
   if (clipStart > 0) {
@@ -220,21 +286,38 @@ export async function convertVideoToWebm(
     }
   }
 
-  const stream = tryGetCaptureStream(video)
+  const reelCapture = clip ? tryGetReelCapture(video) : null
+  const stream = reelCapture?.stream ?? tryGetCaptureStream(video)
+  const stopCapture = reelCapture?.stop ?? (() => {})
+  const outputWidth = reelCapture?.width ?? width
+  const outputHeight = reelCapture?.height ?? height
   if (!stream) {
     URL.revokeObjectURL(sourceUrl)
     onProgress?.(1)
     if (clip) {
       throw new Error('Videofragmenten maken wordt niet ondersteund in deze browser.')
     }
-    return readVideoMeta(file)
+    throw new Error('Deze browser kan de video niet veilig naar WebM omzetten.')
   }
 
   try {
     const chunks: BlobPart[] = []
+    const audioBitsPerSecond = clip ? 64_000 : 128_000
+    const storedTargetBytes = 45 * 1024 * 1024
+    const storedVideoBitsPerSecond = Math.max(
+      80_000,
+      Math.min(
+        4_000_000,
+        Math.floor(
+          (storedTargetBytes * 8) / Math.max(duration, 1) -
+            audioBitsPerSecond,
+        ),
+      ),
+    )
     const recorder = new MediaRecorder(stream, {
       mimeType,
-      videoBitsPerSecond: 4_000_000,
+      videoBitsPerSecond: clip ? 650_000 : storedVideoBitsPerSecond,
+      audioBitsPerSecond,
     })
 
     recorder.ondataavailable = (e) => {
@@ -248,19 +331,19 @@ export async function convertVideoToWebm(
       recorder.onerror = () => reject(new Error('WebM recording failed'))
     })
 
-    recorder.start(250)
-
-    video.playbackRate = clip
-      ? 1
-      : Math.min(4, Math.max(1, duration > 60 ? 4 : 2))
+    video.playbackRate = 1
     try {
       await video.play()
+      await waitForVideoFrame(video)
+      recorder.start(250)
     } catch {
       if (recorder.state !== 'inactive') recorder.stop()
+      stopCapture()
       stream.getTracks().forEach((t) => t.stop())
       URL.revokeObjectURL(sourceUrl)
       onProgress?.(1)
-      return readVideoMeta(file)
+      if (!clip) throw new Error('De video kon niet worden afgespeeld voor omzetting.')
+      throw new Error('Het gekozen videofragment kon niet worden afgespeeld.')
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -294,25 +377,41 @@ export async function convertVideoToWebm(
     })
 
     if (recorder.state !== 'inactive') recorder.stop()
+    stopCapture()
     stream.getTracks().forEach((t) => t.stop())
     video.pause()
     URL.revokeObjectURL(sourceUrl)
 
-    const blob = await stopped
+    const recordedBlob = await stopped
+    const blob = await fixWebmDuration(
+      recordedBlob,
+      Math.max(1, duration) * 1000,
+      { logger: false },
+    )
     onProgress?.(1)
     if (blob.size < 64) {
-      return readVideoMeta(file)
+      throw new Error('De WebM-omzetting leverde geen geldige video op.')
     }
-    return { blob, width, height, duration }
-  } catch {
+    if (blob.size > maxOutputBytes) {
+      throw new Error(
+        clip
+          ? 'Het live fragment is nog groter dan 4 MB. Kies een korter fragment.'
+          : 'De gecomprimeerde video is nog groter dan 50 MB.',
+      )
+    }
+    return { blob, width: outputWidth, height: outputHeight, duration }
+  } catch (error) {
+    stopCapture()
     stream.getTracks().forEach((t) => t.stop())
     video.pause()
     URL.revokeObjectURL(sourceUrl)
     onProgress?.(1)
-    if (clip) {
-      throw new Error('Het videofragment kon niet worden gemaakt.')
-    }
-    return readVideoMeta(file)
+    if (error instanceof Error) throw error
+    throw new Error(
+      clip
+        ? 'Het videofragment kon niet worden gemaakt.'
+        : 'De video kon niet veilig naar WebM worden omgezet.',
+    )
   }
 }
 

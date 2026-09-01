@@ -21,8 +21,15 @@ export function createBlankArtistVideo(
 export function normalizeArtistVideos(
   artist: Pick<Artist, 'videos' | 'videoUrl' | 'imageUrl'>,
 ): ArtistVideo[] {
-  const fromCollection = (artist.videos ?? [])
+  const seenUrls = new Set<string>()
+  const fromCollection = (Array.isArray(artist.videos) ? artist.videos : [])
     .filter((v) => Boolean(v?.videoUrl?.trim()))
+    .filter((v) => {
+      const key = v.videoUrl.trim()
+      if (seenUrls.has(key)) return false
+      seenUrls.add(key)
+      return true
+    })
     .slice(0, MAX_ARTIST_VIDEOS)
     .map((v) => ({
       id: v.id || crypto.randomUUID(),
@@ -53,7 +60,7 @@ export function normalizeArtistVideos(
 export function artistHasVideos(
   artist: Pick<Artist, 'videos' | 'videoUrl'>,
 ): boolean {
-  if ((artist.videos ?? []).some((v) => Boolean(v?.videoUrl?.trim()))) {
+  if ((Array.isArray(artist.videos) ? artist.videos : []).some((v) => Boolean(v?.videoUrl?.trim()))) {
     return true
   }
   return Boolean(artist.videoUrl?.trim())

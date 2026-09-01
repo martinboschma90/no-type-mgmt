@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   instagramPostsFromArtist,
   type InstagramEmbed,
@@ -53,7 +52,6 @@ function InstagramTile({ post }: { post: InstagramEmbed }) {
 
 export function ArtistInstagramCarousel({
   artist,
-  showEmptyState = false,
   previewFocus,
 }: ArtistInstagramCarouselProps) {
   const posts = instagramPostsFromArtist(artist.instagramFeed)
@@ -78,27 +76,7 @@ export function ArtistInstagramCarousel({
   }, [])
 
   if (posts.length === 0) {
-    if (!showEmptyState) return null
-    return (
-      <section
-        ref={sectionRef}
-        id="artist-instagram"
-        className="px-4 py-10 sm:px-6 lg:px-8"
-        aria-label={`${artist.name} Instagram`}
-      >
-        <div className="mx-auto max-w-[1400px] px-4 py-8 text-center">
-          <p className="type-body text-xs text-ink/45">
-            Koppel tot 6 Instagram post-links in het CMS.
-          </p>
-          <Link
-            to={`/cms/artists/${artist.slug}`}
-            className="type-ui mt-3 inline-block text-[0.65rem] text-[#D8FF3E] hover:opacity-80"
-          >
-            Links toevoegen →
-          </Link>
-        </div>
-      </section>
-    )
+    return null
   }
 
   const canSlide = posts.length > 6

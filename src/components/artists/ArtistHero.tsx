@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PillButton } from '@/components/ui/PillButton'
 import { SocialLinks } from '@/components/artists/SocialLinks'
+import { MusicPlayer } from '@/components/artists/MusicPlayer'
 import type { Artist } from '@/types/artist'
 import { useCms } from '@/cms/CmsContext'
 import { artistGenres } from '@/cms/artistGenres'
@@ -9,19 +10,12 @@ import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import { OptimizedImg } from '@/components/ui/OptimizedImg'
 import { rosterGlowGradient } from '@/cms/rosterGlow'
 import { isMusicEmbedActive } from '@/cms/artistMusic'
-import { isArtistSectionVisible } from '@/cms/artistSections'
 import {
   artistBookingWhatsAppMessage,
   buildWhatsAppUrl,
   DEFAULT_WHATSAPP_NUMBER,
 } from '@/data/whatsapp'
 import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
-
-const MusicPlayer = lazy(() =>
-  import('@/components/artists/MusicPlayer').then((m) => ({
-    default: m.MusicPlayer,
-  })),
-)
 
 type ArtistHeroProps = {
   artist: Artist
@@ -149,36 +143,35 @@ export function ArtistHero({ artist, previewFocus }: ArtistHeroProps) {
             ) : null}
           </div>
 
-          {bio ? (
-            <div className="mt-5 sm:mt-8">
-              <p
-                className={[
-                  'type-body max-w-xl text-[0.95rem] text-ink/80 sm:text-base',
-                  bioNeedsToggle && !bioOpen ? 'line-clamp-5 lg:line-clamp-none' : '',
-                ].join(' ')}
-              >
-                {bio}
-              </p>
-              {bioNeedsToggle ? (
-                <button
-                  type="button"
-                  className="type-label mt-2 text-[0.65rem] tracking-[0.14em] text-ink/55 uppercase lg:hidden"
-                  onClick={() => setBioOpen((open) => !open)}
+          <div className="mt-5 flex max-w-xl flex-col sm:mt-8">
+            {bio ? (
+              <div>
+                <p
+                  className={[
+                    'type-body text-[0.95rem] text-ink/80 sm:text-base',
+                    bioNeedsToggle && !bioOpen ? 'line-clamp-5 lg:line-clamp-none' : '',
+                  ].join(' ')}
                 >
-                  {bioOpen ? 'Show less' : 'Read more'}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
+                  {bio}
+                </p>
+                {bioNeedsToggle ? (
+                  <button
+                    type="button"
+                    className="type-label mt-2 text-[0.65rem] tracking-[0.14em] text-ink/55 uppercase lg:hidden"
+                    onClick={() => setBioOpen((open) => !open)}
+                  >
+                    {bioOpen ? 'Show less' : 'Read more'}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
 
-          {isArtistSectionVisible(artist, 'tracks') &&
-          (isMusicEmbedActive(artist.music) || Boolean(artist.tracks?.length)) ? (
-            <div className="mt-6 max-w-xl sm:mt-8">
-              <Suspense fallback={null}>
+            {isMusicEmbedActive(artist.music) || Boolean(artist.tracks?.length) ? (
+              <div className={bio ? 'mt-6 sm:mt-7' : ''}>
                 <MusicPlayer artist={artist} />
-              </Suspense>
-            </div>
-          ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </section>

@@ -4,7 +4,7 @@ const DB_NAME = 'notype-cms-media'
 const DB_VERSION = 1
 const STORE = 'assets'
 
-type StoredRow = MediaAssetMeta & { blob: Blob }
+type StoredRow = MediaAssetMeta & { blob: Blob; publicUrl?: string }
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

@@ -15,8 +15,8 @@ export const ARTIST_SECTION_META: Record<
     description: 'Portrait, naam, bio, booking & socials',
   },
   video: {
-    label: 'Content',
-    description: 'Visuals / vertical 9:16 cinematic carousel',
+    label: 'Shows',
+    description: 'Verticale 9:16 video’s in de carousel',
   },
   instagram: {
     label: 'Instagram',
@@ -26,6 +26,10 @@ export const ARTIST_SECTION_META: Record<
     label: 'Music',
     description: 'Speelt onder de bio in het profiel',
   },
+  related: {
+    label: 'More artists',
+    description: 'Discover-blok onderaan de artiestenpagina',
+  },
 }
 
 export const DEFAULT_ARTIST_SECTIONS: ArtistSectionConfig[] = [
@@ -33,16 +37,18 @@ export const DEFAULT_ARTIST_SECTIONS: ArtistSectionConfig[] = [
   { id: 'video', visible: true },
   { id: 'instagram', visible: true },
   { id: 'tracks', visible: true },
+  { id: 'related', visible: true },
 ]
 
 export function normalizeArtistSections(
   sections?: ArtistSectionConfig[] | null,
 ): ArtistSectionConfig[] {
-  const byId = new Map((sections ?? []).map((s) => [s.id, s]))
+  const list = Array.isArray(sections) ? sections : []
+  const byId = new Map(list.map((s) => [s.id, s]))
   const ordered: ArtistSectionConfig[] = []
 
   // Keep saved order first
-  for (const s of sections ?? []) {
+  for (const s of list) {
     if (ARTIST_SECTION_META[s.id] && !ordered.some((o) => o.id === s.id)) {
       ordered.push({ id: s.id, visible: s.visible !== false })
     }

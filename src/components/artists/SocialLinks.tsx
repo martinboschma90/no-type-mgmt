@@ -54,7 +54,9 @@ function isActiveSocialUrl(url: string) {
 }
 
 export function SocialLinks({ links, className = '' }: SocialLinksProps) {
-  const active = links.filter((link) => isActiveSocialUrl(link.url))
+  const active = (Array.isArray(links) ? links : []).filter((link) =>
+    isActiveSocialUrl(link.url),
+  )
   if (!active.length) return null
 
   return (

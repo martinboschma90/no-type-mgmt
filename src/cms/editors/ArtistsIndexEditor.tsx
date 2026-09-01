@@ -116,7 +116,7 @@ function ArtistCard({
           </p>
           <p className="mt-2 flex flex-wrap gap-1">
             <StatusChip label="Bio" ready={artistHasBio(artist)} />
-            <StatusChip label="Visuals" ready={artistHasVisuals(artist)} />
+            <StatusChip label="Shows" ready={artistHasVisuals(artist)} />
             <StatusChip label="Instagram" ready={artistHasInstagramFeed(artist)} />
           </p>
           <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-neutral-700 transition-all group-hover/card:gap-2 group-hover/card:text-neutral-900">

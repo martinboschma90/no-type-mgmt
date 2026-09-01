@@ -29,6 +29,19 @@ function asArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : []
 }
 
+/** Keep a CMS/public artist blob render-safe when fields are missing or malformed. */
+export function coerceArtist(artist: Artist): Artist {
+  return {
+    ...artist,
+    socials: asArray(artist.socials),
+    videos: asArray(artist.videos),
+    films: asArray(artist.films),
+    tracks: asArray(artist.tracks),
+    genres: asArray(artist.genres),
+    sections: Array.isArray(artist.sections) ? artist.sections : undefined,
+  }
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 

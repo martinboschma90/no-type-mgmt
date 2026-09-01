@@ -404,7 +404,7 @@
 
 [data-cms-theme='dark'] .cms-page-tabs,
 [data-cms-theme='dark'] .cms-artist-tabs {
-  background-color: rgb(9 9 9 / 0.96);
+  background-color: #090909;
 }
 
 [data-cms-theme='dark'] input,

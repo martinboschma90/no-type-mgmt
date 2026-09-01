@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Artist } from '@/types/artist'
 import {
   isMusicEmbedActive,
@@ -182,38 +182,15 @@ function DeferredIframe({
   src: string
   className?: string
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setReady(true)
-          io.disconnect()
-        }
-      },
-      { rootMargin: '240px' },
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
-
   return (
-    <div ref={ref} className="h-full w-full">
-      {ready ? (
-        <iframe
-          title={title}
-          src={src}
-          className={className}
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
-      ) : null}
-    </div>
+    <iframe
+      title={title}
+      src={src}
+      className={className}
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      loading="eager"
+      referrerPolicy="strict-origin-when-cross-origin"
+    />
   )
 }
 

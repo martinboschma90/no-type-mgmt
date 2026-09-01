@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '@/components/layout/AppShell'
 import { ArtistPageSections } from '@/components/artists/ArtistPageSections'
-import { RelatedArtists } from '@/components/artists/RelatedArtists'
 import { usePublicArtist, usePublicArtists } from '@/cms/usePublicArtists'
 
 export function ArtistPage() {
@@ -58,8 +57,7 @@ export function ArtistPage() {
 
   return (
     <AppShell navVariant="wordmark">
-      <ArtistPageSections artist={publicArtist} />
-      <RelatedArtists artist={publicArtist} artists={artists} />
+      <ArtistPageSections artist={publicArtist} artists={artists} />
     </AppShell>
   )
 }

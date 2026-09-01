@@ -6,6 +6,7 @@ import {
   PUBLIC_ARTISTS_STORAGE_KEY_V2,
 } from '@/cms/storageKeys'
 import { withArtDirection } from '@/cms/imageFocus'
+import { coerceArtist } from '@/cms/mappers/artist'
 import { restGet } from '@/lib/publicRest'
 import type { Artist } from '@/types/artist'
 
@@ -26,10 +27,12 @@ function parseArtist(data: unknown, fallbackSlug: string): Artist | null {
   if (!data || typeof data !== 'object') return null
   const artist = data as Artist
   if (!artist.name) return null
-  return withArtDirection({
-    ...artist,
-    slug: artist.slug || fallbackSlug,
-  })
+  return coerceArtist(
+    withArtDirection({
+      ...artist,
+      slug: artist.slug || fallbackSlug,
+    }),
+  )
 }
 
 async function fetchPublicCmsArtistsByKey(

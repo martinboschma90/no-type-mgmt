@@ -1,11 +1,17 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
-type Props = { children: ReactNode }
+type Props = {
+  children: ReactNode
+  /** Isolate this subtree so a crash here does not blank the rest of the app. */
+  label?: string
+  compact?: boolean
+}
+
 type State = { hasError: boolean }
 
 /**
- * Keeps a white-screen crash from becoming a permanent black body.
- * Mobile Safari private mode / storage quirks are the usual trigger.
+ * Keeps a render crash from taking down the rest of the tree.
+ * Use nested boundaries around CMS vs public vs widgets.
  */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false }
@@ -15,15 +21,29 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('App render error', error, info.componentStack)
+    console.error(this.props.label || 'App render error', error, info.componentStack)
   }
 
   render() {
     if (this.state.hasError) {
+      if (this.props.compact) {
+        return (
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-6 text-center text-sm text-neutral-600">
+            <p>Dit blok kon niet geladen worden.</p>
+            <button
+              type="button"
+              className="mt-3 text-xs font-semibold text-neutral-900 underline"
+              onClick={() => this.setState({ hasError: false })}
+            >
+              Opnieuw
+            </button>
+          </div>
+        )
+      }
       return (
         <div
           style={{
-            minHeight: '100vh',
+            minHeight: this.props.label ? '40vh' : '100vh',
             display: 'grid',
             placeItems: 'center',
             padding: '2rem',
@@ -35,14 +55,19 @@ export class ErrorBoundary extends Component<Props, State> {
         >
           <div>
             <p style={{ margin: 0, fontSize: '1.125rem', letterSpacing: '0.04em' }}>
-              NOTYPE MGMT
+              NOTYPE
             </p>
             <p style={{ margin: '0.75rem 0 1.25rem', opacity: 0.7, fontSize: '0.95rem' }}>
-              Something went wrong loading the site.
+              {this.props.label
+                ? 'Dit deel kon niet geladen worden. De rest van de site blijft beschikbaar.'
+                : 'Something went wrong loading the site.'}
             </p>
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                this.setState({ hasError: false })
+                window.location.reload()
+              }}
               style={{
                 appearance: 'none',
                 border: '1px solid #111111',

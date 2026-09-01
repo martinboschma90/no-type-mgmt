@@ -33,6 +33,7 @@ export function ArtistLayoutEditor({
       <ul className="space-y-2">
         {sections.map((section, index) => {
           const meta = ARTIST_SECTION_META[section.id]
+          if (!meta) return null
           const isDragging = dragIndex === index
           const isOver = overIndex === index && dragIndex !== index
 

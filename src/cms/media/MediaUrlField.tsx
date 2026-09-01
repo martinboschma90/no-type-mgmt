@@ -23,7 +23,7 @@ export function MediaUrlField({
   kind = 'image',
   hint,
 }: MediaUrlFieldProps) {
-  const { uploadFiles, assets, syncingRemote } = useMedia()
+  const { uploadFiles, assets, syncingRemote, uploading } = useMedia()
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -110,11 +110,15 @@ export function MediaUrlField({
           ) : null}
         </div>
 
-        {mediaId && !matched?.publicUrl ? (
+        {busy && uploading ? (
+          <p className="rounded-lg bg-sky-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-sky-600">
+            {uploading.message || 'Video verwerken…'} Sluit dit tabblad nog niet.
+          </p>
+        ) : mediaId && !matched?.publicUrl ? (
           <p className="rounded-lg bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-600">
             {syncingRemote
-              ? 'Media wordt naar permanente opslag gesynchroniseerd…'
-              : 'Dit bestand staat nog alleen in deze browser. De live preview rechts kan het al tonen. Voor de publieke website moet het naar permanente opslag.'}
+              ? 'Video wordt naar permanente opslag geüpload…'
+              : 'Online upload wordt automatisch opnieuw geprobeerd. Laat dit tabblad open.'}
           </p>
         ) : null}
 
@@ -126,17 +130,20 @@ export function MediaUrlField({
           </div>
         ) : null}
         {previewUrl && kind === 'video' ? (
-          <video
-            key={previewUrl}
-            src={previewUrl}
-            controls
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            className="h-36 w-full rounded-lg bg-ink/10 object-cover"
-          />
+          <div
+            className="mx-auto w-[min(100%,14rem)] overflow-hidden rounded-xl bg-ink/10"
+            style={{ aspectRatio: '9 / 16' }}
+          >
+            <video
+              key={previewUrl}
+              src={previewUrl}
+              controls
+              muted
+              playsInline
+              preload="metadata"
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
         ) : null}
 
         <input

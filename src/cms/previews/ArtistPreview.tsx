@@ -1,6 +1,5 @@
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { ArtistPageSections } from '@/components/artists/ArtistPageSections'
-import { RelatedArtists } from '@/components/artists/RelatedArtists'
 import { AppShell } from '@/components/layout/AppShell'
 import { useCms } from '@/cms/CmsProvider'
 import { artistSlugFromPath } from '@/cms/artistSlug'
@@ -41,10 +40,10 @@ export function ArtistPreview() {
       <AppShell navVariant="wordmark">
         <ArtistPageSections
           artist={artist}
+          artists={content.artists}
           previewMode
           previewFocus={previewFocus}
         />
-        <RelatedArtists artist={artist} artists={content.artists} />
       </AppShell>
     </PreviewFrame>
   )

@@ -433,6 +433,9 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         )
       }
     })
+      .catch((error) => {
+        console.warn('[cms] site/team hydrate failed', error)
+      })
 
     return () => {
       cancelled = true

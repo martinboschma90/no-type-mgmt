@@ -1,142 +1,143 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Play } from 'lucide-react'
 import type { Artist, ArtistVideo } from '@/types/artist'
 import { MediaContext } from '@/cms/media/MediaContext'
 import { parseMediaRef } from '@/cms/media/refs'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 const CINEMA_EASE = [0.22, 1, 0.36, 1] as const
+const MAX_PLAYING = 6
+const playingVideos = new Set<HTMLVideoElement>()
+
+function pauseVideo(element: HTMLVideoElement) {
+  playingVideos.delete(element)
+  element.pause()
+}
+
+function releaseVideo(element: HTMLVideoElement) {
+  pauseVideo(element)
+}
+
+function requestPlay(element: HTMLVideoElement) {
+  if (playingVideos.size >= MAX_PLAYING && !playingVideos.has(element)) {
+    const oldest = playingVideos.values().next().value
+    if (oldest && oldest !== element) pauseVideo(oldest)
+  }
+  playingVideos.add(element)
+  void element.play().catch(() => {
+    playingVideos.delete(element)
+  })
+}
 
 function VideoTile({
   video,
-  playing,
-  onPlay,
-  onStop,
+  allowSourceFallback,
 }: {
   video: ArtistVideo
-  playing: boolean
-  onPlay: () => void
-  onStop: () => void
+  allowSourceFallback: boolean
 }) {
   const media = useContext(MediaContext)
-  const sourceRef = video.clipUrl || video.videoUrl
+  const [preferClip, setPreferClip] = useState(Boolean(video.clipUrl))
+  const sourceRef =
+    preferClip && video.clipUrl ? video.clipUrl : video.videoUrl
   const resolvedUrl = useResolvedMediaUrl(sourceRef)
+  const articleRef = useRef<HTMLElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [hostWindow, setHostWindow] = useState<Window | null>(null)
-  const [playableUrl, setPlayableUrl] = useState(resolvedUrl)
-  const usingGeneratedClip = Boolean(video.clipUrl)
+  const [active, setActive] = useState(false)
+  const mediaId = parseMediaRef(sourceRef)
+  const localUrl = media?.assets.find(
+    (item) => item.id === mediaId || item.publicUrl === sourceRef,
+  )?.url
+  const videoUrl = localUrl || resolvedUrl
+  const usingGeneratedClip = preferClip && Boolean(video.clipUrl)
   const clipStart = usingGeneratedClip ? 0 : Math.max(0, video.clipStart ?? 0)
   const clipDuration = Math.max(2, video.clipDuration ?? 6)
 
   useEffect(() => {
-    const mediaId = parseMediaRef(sourceRef)
-    const asset = mediaId
-      ? media?.assets.find((item) => item.id === mediaId)
-      : undefined
-    const blob = asset?.blob
-
-    if (hostWindow && blob && hostWindow !== window) {
-      const urlApi = hostWindow as unknown as typeof globalThis
-      const url = urlApi.URL.createObjectURL(blob)
-      setPlayableUrl(url)
-      return () => {
-        urlApi.URL.revokeObjectURL(url)
-      }
-    }
-
-    setPlayableUrl(resolvedUrl)
-    return undefined
-  }, [hostWindow, media?.assets, resolvedUrl, sourceRef])
-
-  const videoUrl = playableUrl
+    setPreferClip(Boolean(video.clipUrl))
+  }, [video.clipUrl])
 
   useEffect(() => {
-    const element = videoRef.current
-    if (!element) return
-    if (playing) {
-      const clipEnd = clipStart + clipDuration
-      if (element.currentTime < clipStart || element.currentTime >= clipEnd) {
-        element.currentTime = clipStart
-      }
-      void element.play().catch(() => undefined)
-    } else {
-      element.pause()
-      element.currentTime = clipStart
+    const node = articleRef.current
+    if (!node || !videoUrl) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setActive(entry.isIntersecting)
+        const element = videoRef.current
+        if (!element) return
+        if (!entry.isIntersecting) {
+          pauseVideo(element)
+        } else if (element.readyState >= HTMLMediaElement.HAVE_METADATA) {
+          requestPlay(element)
+        }
+      },
+      { rootMargin: '80px', threshold: 0.2 },
+    )
+    observer.observe(node)
+    return () => {
+      observer.disconnect()
+      const element = videoRef.current
+      if (element) releaseVideo(element)
     }
-  }, [clipDuration, clipStart, playing, videoUrl])
+  }, [videoUrl])
 
   return (
     <article
-      className={`group relative aspect-[3/4] overflow-hidden rounded-[1.5rem] bg-[#121014] shadow-2xl transition-[transform,opacity] duration-500 ease-out ${
-        playing
-          ? 'z-10 -translate-y-2 scale-[1.035] opacity-100'
-          : 'z-0 translate-y-0 scale-100 opacity-90 hover:opacity-100'
-      }`}
-      onMouseEnter={onPlay}
-      onMouseLeave={onStop}
-      onFocus={onPlay}
-      onBlur={onStop}
-      onClick={() => (playing ? onStop() : onPlay())}
-      tabIndex={0}
+      ref={articleRef}
+      className="relative w-full overflow-hidden rounded-[1.35rem] bg-[#121014] shadow-2xl"
+      style={{ aspectRatio: '9 / 16' }}
     >
-      {videoUrl ? (
+      {active && videoUrl ? (
         <video
-          ref={(element) => {
-            videoRef.current = element
-            const next = element?.ownerDocument.defaultView ?? null
-            if (next !== hostWindow) setHostWindow(next)
-          }}
+          key={videoUrl}
+          ref={videoRef}
           src={videoUrl}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-center"
           muted
           playsInline
           loop
-          preload="auto"
+          preload="metadata"
           onLoadedMetadata={(event) => {
-            event.currentTarget.currentTime = Math.min(
+            const element = event.currentTarget
+            element.currentTime = Math.min(
               clipStart,
-              Math.max(0, event.currentTarget.duration - 0.1),
+              Math.max(0, element.duration - 0.1),
             )
+            requestPlay(element)
           }}
           onTimeUpdate={(event) => {
             const element = event.currentTarget
             const clipEnd = Math.min(element.duration, clipStart + clipDuration)
-            if (playing && element.currentTime >= clipEnd) {
+            if (element.currentTime >= clipEnd) {
               element.currentTime = clipStart
-              void element.play().catch(() => undefined)
+              requestPlay(element)
             }
           }}
-          onEnded={(event) => {
-            event.currentTarget.currentTime = clipStart
-            if (playing) void event.currentTarget.play().catch(() => undefined)
+          onError={() => {
+            const element = videoRef.current
+            if (element) pauseVideo(element)
+            if (preferClip && video.clipUrl && allowSourceFallback) {
+              setPreferClip(false)
+            } else if (element) {
+              pauseVideo(element)
+            }
           }}
         />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-[0.65rem] leading-relaxed text-white/40">
-          Video wordt geladen…
-        </div>
-      )}
+      ) : null}
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/10"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10"
         aria-hidden
       />
-      <div
-        className={`pointer-events-none absolute inset-0 flex items-center justify-center transition-all duration-300 ${
-          playing ? 'scale-90 opacity-0' : 'scale-100 opacity-100'
-        }`}
-        aria-hidden
-      >
-        <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-md">
-          <Play className="ml-0.5 h-4 w-4 fill-current" />
-        </span>
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
-        <p className="type-label min-w-0 truncate text-[0.6rem] tracking-[0.14em] text-white/80 uppercase">
-          {video.title || 'Visual'}
-        </p>
-      </div>
+      {video.title ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
+          <p className="type-label min-w-0 truncate text-[0.6rem] tracking-[0.14em] text-white/80 uppercase">
+            {video.title}
+          </p>
+        </div>
+      ) : null}
     </article>
   )
 }
@@ -159,70 +160,29 @@ export function ArtistReelsCarousel({
     startX: number
     scrollLeft: number
   } | null>(null)
-  const [playingInstance, setPlayingInstance] = useState<string | null>(
-    () => (videos[0] ? `1-${videos[0].id}` : null),
-  )
   const [isInteracting, setIsInteracting] = useState(false)
-  const loopItems = [0, 1, 2].flatMap((copy) =>
-    videos.map((video) => ({
-      video,
-      instanceId: `${copy}-${video.id}`,
-    })),
-  )
+  const canMarquee = videos.length > 3
 
   useEffect(() => {
     const track = trackRef.current
-    if (!track || videos.length === 0) return
+    if (!track || !canMarquee) return
 
     let frame = 0
     let previousTime = 0
-    let initialized = false
-
-    const updateCenteredVideo = () => {
-      const center = track.getBoundingClientRect().left + track.clientWidth / 2
-      let nearest: HTMLElement | null = null
-      let nearestDistance = Number.POSITIVE_INFINITY
-      for (const child of Array.from(track.children)) {
-        if (!(child instanceof HTMLElement)) continue
-        const rect = child.getBoundingClientRect()
-        const distance = Math.abs(rect.left + rect.width / 2 - center)
-        if (distance < nearestDistance) {
-          nearest = child
-          nearestDistance = distance
-        }
-      }
-      const instanceId = nearest?.dataset.videoInstance
-      if (instanceId) {
-        setPlayingInstance((current) =>
-          current === instanceId ? current : instanceId,
-        )
-      }
-    }
 
     const tick = (time: number) => {
-      const setWidth = track.scrollWidth / 3
-      if (!initialized && setWidth > 0) {
-        track.scrollLeft = setWidth
-        initialized = true
+      const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth)
+      if (!isInteracting && previousTime > 0 && maxScroll > 8) {
+        const next = track.scrollLeft + Math.min(24, time - previousTime) * 0.04
+        track.scrollLeft = next >= maxScroll ? 0 : next
       }
-
-      if (initialized && !isInteracting && previousTime > 0) {
-        track.scrollLeft += Math.min(32, time - previousTime) * 0.025
-      }
-      if (setWidth > 0 && track.scrollLeft >= setWidth * 2) {
-        track.scrollLeft -= setWidth
-      } else if (setWidth > 0 && track.scrollLeft <= 1) {
-        track.scrollLeft += setWidth
-      }
-
-      updateCenteredVideo()
       previousTime = time
       frame = window.requestAnimationFrame(tick)
     }
 
     frame = window.requestAnimationFrame(tick)
     return () => window.cancelAnimationFrame(frame)
-  }, [isInteracting, videos])
+  }, [canMarquee, isInteracting, videos.length])
 
   const scroll = (direction: -1 | 1) => {
     trackRef.current?.scrollBy({
@@ -240,7 +200,7 @@ export function ArtistReelsCarousel({
         className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8"
       >
         <div className="rounded-[1.5rem] border border-white/8 bg-[#121014] px-6 py-14 text-center">
-          <p className="type-headline text-lg text-[#F5F5F5]">Visuals</p>
+          <p className="type-headline text-lg text-[#F5F5F5]">Shows</p>
           <p className="type-body mt-2 text-xs text-[#F5F5F5]/45">
             Voeg maximaal acht video’s toe in het CMS.
           </p>
@@ -256,92 +216,99 @@ export function ArtistReelsCarousel({
   }
 
   return (
-    <section
-      ref={sectionRef}
-      id="artist-visuals"
-      className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"
-    >
-      <motion.div
-        initial={previewMode ? false : { opacity: 0, y: 22 }}
-        animate={previewMode ? { opacity: 1, y: 0 } : undefined}
-        whileInView={previewMode ? undefined : { opacity: 1, y: 0 }}
-        viewport={previewMode ? undefined : { once: true, amount: 0.12 }}
-        transition={{ duration: 0.7, ease: CINEMA_EASE }}
+    <ErrorBoundary label="visuals" compact>
+      <section
+        ref={sectionRef}
+        id="artist-visuals"
+        className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"
       >
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div>
-            <p className="type-label text-[0.6rem] tracking-[0.18em] text-ink/40 uppercase">
-              Content
-            </p>
-            <h2 className="type-headline mt-1 text-2xl text-ink sm:text-3xl">
-              Visuals
-            </h2>
-          </div>
-          {videos.length > 4 ? (
-            <div className="flex gap-2">
-              <SliderButton label="Previous videos" onClick={() => scroll(-1)}>
-                ←
-              </SliderButton>
-              <SliderButton label="Next videos" onClick={() => scroll(1)}>
-                →
-              </SliderButton>
+        <motion.div
+          initial={previewMode ? false : { opacity: 0, y: 22 }}
+          animate={previewMode ? { opacity: 1, y: 0 } : undefined}
+          whileInView={previewMode ? undefined : { opacity: 1, y: 0 }}
+          viewport={previewMode ? undefined : { once: true, amount: 0.12 }}
+          transition={{ duration: 0.7, ease: CINEMA_EASE }}
+        >
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="type-label text-[0.6rem] tracking-[0.18em] text-ink/40 uppercase">
+                Artist
+              </p>
+              <h2 className="type-headline mt-1 text-2xl text-ink sm:text-3xl">
+                Shows
+              </h2>
             </div>
-          ) : null}
-        </div>
-
-        <div className="overflow-hidden rounded-[1.75rem] border border-white/8 bg-[#0d090b] py-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] sm:py-14">
-          <div
-            ref={trackRef}
-            className="grid cursor-grab snap-x snap-mandatory grid-flow-col auto-cols-[58%] gap-3 overflow-x-auto overscroll-x-contain px-4 py-3 [mask-image:linear-gradient(to_right,transparent,black_7%,black_93%,transparent)] [perspective:1200px] [scrollbar-width:none] active:cursor-grabbing sm:auto-cols-[34%] sm:px-6 lg:auto-cols-[23%] lg:px-8 [&::-webkit-scrollbar]:hidden"
-            onMouseEnter={() => setIsInteracting(true)}
-            onMouseLeave={() => {
-              dragRef.current = null
-              setIsInteracting(false)
-            }}
-            onWheel={(event) => {
-              event.preventDefault()
-              event.currentTarget.scrollLeft += event.deltaX + event.deltaY
-            }}
-            onPointerDown={(event) => {
-              dragRef.current = {
-                pointerId: event.pointerId,
-                startX: event.clientX,
-                scrollLeft: event.currentTarget.scrollLeft,
-              }
-              event.currentTarget.setPointerCapture(event.pointerId)
-              setIsInteracting(true)
-            }}
-            onPointerMove={(event) => {
-              const drag = dragRef.current
-              if (!drag || drag.pointerId !== event.pointerId) return
-              event.currentTarget.scrollLeft =
-                drag.scrollLeft - (event.clientX - drag.startX)
-            }}
-            onPointerUp={(event) => {
-              if (dragRef.current?.pointerId === event.pointerId) {
-                dragRef.current = null
-                event.currentTarget.releasePointerCapture(event.pointerId)
-              }
-            }}
-          >
-            {loopItems.map(({ video, instanceId }) => (
-              <div
-                key={instanceId}
-                data-video-instance={instanceId}
-                className="snap-center"
-              >
-                <VideoTile
-                  video={video}
-                  playing={playingInstance === instanceId}
-                  onPlay={() => setPlayingInstance(instanceId)}
-                  onStop={() => undefined}
-                />
+            {videos.length > 4 ? (
+              <div className="flex gap-2">
+                <SliderButton label="Previous videos" onClick={() => scroll(-1)}>
+                  ←
+                </SliderButton>
+                <SliderButton label="Next videos" onClick={() => scroll(1)}>
+                  →
+                </SliderButton>
               </div>
-            ))}
+            ) : null}
           </div>
-        </div>
-      </motion.div>
-    </section>
+
+          <div className="overflow-hidden rounded-[1.75rem] border border-white/8 bg-[#0d090b] py-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] sm:py-14">
+            <div
+              ref={trackRef}
+              className={
+                videos.length === 1
+                  ? 'flex justify-center overflow-x-auto px-3 py-3 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                  : 'grid cursor-grab grid-flow-col auto-cols-[min(62vw,17.5rem)] grid-rows-1 items-start gap-3 overflow-x-auto overscroll-x-contain px-3 py-3 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] [scrollbar-width:none] active:cursor-grabbing sm:auto-cols-[17.5rem] sm:px-6 lg:auto-cols-[17.5rem] lg:px-8 [&::-webkit-scrollbar]:hidden'
+              }
+              onMouseLeave={() => {
+                dragRef.current = null
+                setIsInteracting(false)
+              }}
+              onWheel={(event) => {
+                event.preventDefault()
+                event.currentTarget.scrollLeft += event.deltaX + event.deltaY
+              }}
+              onPointerDown={(event) => {
+                dragRef.current = {
+                  pointerId: event.pointerId,
+                  startX: event.clientX,
+                  scrollLeft: event.currentTarget.scrollLeft,
+                }
+                event.currentTarget.setPointerCapture(event.pointerId)
+                setIsInteracting(true)
+              }}
+              onPointerMove={(event) => {
+                const drag = dragRef.current
+                if (!drag || drag.pointerId !== event.pointerId) return
+                event.currentTarget.scrollLeft =
+                  drag.scrollLeft - (event.clientX - drag.startX)
+              }}
+              onPointerUp={(event) => {
+                if (dragRef.current?.pointerId === event.pointerId) {
+                  dragRef.current = null
+                  event.currentTarget.releasePointerCapture(event.pointerId)
+                  setIsInteracting(false)
+                }
+              }}
+            >
+              {videos.map((video) => (
+                <div
+                  key={video.id}
+                  className={
+                    videos.length === 1
+                      ? 'w-[min(72vw,17.5rem)] shrink-0'
+                      : 'w-full min-w-0 shrink-0'
+                  }
+                >
+                  <VideoTile
+                    video={video}
+                    allowSourceFallback={previewMode}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </section>
+    </ErrorBoundary>
   )
 }
 

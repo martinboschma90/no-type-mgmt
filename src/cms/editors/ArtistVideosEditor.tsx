@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   MAX_ARTIST_VIDEOS,
   createBlankArtistVideo,
@@ -10,13 +10,86 @@ import { EditorSection, TextInput } from '@/cms/fields'
 import { MediaUrlField } from '@/cms/media/MediaUrlField'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 import { useMedia } from '@/cms/media/MediaProvider'
-import { toMediaRef } from '@/cms/media/refs'
+import { parseMediaRef, toMediaRef } from '@/cms/media/refs'
 import type { ArtistVideo } from '@/types/artist'
 
 function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60)
-  const rest = Math.floor(seconds % 60)
-  return `${minutes}:${String(rest).padStart(2, '0')}`
+  const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
+  const minutes = Math.floor(safe / 60)
+  const rest = (safe % 60).toFixed(1).padStart(4, '0')
+  return `${minutes}:${rest}`
+}
+
+function parseTimecode(value: string) {
+  const parts = value.trim().split(':').map(Number)
+  if (
+    parts.length === 0 ||
+    parts.length > 3 ||
+    parts.some((part) => !Number.isFinite(part) || part < 0)
+  ) {
+    return null
+  }
+  return parts.reduce((total, part) => total * 60 + part, 0)
+}
+
+function formatMegabytes(bytes: number) {
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+}
+
+function videoPerformanceScore(bytes: number) {
+  const megabytes = bytes / (1024 * 1024)
+  if (megabytes <= 0.5) return 100
+  return Math.max(
+    1,
+    Math.min(100, Math.round(100 - ((megabytes - 0.5) / 3.5) * 40)),
+  )
+}
+
+function TimecodeInput({
+  label,
+  value,
+  max,
+  onCommit,
+}: {
+  label: string
+  value: number
+  max: number
+  onCommit: (seconds: number) => void
+}) {
+  const [draft, setDraft] = useState(formatTime(value))
+
+  useEffect(() => setDraft(formatTime(value)), [value])
+
+  function commit() {
+    const parsed = parseTimecode(draft)
+    if (parsed === null) {
+      setDraft(formatTime(value))
+      return
+    }
+    const next = Math.min(Math.max(0, parsed), Math.max(0, max))
+    onCommit(next)
+    setDraft(formatTime(next))
+  }
+
+  return (
+    <label className="min-w-0">
+      <span className="mb-1 block text-[9px] font-medium tracking-[0.08em] text-neutral-500 uppercase">
+        {label}
+      </span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') event.currentTarget.blur()
+        }}
+        aria-label={`${label} tijdcode`}
+        className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-xs tabular-nums text-white outline-none focus:border-neutral-400"
+      />
+    </label>
+  )
 }
 
 function VideoMomentField({
@@ -27,32 +100,130 @@ function VideoMomentField({
   onChange: (partial: Partial<ArtistVideo>) => void
 }) {
   const resolvedUrl = useResolvedMediaUrl(video.videoUrl)
-  const { createVideoClip } = useMedia()
+  const resolvedClipUrl = useResolvedMediaUrl(video.clipUrl)
+  const { assets, createVideoClip } = useMedia()
   const previewRef = useRef<HTMLVideoElement>(null)
-  const [sourceDuration, setSourceDuration] = useState(0)
+  const durationProbeRef = useRef(false)
+  const mediaId = parseMediaRef(video.videoUrl)
+  const sourceAsset = assets.find(
+    (asset) =>
+      asset.id === mediaId ||
+      asset.url === resolvedUrl ||
+      asset.publicUrl === video.videoUrl ||
+      asset.publicUrl === resolvedUrl,
+  )
+  const sourceUrl = sourceAsset?.url || resolvedUrl
+  const assetDuration =
+    sourceAsset?.duration && Number.isFinite(sourceAsset.duration)
+      ? sourceAsset.duration
+      : 0
+  const [sourceDuration, setSourceDuration] = useState(assetDuration)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [liveSize, setLiveSize] = useState<number | null>(null)
   const clipDuration = Math.max(2, video.clipDuration ?? 6)
   const maxStart = Math.max(0, sourceDuration - clipDuration)
   const clipStart = Math.min(Math.max(0, video.clipStart ?? 0), maxStart)
 
-  if (!resolvedUrl) return null
+  useEffect(() => {
+    if (assetDuration > 0) setSourceDuration(assetDuration)
+  }, [assetDuration])
+
+  useEffect(() => {
+    if (!video.clipUrl) {
+      setLiveSize(null)
+      return
+    }
+    setLiveSize(null)
+
+    const clipMediaId = parseMediaRef(video.clipUrl)
+    const clipAsset = assets.find(
+      (asset) =>
+        asset.id === clipMediaId ||
+        asset.url === resolvedClipUrl ||
+        asset.publicUrl === video.clipUrl ||
+        asset.publicUrl === resolvedClipUrl,
+    )
+    if (clipAsset?.size) {
+      setLiveSize(clipAsset.size)
+      return
+    }
+
+    if (!/^https?:\/\//i.test(resolvedClipUrl)) return
+    let cancelled = false
+    void fetch(resolvedClipUrl, { method: 'HEAD' })
+      .then((response) => {
+        const size = Number(response.headers.get('content-length') || 0)
+        if (!cancelled && response.ok && size > 0) setLiveSize(size)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [assets, resolvedClipUrl, video.clipUrl])
+
+  function readDuration(element: HTMLVideoElement) {
+    const mediaDuration =
+      Number.isFinite(element.duration) && element.duration > 0
+        ? element.duration
+        : 0
+    const seekableDuration =
+      element.seekable.length > 0
+        ? element.seekable.end(element.seekable.length - 1)
+        : 0
+    const duration = Math.max(mediaDuration, seekableDuration, assetDuration)
+
+    if (duration > 0) {
+      durationProbeRef.current = false
+      setSourceDuration(duration)
+      element.currentTime = Math.min(
+        clipStart,
+        Math.max(0, duration - 0.1),
+      )
+      return
+    }
+
+    // MediaRecorder WebM files can omit duration metadata. Seeking far ahead
+    // makes Chromium calculate the actual duration and emit durationchange.
+    if (!durationProbeRef.current) {
+      durationProbeRef.current = true
+      try {
+        element.currentTime = Number.MAX_SAFE_INTEGER
+      } catch {
+        durationProbeRef.current = false
+      }
+    }
+  }
+
+  if (!sourceUrl) return null
 
   return (
-    <div className="grid gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:grid-cols-[8rem_1fr]">
+    <div className="grid gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
       <video
         ref={previewRef}
-        src={resolvedUrl}
+        src={sourceUrl}
+        controls
+        draggable={false}
         muted
         playsInline
         preload="metadata"
-        className="aspect-[3/4] w-24 rounded-lg bg-neutral-900 object-cover sm:w-32"
-        onLoadedMetadata={(event) => {
-          const duration = Number.isFinite(event.currentTarget.duration)
-            ? event.currentTarget.duration
-            : 0
-          setSourceDuration(duration)
-          event.currentTarget.currentTime = Math.min(clipStart, Math.max(0, duration - 0.1))
+        className="mx-auto aspect-[9/16] w-full max-w-48 rounded-lg bg-neutral-900 object-cover"
+        onPointerDown={(event) => event.stopPropagation()}
+        onDragStart={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
+        onLoadedMetadata={(event) => readDuration(event.currentTarget)}
+        onLoadedData={(event) => readDuration(event.currentTarget)}
+        onDurationChange={(event) => readDuration(event.currentTarget)}
+        onSeeked={(event) => {
+          if (durationProbeRef.current || sourceDuration <= 0) return
+          const nextStart = Math.min(
+            Math.max(0, event.currentTarget.currentTime),
+            maxStart,
+          )
+          if (Math.abs(nextStart - clipStart) < 0.05) return
+          onChange({ clipStart: nextStart, clipUrl: undefined })
         }}
       />
       <div className="min-w-0 self-center">
@@ -62,13 +233,24 @@ function VideoMomentField({
             {formatTime(clipStart)}–{formatTime(Math.min(sourceDuration, clipStart + clipDuration))}
           </span>
         </div>
+        <p className="mt-1 text-[10px] tabular-nums text-neutral-500">
+          Totale videoduur: {sourceDuration > 0 ? formatTime(sourceDuration) : 'laden…'}
+        </p>
         <input
           type="range"
           min={0}
           max={maxStart}
           step={0.1}
           value={clipStart}
+          draggable={false}
           disabled={sourceDuration <= clipDuration}
+          onPointerDown={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+          onTouchStart={(event) => event.stopPropagation()}
+          onDragStart={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
           onChange={(event) => {
             const next = Number(event.target.value)
             onChange({ clipStart: next, clipUrl: undefined })
@@ -76,9 +258,34 @@ function VideoMomentField({
           }}
           className="mt-3 h-1.5 w-full accent-neutral-700 disabled:opacity-40"
         />
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <TimecodeInput
+            label="Van"
+            value={clipStart}
+            max={maxStart}
+            onCommit={(nextStart) => {
+              onChange({ clipStart: nextStart, clipUrl: undefined })
+              if (previewRef.current) previewRef.current.currentTime = nextStart
+            }}
+          />
+          <TimecodeInput
+            label="Tot"
+            value={Math.min(sourceDuration, clipStart + clipDuration)}
+            max={sourceDuration}
+            onCommit={(nextEnd) => {
+              const nextDuration = Math.min(
+                10,
+                Math.max(2, nextEnd - clipStart),
+              )
+              onChange({ clipDuration: nextDuration, clipUrl: undefined })
+            }}
+          />
+        </div>
         <div className="mt-3 flex items-center gap-1.5">
-          <span className="mr-1 text-[10px] text-neutral-400">Lengte</span>
-          {[4, 6, 8, 10].map((seconds) => (
+          <span className="mr-1 text-[10px] text-neutral-400">
+            Fragmentduur
+          </span>
+          {[6, 8, 10].map((seconds) => (
             <button
               key={seconds}
               type="button"
@@ -102,7 +309,8 @@ function VideoMomentField({
           ))}
         </div>
         <p className="mt-2 text-[10px] leading-relaxed text-neutral-400">
-          Schuif naar het moment en maak daarna het korte websitefragment.
+          Spoel in de video of gebruik de tijdlijn. Het gekozen moment wordt de
+          start van je websitefragment.
         </p>
         <button
           type="button"
@@ -112,7 +320,7 @@ function VideoMomentField({
             setError(null)
             try {
               const asset = await createVideoClip({
-                sourceUrl: resolvedUrl,
+                sourceUrl,
                 name: video.title || 'artist-video',
                 startTime: clipStart,
                 duration: clipDuration,
@@ -141,10 +349,40 @@ function VideoMomentField({
               : 'Websitefragment maken'}
         </button>
         {video.clipUrl ? (
-          <span className="ml-2 text-[10px] font-medium text-emerald-600">
-            Fragment klaar
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-medium text-emerald-600">
+              Live fragment klaar
+            </span>
+            {liveSize ? (
+              <>
+                <span className="rounded-full bg-neutral-200 px-2 py-1 text-[10px] font-semibold tabular-nums text-neutral-700">
+                  Live: {formatMegabytes(liveSize)}
+                </span>
+                <span
+                  className={[
+                    'rounded-full px-2 py-1 text-[10px] font-semibold tabular-nums',
+                    videoPerformanceScore(liveSize) >= 85
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : videoPerformanceScore(liveSize) >= 70
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-red-100 text-red-700',
+                  ].join(' ')}
+                  title="Geschatte videoscore op basis van de live bestandsgrootte"
+                >
+                  Videoscore: {videoPerformanceScore(liveSize)}/100
+                </span>
+              </>
+            ) : (
+              <span className="text-[10px] text-neutral-400">
+                Live grootte meten…
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="ml-2 text-[10px] font-medium text-amber-600">
+            Maak eerst een fragment voor de website
           </span>
-        ) : null}
+        )}
         {error ? <p className="mt-2 text-[10px] text-red-500">{error}</p> : null}
       </div>
     </div>
@@ -183,8 +421,8 @@ export function ArtistVideosEditor({
 
   return (
     <EditorSection
-      title="Visuals"
-      description="Voeg maximaal acht video’s toe. De filmstrip beweegt automatisch en speelt de middelste clip."
+      title="Shows"
+      description="Elke upload is één slide. Voeg per video een nieuwe slide toe (maximaal acht)."
       defaultOpen
       badge={`${videos.length}/${MAX_ARTIST_VIDEOS}`}
     >
@@ -192,12 +430,12 @@ export function ArtistVideosEditor({
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
           <div>
             <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-              Content sectie
+              Shows sectie
             </p>
             <p className="type-body mt-1 text-xs text-ink/45">
               {sectionVisible
                 ? 'Zichtbaar op de artiestenpagina'
-                : 'Verborgen — visuals blijven bewaard'}
+                : 'Verborgen — shows blijven bewaard'}
             </p>
           </div>
           <ArtistVisibilityToggle
@@ -214,17 +452,8 @@ export function ArtistVideosEditor({
           return (
             <li
               key={video.id}
-              draggable
-              onDragStart={(e) => {
-                setDragIndex(index)
-                e.dataTransfer.effectAllowed = 'move'
-                e.dataTransfer.setData('text/plain', String(index))
-              }}
-              onDragEnd={() => {
-                setDragIndex(null)
-                setOverIndex(null)
-              }}
               onDragOver={(e) => {
+                if (dragIndex === null) return
                 e.preventDefault()
                 e.dataTransfer.dropEffect = 'move'
                 if (overIndex !== index) setOverIndex(index)
@@ -233,6 +462,7 @@ export function ArtistVideosEditor({
                 if (overIndex === index) setOverIndex(null)
               }}
               onDrop={(e) => {
+                if (dragIndex === null) return
                 e.preventDefault()
                 const from = Number(e.dataTransfer.getData('text/plain'))
                 if (Number.isNaN(from)) return
@@ -251,8 +481,20 @@ export function ArtistVideosEditor({
             >
               <div className="flex items-center gap-3">
                 <span
+                  draggable
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Video ${index + 1} verslepen`}
+                  onDragStart={(event) => {
+                    setDragIndex(index)
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', String(index))
+                  }}
+                  onDragEnd={() => {
+                    setDragIndex(null)
+                    setOverIndex(null)
+                  }}
                   className="flex h-8 w-6 shrink-0 cursor-grab flex-col items-center justify-center gap-0.5 text-ink/30 active:cursor-grabbing"
-                  aria-hidden
                 >
                   <span className="block h-0.5 w-3.5 rounded-full bg-current" />
                   <span className="block h-0.5 w-3.5 rounded-full bg-current" />
@@ -275,10 +517,18 @@ export function ArtistVideosEditor({
                 label="Video"
                 kind="video"
                 value={video.videoUrl}
-                onChange={(videoUrl) =>
-                  patch(video.id, { videoUrl, clipUrl: undefined })
-                }
-                hint="Korte verticale clip, bij voorkeur 3:4 of 9:16. Speelt gedempt af bij hover."
+                onChange={(videoUrl) => {
+                  const completingOnlineSync =
+                    Boolean(parseMediaRef(video.videoUrl)) &&
+                    /^https?:\/\//i.test(videoUrl)
+                  patch(
+                    video.id,
+                    completingOnlineSync
+                      ? { videoUrl }
+                      : { videoUrl, clipUrl: undefined },
+                  )
+                }}
+                hint="Reels-formaat 9:16. Alle clips spelen gedempt automatisch af."
               />
               {video.videoUrl ? (
                 <VideoMomentField
@@ -322,8 +572,16 @@ export function ArtistVideosEditor({
 
 /** Apply videos + keep legacy videoUrl in sync for older paths. */
 export function withSyncedVideos(videos: ArtistVideo[]) {
+  const seen = new Set<string>()
+  const unique = videos.filter((video) => {
+    const key = video.videoUrl.trim()
+    if (!key) return true
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
   return {
-    videos,
-    videoUrl: syncLegacyVideoUrl(videos),
+    videos: unique,
+    videoUrl: syncLegacyVideoUrl(unique),
   }
 }

@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { Analytics, type BeforeSendEvent } from '@vercel/analytics/react'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PublicContentProvider } from '@/cms/PublicContentProvider'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { RouteFallback } from '@/components/ui/RouteFallback'
 import { HomePage } from '@/pages/HomePage'
 import { ArtistPage } from '@/pages/ArtistPage'
@@ -66,12 +67,21 @@ export default function App() {
         <Route
           path="/cms/*"
           element={
-            <Suspense fallback={<RouteFallback />}>
-              <CmsApp />
-            </Suspense>
+            <ErrorBoundary label="cms">
+              <Suspense fallback={<RouteFallback />}>
+                <CmsApp />
+              </Suspense>
+            </ErrorBoundary>
           }
         />
-        <Route path="*" element={<PublicApp />} />
+        <Route
+          path="*"
+          element={
+            <ErrorBoundary label="public">
+              <PublicApp />
+            </ErrorBoundary>
+          }
+        />
       </Routes>
       <Analytics beforeSend={publicPageViewsOnly} />
     </BrowserRouter>

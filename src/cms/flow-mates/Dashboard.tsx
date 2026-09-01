@@ -14,6 +14,7 @@ import {
 import { useCms } from '@/cms/CmsProvider'
 import { useMedia } from '@/cms/media/MediaProvider'
 import { PAGE_TABS } from '@/cms/flow-mates/PagesTabBar'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { TrafficDashboard } from '@/cms/flow-mates/TrafficDashboard'
 
 function relativeTime(ts: number | null): string {
@@ -190,7 +191,9 @@ export function DashboardHome() {
         />
       </div>
 
-      <TrafficDashboard />
+      <ErrorBoundary label="traffic" compact>
+        <TrafficDashboard />
+      </ErrorBoundary>
 
       <div className="mb-2">
         <h3 className="text-sm font-semibold tracking-tight text-neutral-900">Snelle acties</h3>

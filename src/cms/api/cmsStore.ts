@@ -7,7 +7,7 @@ import {
 import type { CmsContent } from '@/cms/content'
 import { visibleArtists } from '@/cms/artistVisibility'
 import { withArtDirection } from '@/cms/imageFocus'
-import { isArtistUuid } from '@/cms/mappers/artist'
+import { isArtistUuid, coerceArtist } from '@/cms/mappers/artist'
 import type { Json } from '@/lib/database.types'
 import type { Artist } from '@/types/artist'
 
@@ -29,7 +29,7 @@ function parseCmsBlob(data: unknown): CmsContent | null {
   }
   return {
     ...parsed,
-    artists: parsed.artists.map((artist) => withArtDirection(artist)),
+    artists: parsed.artists.map((artist) => coerceArtist(withArtDirection(artist))),
   }
 }
 
@@ -37,10 +37,12 @@ function parseArtist(data: unknown, fallbackSlug: string): Artist | null {
   if (!data || typeof data !== 'object') return null
   const artist = data as Artist
   if (!artist.name) return null
-  return withArtDirection({
-    ...artist,
-    slug: artist.slug || fallbackSlug,
-  })
+  return coerceArtist(
+    withArtDirection({
+      ...artist,
+      slug: artist.slug || fallbackSlug,
+    }),
+  )
 }
 
 export async function fetchCmsContentRow(
