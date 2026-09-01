@@ -20,12 +20,6 @@ export function CmsThemeProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, theme)
   }, [theme])
 
-  useEffect(() => {
-    const root = window.document.documentElement
-    root.classList.add('cms-compact-root')
-    return () => root.classList.remove('cms-compact-root')
-  }, [])
-
   const value = useMemo(
     () => ({
       theme,

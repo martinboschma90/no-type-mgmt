@@ -8,6 +8,8 @@ export type PreviewDevice = 'desktop' | 'tablet' | 'mobile'
 type PreviewFrameProps = {
   label: string
   children: ReactNode
+  /** Scroll the preview iframe to this element id after mount. */
+  scrollToId?: string
 }
 
 const devices: {
@@ -24,7 +26,7 @@ const devices: {
 /**
  * Frame CMS preview chrome. Inner island is Notype content only.
  */
-export function PreviewFrame({ label, children }: PreviewFrameProps) {
+export function PreviewFrame({ label, children, scrollToId }: PreviewFrameProps) {
   const { theme } = useTheme()
   const [device, setDevice] = useState<PreviewDevice>('desktop')
   const [nonce, setNonce] = useState(0)
@@ -61,6 +63,33 @@ export function PreviewFrame({ label, children }: PreviewFrameProps) {
     if (root) root.dataset.theme = theme
   }, [theme, mountNode])
 
+  useEffect(() => {
+    if (!mountNode) return
+    let attempts = 0
+    let timer = 0
+
+    const tick = () => {
+      attempts += 1
+      if (!scrollToId) {
+        mountNode.scrollTo({ top: 0 })
+        return
+      }
+      const target = mountNode.ownerDocument.getElementById(scrollToId)
+      if (!target) {
+        if (attempts < 15) timer = window.setTimeout(tick, 120)
+        return
+      }
+      const top =
+        target.getBoundingClientRect().top -
+        mountNode.getBoundingClientRect().top +
+        mountNode.scrollTop
+      mountNode.scrollTo({ top: Math.max(0, top - 16), behavior: 'smooth' })
+    }
+
+    timer = window.setTimeout(tick, 80)
+    return () => window.clearTimeout(timer)
+  }, [mountNode, scrollToId])
+
   const initializeFrame = useCallback(() => {
     const iframe = iframeRef.current
     const doc = iframe?.contentDocument
@@ -75,8 +104,10 @@ export function PreviewFrame({ label, children }: PreviewFrameProps) {
     doc.head.prepend(base)
 
     const style = doc.createElement('style')
-    style.textContent =
-      'html,body,#preview-root{margin:0;min-height:100%;} body{overflow:auto;}'
+    style.textContent = `
+      html, body { margin: 0; height: 100%; overflow: hidden !important; }
+      #preview-root { height: 100%; overflow: auto !important; overflow-x: hidden; }
+    `
     doc.head.appendChild(style)
     doc.documentElement.dataset.theme = theme
     setMountNode(doc.getElementById('preview-root'))
@@ -88,7 +119,7 @@ export function PreviewFrame({ label, children }: PreviewFrameProps) {
         maximized ? 'fixed inset-0 z-50' : 'h-full'
       }`}
     >
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200 px-3 py-2">
+      <div className="sticky top-0 z-20 flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200 bg-white px-3 py-2">
         <div className="min-w-0">
           <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-500">
             Live preview

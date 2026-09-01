@@ -24,7 +24,7 @@ export const ARTIST_SECTION_META: Record<
   },
   tracks: {
     label: 'Music',
-    description: 'Platform embed (SoundCloud / Spotify / custom) of tracklijst',
+    description: 'Speelt onder de bio in het profiel',
   },
 }
 

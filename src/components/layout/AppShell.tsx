@@ -31,7 +31,7 @@ export function AppShell({
   return (
     <>
       <GradientOverlay />
-      <div className="relative z-[1] min-h-svh bg-[var(--body-bg)] pb-20 text-ink sm:pb-24">
+      <div className="relative z-[1] min-h-svh bg-[var(--body-bg)] text-ink">
         <Navbar
           menuOpen={menuOpen}
           onMenuToggle={() => setMenuOpen((v) => !v)}

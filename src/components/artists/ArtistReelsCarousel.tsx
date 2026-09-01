@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Play } from 'lucide-react'
 import type { Artist, ArtistVideo } from '@/types/artist'
+import { MediaContext } from '@/cms/media/MediaContext'
+import { parseMediaRef } from '@/cms/media/refs'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
 
 const CINEMA_EASE = [0.22, 1, 0.36, 1] as const
 
@@ -18,11 +21,36 @@ function VideoTile({
   onPlay: () => void
   onStop: () => void
 }) {
-  const videoUrl = useResolvedMediaUrl(video.clipUrl || video.videoUrl)
+  const media = useContext(MediaContext)
+  const sourceRef = video.clipUrl || video.videoUrl
+  const resolvedUrl = useResolvedMediaUrl(sourceRef)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const [hostWindow, setHostWindow] = useState<Window | null>(null)
+  const [playableUrl, setPlayableUrl] = useState(resolvedUrl)
   const usingGeneratedClip = Boolean(video.clipUrl)
   const clipStart = usingGeneratedClip ? 0 : Math.max(0, video.clipStart ?? 0)
   const clipDuration = Math.max(2, video.clipDuration ?? 6)
+
+  useEffect(() => {
+    const mediaId = parseMediaRef(sourceRef)
+    const asset = mediaId
+      ? media?.assets.find((item) => item.id === mediaId)
+      : undefined
+    const blob = asset?.blob
+
+    if (hostWindow && blob && hostWindow !== window) {
+      const url = hostWindow.URL.createObjectURL(blob)
+      setPlayableUrl(url)
+      return () => {
+        hostWindow.URL.revokeObjectURL(url)
+      }
+    }
+
+    setPlayableUrl(resolvedUrl)
+    return undefined
+  }, [hostWindow, media?.assets, resolvedUrl, sourceRef])
+
+  const videoUrl = playableUrl
 
   useEffect(() => {
     const element = videoRef.current
@@ -55,11 +83,16 @@ function VideoTile({
     >
       {videoUrl ? (
         <video
-          ref={videoRef}
+          ref={(element) => {
+            videoRef.current = element
+            const next = element?.ownerDocument.defaultView ?? null
+            if (next !== hostWindow) setHostWindow(next)
+          }}
           src={videoUrl}
           className="absolute inset-0 h-full w-full object-cover"
           muted
           playsInline
+          loop
           preload="auto"
           onLoadedMetadata={(event) => {
             event.currentTarget.currentTime = Math.min(
@@ -80,7 +113,11 @@ function VideoTile({
             if (playing) void event.currentTarget.play().catch(() => undefined)
           }}
         />
-      ) : null}
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-[0.65rem] leading-relaxed text-white/40">
+          Video wordt geladen…
+        </div>
+      )}
       <div
         className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/10"
         aria-hidden
@@ -108,12 +145,16 @@ export function ArtistReelsCarousel({
   artist,
   videos,
   showEmptyState = false,
+  previewMode = false,
+  previewFocus,
 }: {
   artist: Artist
   videos: ArtistVideo[]
   showEmptyState?: boolean
   previewMode?: boolean
+  previewFocus?: ArtistPreviewFocus
 }) {
+  const sectionRef = useRef<HTMLElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
     pointerId: number
@@ -195,7 +236,11 @@ export function ArtistReelsCarousel({
   if (videos.length === 0) {
     if (!showEmptyState) return null
     return (
-      <section className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">
+      <section
+        ref={sectionRef}
+        id="artist-visuals"
+        className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8"
+      >
         <div className="rounded-[1.5rem] border border-white/8 bg-[#121014] px-6 py-14 text-center">
           <p className="type-headline text-lg text-[#F5F5F5]">Visuals</p>
           <p className="type-body mt-2 text-xs text-[#F5F5F5]/45">
@@ -213,11 +258,16 @@ export function ArtistReelsCarousel({
   }
 
   return (
-    <section className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+    <section
+      ref={sectionRef}
+      id="artist-visuals"
+      className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20"
+    >
       <motion.div
-        initial={{ opacity: 0, y: 22 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.12 }}
+        initial={previewMode ? false : { opacity: 0, y: 22 }}
+        animate={previewMode ? { opacity: 1, y: 0 } : undefined}
+        whileInView={previewMode ? undefined : { opacity: 1, y: 0 }}
+        viewport={previewMode ? undefined : { once: true, amount: 0.12 }}
         transition={{ duration: 0.7, ease: CINEMA_EASE }}
       >
         <div className="mb-5 flex items-end justify-between gap-4">

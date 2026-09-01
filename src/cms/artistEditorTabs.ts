@@ -15,6 +15,8 @@ export const ARTIST_EDITOR_TABS = [
 
 export type ArtistEditorTabId = (typeof ARTIST_EDITOR_TABS)[number]['id']
 
+export type ArtistPreviewFocus = 'hero' | 'video' | 'instagram'
+
 const LEGACY_TABS: Record<string, ArtistEditorTabId> = {
   visuals: 'content',
 }

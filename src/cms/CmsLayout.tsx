@@ -391,12 +391,15 @@ export function CmsLayout() {
         className={`transition-[padding-left] duration-300 ease-out lg:pl-16 lg:peer-hover/sidebar:pl-64 ${
           pagesWorkspace
             ? '[--cms-editor-sticky-top:6.25rem] lg:[--cms-editor-sticky-top:3rem]'
-            : '[--cms-editor-sticky-top:3.5rem] lg:[--cms-editor-sticky-top:0rem]'
+            : panels.mode === 'artists' && artistSlug
+              ? '[--cms-editor-sticky-top:3.5rem] lg:[--cms-editor-sticky-top:1.5rem]'
+              : '[--cms-editor-sticky-top:3.5rem] lg:[--cms-editor-sticky-top:1.5rem]'
         }`}
       >
         <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {pagesWorkspace ? <PagesTabBar /> : null}
 
+          {panels.mode === 'dashboard' || panels.mode === 'media' || !panels.Page ? (
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-neutral-200/70 pb-6">
             <div className="min-w-0">
               <h1
@@ -415,49 +418,6 @@ export function CmsLayout() {
               ) : null}
             </div>
           </div>
-
-          {panels.mode === 'artists' && artistSlug ? (
-            <div className="mb-6 rounded-xl border border-neutral-200 bg-white p-2.5">
-              <div className="mb-2 flex items-center justify-between gap-3 px-1">
-                <Link
-                  to="/cms/artists"
-                  className="shrink-0 text-xs font-medium text-neutral-500 hover:text-neutral-900"
-                >
-                  ← Alle artiesten
-                </Link>
-                <span className="text-[10px] font-semibold text-neutral-400">
-                  Artiestenpagina invullen
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
-                {ARTIST_EDITOR_TABS.map((tab) => {
-                  const isActive = isArtistEditorTabActive(
-                    tab.id,
-                    new URLSearchParams(search).get('tab'),
-                  )
-                  return (
-                    <Link
-                      key={tab.id}
-                      to={artistEditorPath(artistSlug, tab.id)}
-                      className={`rounded-lg px-3 py-2.5 transition-colors ${
-                        isActive
-                          ? 'bg-neutral-900 text-white'
-                          : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                      }`}
-                    >
-                      <span className="block text-sm font-semibold">{tab.label}</span>
-                      <span
-                        className={`mt-0.5 block truncate text-[10px] ${
-                          isActive ? 'text-white/65' : 'text-neutral-400'
-                        }`}
-                      >
-                        {tab.description}
-                      </span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
           ) : null}
 
           {panels.mode === 'dashboard' ? (
@@ -488,6 +448,63 @@ export function CmsLayout() {
             ) : (
               <EditorPreviewLayout>
               <div className="cms-editor-pane min-w-0 pr-1">
+                <div className="mb-5 border-b border-neutral-200/70 pb-5">
+                  <h1
+                    className="text-2xl font-medium tracking-tight text-neutral-900 sm:text-[1.75rem]"
+                    style={{ letterSpacing: '-0.01em' }}
+                  >
+                    {panels.title}
+                  </h1>
+                  <p className="mt-1.5 text-sm leading-relaxed text-neutral-500">{panels.subtitle}</p>
+                  <p className="mt-2 text-[11px] uppercase tracking-wide text-neutral-400">
+                    {formatSavedAt(savedAt)}
+                    {artistSyncError ? ` · Artist: ${artistSyncError}` : ''}
+                    {siteSyncError ? ` · Site: ${siteSyncError}` : ''}
+                  </p>
+                </div>
+                {panels.mode === 'artists' && artistSlug ? (
+                  <div className="cms-artist-tabs sticky top-12 z-20 mb-4 rounded-xl border border-neutral-200 bg-white p-2.5 lg:top-0">
+                    <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                      <Link
+                        to="/cms/artists"
+                        className="shrink-0 text-xs font-medium text-neutral-500 hover:text-neutral-900"
+                      >
+                        ← Alle artiesten
+                      </Link>
+                      <span className="text-[10px] font-semibold text-neutral-400">
+                        Artiestenpagina invullen
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+                      {ARTIST_EDITOR_TABS.map((tab) => {
+                        const isActive = isArtistEditorTabActive(
+                          tab.id,
+                          new URLSearchParams(search).get('tab'),
+                        )
+                        return (
+                          <Link
+                            key={tab.id}
+                            to={artistEditorPath(artistSlug, tab.id)}
+                            className={`rounded-lg px-3 py-2.5 transition-colors ${
+                              isActive
+                                ? 'bg-neutral-900 text-white'
+                                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                            }`}
+                          >
+                            <span className="block text-sm font-semibold">{tab.label}</span>
+                            <span
+                              className={`mt-0.5 block truncate text-[10px] ${
+                                isActive ? 'text-white/65' : 'text-neutral-400'
+                              }`}
+                            >
+                              {tab.description}
+                            </span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : null}
                 {panels.mode === 'artists' && artistSlug ? null : (
                   <EditorTopBar
                     mode="auto-save"

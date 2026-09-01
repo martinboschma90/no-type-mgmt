@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { PillButton } from '@/components/ui/PillButton'
 import { SocialLinks } from '@/components/artists/SocialLinks'
 import type { Artist } from '@/types/artist'
@@ -8,14 +8,24 @@ import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import { OptimizedImg } from '@/components/ui/OptimizedImg'
 import { rosterGlowGradient } from '@/cms/rosterGlow'
+import { isMusicEmbedActive } from '@/cms/artistMusic'
+import { isArtistSectionVisible } from '@/cms/artistSections'
 import {
   artistBookingWhatsAppMessage,
   buildWhatsAppUrl,
   DEFAULT_WHATSAPP_NUMBER,
 } from '@/data/whatsapp'
+import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
+
+const MusicPlayer = lazy(() =>
+  import('@/components/artists/MusicPlayer').then((m) => ({
+    default: m.MusicPlayer,
+  })),
+)
 
 type ArtistHeroProps = {
   artist: Artist
+  previewFocus?: ArtistPreviewFocus
 }
 
 function WhatsAppIcon() {
@@ -26,7 +36,8 @@ function WhatsAppIcon() {
   )
 }
 
-export function ArtistHero({ artist }: ArtistHeroProps) {
+export function ArtistHero({ artist, previewFocus }: ArtistHeroProps) {
+  const sectionRef = useRef<HTMLElement>(null)
   const { content } = useCms()
   const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
@@ -52,8 +63,19 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
     ),
   }
 
+  useEffect(() => {
+    if (previewFocus !== 'hero') return
+    const id = window.setTimeout(() => {
+      sectionRef.current?.scrollIntoView({ block: 'start' })
+    }, 80)
+    return () => window.clearTimeout(id)
+  }, [previewFocus])
+
   return (
-    <section className="px-4 pb-8 pt-20 sm:px-6 sm:pt-24 lg:px-8 lg:pb-12">
+    <section
+      ref={sectionRef}
+      className="px-4 pb-8 pt-20 sm:px-6 sm:pt-24 lg:px-8 lg:pb-12"
+    >
       <div className="mx-auto grid max-w-[1400px] grid-cols-1 items-start gap-5 sm:gap-8 lg:grid-cols-12 lg:gap-10">
         <div className="order-1 lg:col-span-7 lg:col-start-6 lg:pt-4">
           <h1 className="type-display text-[clamp(2.5rem,11vw,5.75rem)] text-ink">
@@ -146,6 +168,15 @@ export function ArtistHero({ artist }: ArtistHeroProps) {
                   {bioOpen ? 'Show less' : 'Read more'}
                 </button>
               ) : null}
+            </div>
+          ) : null}
+
+          {isArtistSectionVisible(artist, 'tracks') &&
+          (isMusicEmbedActive(artist.music) || Boolean(artist.tracks?.length)) ? (
+            <div className="mt-6 max-w-xl sm:mt-8">
+              <Suspense fallback={null}>
+                <MusicPlayer artist={artist} />
+              </Suspense>
             </div>
           ) : null}
         </div>

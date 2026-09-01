@@ -308,12 +308,9 @@
 }
 
 /* Flow Mates chrome — Frame CMS look, not Notype lime/magenta */
-.cms-compact-root {
-  font-size: 14px;
-}
-
 [data-cms] {
   color-scheme: light;
+  font-size: 14px;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --color-brand: #171717;
   --color-brand-dim: #404040;
@@ -405,7 +402,8 @@
   background-color: #101010;
 }
 
-[data-cms-theme='dark'] .cms-page-tabs {
+[data-cms-theme='dark'] .cms-page-tabs,
+[data-cms-theme='dark'] .cms-artist-tabs {
   background-color: rgb(9 9 9 / 0.96);
 }
 
@@ -456,6 +454,15 @@
 [data-cms-theme='dark'] .cms-action-card:hover {
   border-color: #4a4a4a;
   background: #222222;
+}
+
+[data-cms] .cms-traffic-panel {
+  background: #111111;
+  color: #f5f5f5;
+}
+
+[data-cms-theme='light'] .cms-traffic-panel {
+  border-color: #1a1a1a;
 }
 
 [data-cms-theme='dark'] .border-emerald-200\/70 {

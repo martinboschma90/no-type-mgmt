@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
-  Globe2,
   MonitorSmartphone,
   MousePointer2,
   RefreshCw,
   Users,
 } from 'lucide-react'
 import { useAuth } from '@/cms/auth/AuthProvider'
+import { useCms } from '@/cms/CmsProvider'
 
 type MetricRow = {
   timestamp?: string
@@ -20,17 +20,22 @@ type MetricRow = {
 }
 
 type TrafficData = {
-  period: { days: number; since: string; until: string }
   totals: { pageviews: number; visitors: number }
   previous: { pageviews: number; visitors: number }
   trend: MetricRow[]
   pages: MetricRow[]
+  artists: MetricRow[]
   referrers: MetricRow[]
   countries: MetricRow[]
   devices: MetricRow[]
+  countryArtists: MetricRow[]
 }
 
 const periods = [7, 30, 90] as const
+
+function asList(value: unknown): MetricRow[] {
+  return Array.isArray(value) ? value : []
+}
 
 function number(value: number) {
   return new Intl.NumberFormat('nl-NL').format(value || 0)
@@ -42,21 +47,13 @@ function change(current: number, previous: number) {
   return `${percentage >= 0 ? '+' : ''}${Math.round(percentage)}%`
 }
 
-function formatDate(value?: string) {
-  if (!value) return ''
-  return new Intl.DateTimeFormat('nl-NL', {
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(value))
-}
-
-function countryName(code?: string) {
-  if (!code) return 'Onbekend'
-  try {
-    return new Intl.DisplayNames(['nl'], { type: 'region' }).of(code) || code
-  } catch {
-    return code
-  }
+function countryFlag(code?: string) {
+  const country = code?.trim().toUpperCase()
+  if (!country || country.length !== 2 || country === 'ZZ') return '🌍'
+  const first = country.charCodeAt(0)
+  const second = country.charCodeAt(1)
+  if (first < 65 || first > 90 || second < 65 || second > 90) return '🌍'
+  return String.fromCodePoint(127397 + first, 127397 + second)
 }
 
 const deviceNames: Record<string, string> = {
@@ -65,14 +62,19 @@ const deviceNames: Record<string, string> = {
   tablet: 'Tablet',
 }
 
+function artistSlugFromPath(path?: string) {
+  const match = path?.match(/^\/artists\/([^/?#]+)/i)
+  return match?.[1] ? decodeURIComponent(match[1]).toLowerCase() : null
+}
+
 export function TrafficDashboard() {
   const { session } = useAuth()
+  const { content } = useCms()
   const [days, setDays] = useState<(typeof periods)[number]>(30)
   const [data, setData] = useState<TrafficData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -90,18 +92,32 @@ export function TrafficDashboard() {
         if (!response.ok) {
           throw new Error(payload?.error || 'Analytics kon niet worden geladen.')
         }
-        if (
-          !payload?.totals ||
-          !Array.isArray(payload.trend) ||
-          !Array.isArray(payload.pages)
-        ) {
+        if (!payload?.totals || typeof payload.totals !== 'object') {
           throw new Error('Analytics gaf nog geen geldige gegevens terug.')
         }
-        return payload as TrafficData
+        const next: TrafficData = {
+          totals: {
+            pageviews: Number(payload.totals.pageviews) || 0,
+            visitors: Number(payload.totals.visitors) || 0,
+          },
+          previous: {
+            pageviews: Number(payload.previous?.pageviews) || 0,
+            visitors: Number(payload.previous?.visitors) || 0,
+          },
+          trend: asList(payload.trend),
+          pages: asList(payload.pages),
+          artists: asList(payload.artists),
+          referrers: asList(payload.referrers),
+          countries: asList(payload.countries),
+          devices: asList(payload.devices),
+          countryArtists: asList(payload.countryArtists),
+        }
+        return next
       })
       .then(setData)
       .catch((reason) => {
         if (reason instanceof DOMException && reason.name === 'AbortError') return
+        setData(null)
         setError(reason instanceof Error ? reason.message : 'Analytics kon niet worden geladen.')
       })
       .finally(() => {
@@ -111,140 +127,200 @@ export function TrafficDashboard() {
     return () => controller.abort()
   }, [days, reloadKey, session?.access_token])
 
-  const maxTrend = useMemo(
-    () => Math.max(1, ...(data?.trend.map((row) => row.pageviews) || [1])),
-    [data?.trend],
-  )
+  const artistNames = useMemo(() => {
+    const map = new Map<string, string>()
+    const artists = Array.isArray(content.artists) ? content.artists : []
+    for (const artist of artists) {
+      if (artist?.slug) map.set(artist.slug.toLowerCase(), artist.name)
+    }
+    return map
+  }, [content.artists])
+
+  const topArtists = useMemo(() => {
+    const merged = new Map<string, MetricRow>()
+    for (const row of [...(data?.artists ?? []), ...(data?.pages ?? [])]) {
+      const slug = artistSlugFromPath(row.requestPath)
+      if (!slug) continue
+      const current = merged.get(slug)
+      merged.set(slug, {
+        requestPath: `/artists/${slug}`,
+        pageviews: (current?.pageviews || 0) + (row.pageviews || 0),
+        visitors: (current?.visitors || 0) + (row.visitors || 0),
+      })
+    }
+    return [...merged.values()].sort((a, b) => b.pageviews - a.pageviews).slice(0, 4)
+  }, [data])
+
+  const countryCards = useMemo(() => {
+    const artistsByCountry = new Map<string, { name: string; pageviews: number }[]>()
+    for (const row of data?.countryArtists ?? []) {
+      const code = row.country?.toUpperCase()
+      const slug = artistSlugFromPath(row.requestPath)
+      if (!code || !slug) continue
+      const name = artistNames.get(slug) || slug
+      const list = artistsByCountry.get(code) ?? []
+      const existing = list.find((item) => item.name === name)
+      if (existing) existing.pageviews += row.pageviews || 0
+      else list.push({ name, pageviews: row.pageviews || 0 })
+      artistsByCountry.set(code, list)
+    }
+
+    const countries = (data?.countries ?? []).length
+      ? data?.countries ?? []
+      : [...artistsByCountry.keys()].map((country) => ({
+          country,
+          pageviews: 0,
+          visitors: 0,
+        }))
+
+    return countries.slice(0, 6).map((row) => {
+      const code = row.country?.toUpperCase() || ''
+      const artists = (artistsByCountry.get(code) ?? [])
+        .sort((a, b) => b.pageviews - a.pageviews)
+        .slice(0, 2)
+      return {
+        code,
+        pageviews: row.pageviews || 0,
+        artists,
+      }
+    })
+  }, [artistNames, data])
+
+  const trend = data?.trend ?? []
+  const maxTrend = Math.max(1, ...trend.map((row) => row.pageviews || 0), 1)
 
   return (
-    <section className="mb-4 overflow-hidden rounded-xl border border-neutral-200 bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-neutral-500" />
-            <h3 className="text-base font-semibold tracking-tight text-neutral-900">
-              Website traffic
-            </h3>
-          </div>
-          <p className="mt-1 text-xs text-neutral-500">
-            Alleen openbare pagina’s, gemeten door Vercel Analytics.
-          </p>
-        </div>
+    <section className="cms-traffic-panel mb-4 overflow-hidden rounded-2xl border border-neutral-800 bg-[#111] text-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
         <div className="flex items-center gap-2">
-          {data ? (
-            <button
-              type="button"
-              onClick={() => setExpanded((value) => !value)}
-              className="text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-900"
-            >
-              {expanded ? 'Details sluiten' : 'Details tonen'}
-            </button>
-          ) : null}
-          <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1">
-            {periods.map((period) => (
-              <button
-                key={period}
-                type="button"
-                onClick={() => setDays(period)}
-                className={[
-                  'rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors',
-                  days === period
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-500 hover:text-neutral-900',
-                ].join(' ')}
-              >
-                {period} dagen
-              </button>
-            ))}
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-400/15">
+            <Activity className="h-3.5 w-3.5 text-emerald-300" />
+          </span>
+          <div>
+            <h3 className="text-sm font-semibold tracking-tight text-white">Website traffic</h3>
+            <p className="text-[11px] text-white/45">Artiesten, landen, bronnen en apparaten</p>
           </div>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
+          {periods.map((period) => (
+            <button
+              key={period}
+              type="button"
+              onClick={() => setDays(period)}
+              className={[
+                'rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors',
+                days === period ? 'bg-white text-neutral-950' : 'text-white/45 hover:text-white',
+              ].join(' ')}
+            >
+              {period}d
+            </button>
+          ))}
         </div>
       </div>
 
-      {loading ? <TrafficLoading /> : null}
+      {loading ? (
+        <div className="animate-pulse p-4">
+          <div className="h-16 rounded-lg bg-white/5" />
+        </div>
+      ) : null}
 
       {!loading && error ? (
-        <div className="flex min-h-24 flex-col items-center justify-center px-4 py-4 text-center">
-          <p className="max-w-lg text-sm font-medium text-neutral-800">{error}</p>
-          <p className="mt-1 max-w-lg text-xs leading-relaxed text-neutral-500">
-            Voeg de servervariabelen toe in Vercel en plaats de site daarna opnieuw online.
-          </p>
+        <div className="flex items-center justify-between gap-3 px-4 py-4">
+          <p className="text-xs text-white/70">{error}</p>
           <button
             type="button"
             onClick={() => setReloadKey((value) => value + 1)}
-            className="cms-secondary-action mt-2 inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] font-medium text-white/80 hover:bg-white/5"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            Opnieuw proberen
+            Opnieuw
           </button>
         </div>
       ) : null}
 
       {!loading && !error && data ? (
         <>
-          <div className="grid border-b border-neutral-200 sm:grid-cols-2">
-            <TrafficMetric
-              icon={<MousePointer2 className="h-4 w-4" />}
+          <div className="grid grid-cols-2 border-b border-white/10 sm:grid-cols-[1fr_1fr_1.3fr]">
+            <Metric
+              icon={<MousePointer2 className="h-3.5 w-3.5" />}
               label="Bezoeken"
               value={number(data.totals.pageviews)}
               delta={change(data.totals.pageviews, data.previous.pageviews)}
-              compact={!expanded}
             />
-            <TrafficMetric
-              icon={<Users className="h-4 w-4" />}
+            <Metric
+              icon={<Users className="h-3.5 w-3.5" />}
               label="Unieke bezoekers"
               value={number(data.totals.visitors)}
               delta={change(data.totals.visitors, data.previous.visitors)}
-              border
-              compact={!expanded}
             />
-          </div>
-
-          {expanded ? (
-            <>
-              <div className="grid xl:grid-cols-[1.5fr_1fr]">
-            <div className="border-b border-neutral-200 p-4 sm:p-5 xl:border-b-0 xl:border-r">
-              <p className="mb-5 text-xs font-semibold text-neutral-700">Bezoeken per dag</p>
-              <div className="flex h-44 items-end gap-1">
-                {data.trend.map((row) => (
+            <div className="col-span-2 hidden h-14 items-end gap-px px-4 py-3 sm:col-span-1 sm:flex">
+              {(trend.length ? trend : [{ timestamp: 'empty', pageviews: 0, visitors: 0 }]).map(
+                (row, index) => (
                   <div
-                    key={row.timestamp}
-                    className="group flex h-full min-w-0 flex-1 flex-col justify-end"
-                    title={`${formatDate(row.timestamp)} · ${number(row.pageviews)} bezoeken`}
+                    key={row.timestamp || index}
+                    className="flex h-full min-w-0 flex-1 flex-col justify-end"
                   >
                     <div
-                      className="min-h-1 rounded-sm bg-neutral-300 transition-colors group-hover:bg-neutral-800"
-                      style={{ height: `${Math.max(3, (row.pageviews / maxTrend) * 100)}%` }}
+                      className="rounded-sm bg-emerald-400/80"
+                      style={{
+                        height: `${Math.max(8, ((row.pageviews || 0) / maxTrend) * 100)}%`,
+                      }}
                     />
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+
+          {countryCards.length > 0 ? (
+            <div className="border-b border-white/10 px-3 py-3">
+              <p className="mb-2.5 px-1 text-[10px] font-semibold tracking-wider text-white/45 uppercase">
+                Landen en bekeken artiesten
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {countryCards.map((card) => (
+                  <div
+                    key={card.code || 'unknown'}
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg leading-none" aria-hidden>
+                        {countryFlag(card.code)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[12px] font-semibold text-white">
+                          {countryName(card.code)}
+                        </p>
+                        <p className="text-[10px] text-white/40">
+                          {number(card.pageviews)} bezoeken
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-2 truncate text-[11px] text-white/70">
+                      {card.artists.length
+                        ? card.artists.map((artist) => artist.name).join(' · ')
+                        : 'Nog geen artiestenpagina’s'}
+                    </p>
                   </div>
                 ))}
               </div>
-              <div className="mt-2 flex justify-between text-[10px] text-neutral-400">
-                <span>{formatDate(data.trend[0]?.timestamp)}</span>
-                <span>{formatDate(data.trend.at(-1)?.timestamp)}</span>
-              </div>
             </div>
+          ) : null}
 
+          <div className="grid sm:grid-cols-3">
             <RankedList
-              title="Populairste pagina’s"
-              rows={data.pages}
-              label={(row) => row.requestPath || '/'}
+              title="Artiesten"
+              rows={topArtists}
+              label={(row) =>
+                artistNames.get(artistSlugFromPath(row.requestPath) || '') ||
+                artistSlugFromPath(row.requestPath) ||
+                'Onbekend'
+              }
             />
-              </div>
-
-              <div className="grid border-t border-neutral-200 md:grid-cols-3">
             <RankedList
-              icon={<Globe2 className="h-3.5 w-3.5" />}
-              title="Verkeersbronnen"
+              title="Bronnen"
               rows={data.referrers}
               label={(row) => row.referrerHostname || 'Direct'}
-              compact
-            />
-            <RankedList
-              title="Landen"
-              rows={data.countries}
-              label={(row) => countryName(row.country)}
-              compact
-              border
             />
             <RankedList
               icon={<MonitorSmartphone className="h-3.5 w-3.5" />}
@@ -255,53 +331,38 @@ export function TrafficDashboard() {
                 row.deviceType ||
                 'Onbekend'
               }
-              compact
-              border
             />
-              </div>
-            </>
-          ) : null}
+          </div>
         </>
       ) : null}
     </section>
   )
 }
 
-function TrafficMetric({
+function Metric({
   icon,
   label,
   value,
   delta,
-  border = false,
-  compact = false,
 }: {
   icon: React.ReactNode
   label: string
   value: string
   delta: string
-  border?: boolean
-  compact?: boolean
 }) {
   const positive = !delta.startsWith('-')
   return (
-    <div className={`${compact ? 'px-4 py-3' : 'p-4 sm:p-5'} ${border ? 'sm:border-l sm:border-neutral-200' : ''}`}>
-      <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
+    <div className="border-b border-white/10 px-4 py-3 sm:border-b-0 sm:border-r">
+      <div className="flex items-center gap-1.5 text-[11px] text-white/45">
         {icon}
         {label}
       </div>
-      <div className="mt-2 flex items-end gap-2">
-        <span className={`${compact ? 'text-xl' : 'text-2xl'} font-semibold tracking-tight text-neutral-900`}>{value}</span>
-        <span
-          className={`mb-0.5 text-[11px] font-medium ${
-            positive ? 'text-emerald-600' : 'text-red-500'
-          }`}
-        >
+      <div className="mt-1 flex items-end gap-2">
+        <span className="text-xl font-semibold tracking-tight text-white">{value}</span>
+        <span className={`mb-0.5 text-[11px] font-medium ${positive ? 'text-emerald-300' : 'text-red-400'}`}>
           {delta}
         </span>
       </div>
-      {!compact ? (
-        <p className="mt-1 text-[10px] text-neutral-400">ten opzichte van vorige periode</p>
-      ) : null}
     </div>
   )
 }
@@ -311,62 +372,41 @@ function RankedList({
   rows,
   label,
   icon,
-  compact = false,
-  border = false,
 }: {
   title: string
   rows: MetricRow[]
   label: (row: MetricRow) => string
   icon?: React.ReactNode
-  compact?: boolean
-  border?: boolean
 }) {
-  const max = Math.max(1, ...rows.map((row) => row.pageviews))
+  const list = Array.isArray(rows) ? rows : []
+  const max = Math.max(1, ...list.map((row) => row.pageviews || 0), 1)
   return (
-    <div
-      className={[
-        compact ? 'p-4 sm:p-5' : 'p-4 sm:p-5',
-        border ? 'border-t border-neutral-200 md:border-l md:border-t-0' : '',
-      ].join(' ')}
-    >
-      <p className="mb-4 flex items-center gap-2 text-xs font-semibold text-neutral-700">
+    <div className="border-t border-white/10 p-3.5 xl:border-t-0 xl:border-l xl:first:border-l-0">
+      <p className="mb-2.5 flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-white/45 uppercase">
         {icon}
         {title}
       </p>
-      {rows.length === 0 ? (
-        <p className="text-xs text-neutral-400">Nog geen gegevens.</p>
+      {list.length === 0 ? (
+        <p className="text-[11px] text-white/30">Nog geen gegevens</p>
       ) : (
-        <ol className="space-y-3">
-          {rows.slice(0, compact ? 5 : 8).map((row, index) => (
+        <ol className="space-y-1.5">
+          {list.slice(0, 4).map((row, index) => (
             <li key={`${label(row)}-${index}`}>
-              <div className="mb-1 flex items-center gap-3 text-[11px]">
-                <span className="min-w-0 flex-1 truncate font-medium text-neutral-700">
-                  {label(row)}
-                </span>
-                <span className="tabular-nums text-neutral-400">{number(row.pageviews)}</span>
+              <div className="mb-0.5 flex items-center gap-2 text-[11px]">
+                <span className="w-3 text-white/30">{index + 1}</span>
+                <span className="min-w-0 flex-1 truncate font-medium text-white/90">{label(row)}</span>
+                <span className="tabular-nums text-white/40">{number(row.pageviews || 0)}</span>
               </div>
-              <div className="h-1 overflow-hidden rounded-full bg-neutral-100">
+              <div className="h-1 overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-neutral-400"
-                  style={{ width: `${Math.max(4, (row.pageviews / max) * 100)}%` }}
+                  className="h-full rounded-full bg-emerald-400/80"
+                  style={{ width: `${Math.max(6, ((row.pageviews || 0) / max) * 100)}%` }}
                 />
               </div>
             </li>
           ))}
         </ol>
       )}
-    </div>
-  )
-}
-
-function TrafficLoading() {
-  return (
-    <div className="animate-pulse p-5">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="h-24 rounded-lg bg-neutral-100" />
-        <div className="h-24 rounded-lg bg-neutral-100" />
-      </div>
-      <div className="mt-5 h-48 rounded-lg bg-neutral-100" />
     </div>
   )
 }

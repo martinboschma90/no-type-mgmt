@@ -270,7 +270,7 @@ export function ArtistEditor() {
         />
       ) : null}
 
-      <div className="sticky top-0 z-30 -mx-4 -mt-4 mb-1 border-b border-ink/10 bg-[var(--body-bg)]/95 px-4 pt-4 pb-3 backdrop-blur-md sm:-mx-5 sm:px-5">
+      <div className="sticky top-[var(--cms-editor-sticky-top,0px)] z-20 -mx-4 -mt-4 mb-1 border-b border-ink/10 bg-[var(--body-bg)]/95 px-4 pt-4 pb-3 backdrop-blur-md sm:-mx-5 sm:px-5">
         <ArtistPublishBar
           artist={artist}
           dirty={dirty}
@@ -343,6 +343,7 @@ export function ArtistEditor() {
           updateArtist(updateKey, (a) => ({
             ...a,
             ...withSyncedVideos(videos),
+            sections: setArtistSectionVisible(a.sections, 'video', true),
           }))
         }
       />

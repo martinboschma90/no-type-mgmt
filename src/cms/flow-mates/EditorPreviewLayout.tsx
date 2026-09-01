@@ -81,11 +81,11 @@ export function EditorPreviewLayout({ children }: { children: ReactNode }) {
               <GripVertical className="h-4 w-4" />
             </span>
           </button>
-          <div className="relative hidden min-w-0 flex-1 self-start xl:sticky xl:top-[var(--cms-editor-sticky-top,0px)] xl:block xl:h-[calc(100vh-3.5rem)]">
+          <div className="relative hidden min-w-0 flex-1 self-start xl:sticky xl:top-[var(--cms-editor-sticky-top,0px)] xl:z-20 xl:block xl:h-[calc(100dvh-var(--cms-editor-sticky-top,0px)-1rem)]">
             <button
               type="button"
               onClick={() => setPreviewCollapsed(true)}
-              className="absolute right-2 top-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 shadow-sm hover:bg-neutral-50"
+              className="absolute right-2 top-2 z-30 inline-flex h-7 w-7 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 shadow-sm hover:bg-neutral-50"
               aria-label="Preview inklappen"
             >
               <ChevronRight className="h-3.5 w-3.5" />

@@ -114,7 +114,7 @@ export function MediaUrlField({
           <p className="rounded-lg bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-600">
             {syncingRemote
               ? 'Media wordt naar permanente opslag gesynchroniseerd…'
-              : 'Dit bestand staat nog lokaal. Upload het opnieuw om het publiek te kunnen gebruiken.'}
+              : 'Dit bestand staat nog alleen in deze browser. De live preview rechts kan het al tonen. Voor de publieke website moet het naar permanente opslag.'}
           </p>
         ) : null}
 

@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   previousSince.setUTCDate(previousSince.getUTCDate() - days)
 
   try {
-    const [totals, previous, trend, pages, referrers, countries, devices] =
+    const [totals, previous, trend, pages, artists, referrers, countries, devices, countryArtists] =
       await Promise.all([
         queryVercel('count', { since, until }),
         queryVercel('count', { since: previousSince, until: previousUntil }),
@@ -39,21 +39,35 @@ export default async function handler(req, res) {
           since,
           until,
           by: 'requestPath',
-          limit: 8,
+          limit: 20,
         }),
         queryVercel('aggregate', {
           since,
           until,
+          by: 'requestPath',
+          limit: 12,
+          filter: "startswith(requestPath,'/artists')",
+        }).catch(() => ({ data: [] })),
+        queryVercel('aggregate', {
+          since,
+          until,
           by: 'referrerHostname',
-          limit: 6,
+          limit: 8,
         }),
-        queryVercel('aggregate', { since, until, by: 'country', limit: 6 }),
+        queryVercel('aggregate', { since, until, by: 'country', limit: 8 }),
         queryVercel('aggregate', {
           since,
           until,
           by: 'deviceType',
           limit: 6,
         }),
+        queryVercel('aggregate', {
+          since,
+          until,
+          by: ['country', 'requestPath'],
+          limit: 40,
+          filter: "startswith(requestPath,'/artists')",
+        }).catch(() => ({ data: [] })),
       ])
 
     res.setHeader('Cache-Control', 'private, max-age=300')
@@ -67,9 +81,11 @@ export default async function handler(req, res) {
       previous: previous.data,
       trend: trend.data,
       pages: pages.data,
+      artists: artists.data,
       referrers: referrers.data,
       countries: countries.data,
       devices: devices.data,
+      countryArtists: countryArtists.data,
     })
   } catch (error) {
     return json(res, error.status || 502, {
@@ -85,8 +101,12 @@ async function queryVercel(endpoint, options) {
     until: options.until.toISOString(),
   })
 
-  if (options.by) params.set('by', options.by)
+  if (options.by) {
+    const dimensions = Array.isArray(options.by) ? options.by : [options.by]
+    for (const dimension of dimensions) params.append('by', dimension)
+  }
   if (options.limit) params.set('limit', String(options.limit))
+  if (options.filter) params.set('filter', options.filter)
   if (process.env.VERCEL_TEAM_ID) {
     params.set('teamId', process.env.VERCEL_TEAM_ID)
   } else if (process.env.VERCEL_TEAM_SLUG) {

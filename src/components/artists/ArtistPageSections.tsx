@@ -1,35 +1,21 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { ArtistHero } from '@/components/artists/ArtistHero'
-import { isMusicEmbedActive } from '@/cms/artistMusic'
+import { ArtistVideoSlide } from '@/components/artists/ArtistVideoSlide'
 import { isInstagramFeedActive } from '@/cms/artistInstagram'
 import { artistHasVideos } from '@/cms/artistVideos'
 import { normalizeArtistSections } from '@/cms/artistSections'
+import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
 import type { Artist } from '@/types/artist'
-
-const ArtistVideoSlide = lazy(() =>
-  import('@/components/artists/ArtistVideoSlide').then((m) => ({
-    default: m.ArtistVideoSlide,
-  })),
-)
 const ArtistInstagramCarousel = lazy(() =>
   import('@/components/artists/ArtistInstagramCarousel').then((m) => ({
     default: m.ArtistInstagramCarousel,
-  })),
-)
-const MusicPlayer = lazy(() =>
-  import('@/components/artists/MusicPlayer').then((m) => ({
-    default: m.MusicPlayer,
   })),
 )
 
 type ArtistPageSectionsProps = {
   artist: Artist
   previewMode?: boolean
-}
-
-function hasMusicToShow(artist: Artist) {
-  if (isMusicEmbedActive(artist.music)) return true
-  return Boolean(artist.tracks?.length)
+  previewFocus?: ArtistPreviewFocus
 }
 
 function LazySection({ children }: { children: ReactNode }) {
@@ -40,27 +26,42 @@ function LazySection({ children }: { children: ReactNode }) {
 export function ArtistPageSections({
   artist,
   previewMode = false,
+  previewFocus = 'hero',
 }: ArtistPageSectionsProps) {
   const sections = normalizeArtistSections(artist.sections)
 
   return (
     <>
       {sections.map((section) => {
-        if (!section.visible) return null
+        const hiddenOnLive = !section.visible
+        if (
+          hiddenOnLive &&
+          !(previewMode && (section.id === 'video' || section.id === 'instagram'))
+        ) {
+          return null
+        }
 
         switch (section.id) {
           case 'hero':
-            return <ArtistHero key="hero" artist={artist} />
+            return (
+              <ArtistHero
+                key="hero"
+                artist={artist}
+                previewFocus={previewMode ? previewFocus : undefined}
+              />
+            )
           case 'video': {
             if (!previewMode && !artistHasVideos(artist)) return null
+            const slide = (
+              <ArtistVideoSlide
+                artist={artist}
+                previewMode={previewMode}
+                showEmptyState={previewMode}
+                previewFocus={previewMode ? previewFocus : undefined}
+              />
+            )
             return (
-              <LazySection key="video">
-                <ArtistVideoSlide
-                  artist={artist}
-                  previewMode={previewMode}
-                  showEmptyState={previewMode}
-                />
-              </LazySection>
+              <div key="video">{slide}</div>
             )
           }
           case 'instagram': {
@@ -70,30 +71,13 @@ export function ArtistPageSections({
                 <ArtistInstagramCarousel
                   artist={artist}
                   showEmptyState={previewMode}
+                  previewFocus={previewMode ? previewFocus : undefined}
                 />
               </LazySection>
             )
           }
-          case 'tracks': {
-            if (!previewMode && !hasMusicToShow(artist)) return null
-            return (
-              <LazySection key="tracks">
-                <section className="mx-auto max-w-[1400px] px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-                  <div className="mb-5">
-                    <p className="type-label text-[0.6rem] tracking-[0.18em] text-ink/40 uppercase">
-                      Music
-                    </p>
-                    <h2 className="type-headline mt-1 text-2xl text-ink sm:text-3xl">
-                      Listen
-                    </h2>
-                  </div>
-                  <div className="max-w-3xl">
-                    <MusicPlayer artist={artist} />
-                  </div>
-                </section>
-              </LazySection>
-            )
-          }
+          case 'tracks':
+            return null
           default:
             return null
         }

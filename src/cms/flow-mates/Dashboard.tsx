@@ -138,7 +138,7 @@ export function DashboardHome() {
         </div>
       </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-7">
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <StatusCard
           icon={CheckCircle2}
           label="Website status"

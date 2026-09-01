@@ -1,14 +1,16 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   instagramPostsFromArtist,
   type InstagramEmbed,
 } from '@/cms/artistInstagram'
+import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
 import type { Artist } from '@/types/artist'
 
 type ArtistInstagramCarouselProps = {
   artist: Artist
   showEmptyState?: boolean
+  previewFocus?: ArtistPreviewFocus
 }
 
 function InstagramIcon() {
@@ -52,9 +54,19 @@ function InstagramTile({ post }: { post: InstagramEmbed }) {
 export function ArtistInstagramCarousel({
   artist,
   showEmptyState = false,
+  previewFocus,
 }: ArtistInstagramCarouselProps) {
   const posts = instagramPostsFromArtist(artist.instagramFeed)
+  const sectionRef = useRef<HTMLElement>(null)
   const scrollerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (previewFocus !== 'instagram') return
+    const id = window.setTimeout(() => {
+      sectionRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    }, 120)
+    return () => window.clearTimeout(id)
+  }, [previewFocus, posts.length])
 
   const slide = useCallback((dir: -1 | 1) => {
     const el = scrollerRef.current
@@ -68,7 +80,12 @@ export function ArtistInstagramCarousel({
   if (posts.length === 0) {
     if (!showEmptyState) return null
     return (
-      <section className="px-4 py-10 sm:px-6 lg:px-8" aria-label={`${artist.name} Instagram`}>
+      <section
+        ref={sectionRef}
+        id="artist-instagram"
+        className="px-4 py-10 sm:px-6 lg:px-8"
+        aria-label={`${artist.name} Instagram`}
+      >
         <div className="mx-auto max-w-[1400px] px-4 py-8 text-center">
           <p className="type-body text-xs text-ink/45">
             Koppel tot 6 Instagram post-links in het CMS.
@@ -88,6 +105,8 @@ export function ArtistInstagramCarousel({
 
   return (
     <section
+      ref={sectionRef}
+      id="artist-instagram"
       className="relative px-4 py-8 sm:px-6 sm:py-10 lg:px-8"
       aria-label={`${artist.name} Instagram`}
     >
