@@ -51,6 +51,7 @@ export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
                 className="artist-card__img absolute"
                 style={frame}
                 size="card"
+                srcSetSizes={['poster', 'card', 'hero']}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 loading={priority ? 'eager' : 'lazy'}
                 fetchPriority={priority ? 'high' : 'low'}

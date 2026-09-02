@@ -8,11 +8,13 @@ import {
 } from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { GradientOverlay } from '@/components/layout/GradientOverlay'
-import { MenuOverlay } from '@/components/layout/MenuOverlay'
 import { StickyContactBar } from '@/components/layout/StickyContactBar'
 
 const Footer = lazy(() =>
   import('@/components/layout/Footer').then((m) => ({ default: m.Footer })),
+)
+const MenuOverlay = lazy(() =>
+  import('@/components/layout/MenuOverlay').then((m) => ({ default: m.MenuOverlay })),
 )
 
 type AppShellProps = {
@@ -27,6 +29,7 @@ export function AppShell({
   showFooter = true,
 }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuReady, setMenuReady] = useState(false)
   const [footerReady, setFooterReady] = useState(false)
   const footerBoundaryRef = useRef<HTMLDivElement>(null)
 
@@ -62,10 +65,18 @@ export function AppShell({
       <div className="relative z-[1] min-h-svh bg-[var(--body-bg)] text-ink">
         <Navbar
           menuOpen={menuOpen}
-          onMenuToggle={() => setMenuOpen((v) => !v)}
+          onMenuToggle={() => {
+            setMenuReady(true)
+            setMenuOpen((v) => !v)
+          }}
+          onMenuIntent={() => setMenuReady(true)}
           variant={navVariant}
         />
-        <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} />
+        {menuReady ? (
+          <Suspense fallback={null}>
+            <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} />
+          </Suspense>
+        ) : null}
         <main>{children}</main>
         {showFooter ? (
           <>

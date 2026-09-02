@@ -11,12 +11,12 @@ import {
 import type { Artist } from '@/types/artist'
 import { CmsContext, type CmsContextValue, type ContentSyncStatus } from '@/cms/CmsContext'
 import {
-  createDefaultContent,
   loadStoredContent,
   loadStoredContentUpdatedAt,
   persistContent,
   type CmsContent,
 } from '@/cms/content'
+import { createDefaultContent } from '@/cms/defaultCmsContent'
 import { createBlankArtist } from '@/cms/createArtist'
 import {
   deleteArtistInSupabase,

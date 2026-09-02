@@ -24,7 +24,7 @@ import {
   DEFAULT_ARTIST_SECTIONS,
   normalizeArtistSections,
 } from '../src/cms/artistSections'
-import { createDefaultContent } from '../src/cms/content'
+import { createDefaultContent } from '../src/cms/defaultCmsContent'
 import type { Artist } from '../src/types/artist'
 
 const dryRun = process.argv.includes('--dry-run')

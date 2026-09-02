@@ -1,11 +1,15 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { Analytics, type BeforeSendEvent } from '@vercel/analytics/react'
+import type { BeforeSendEvent } from '@vercel/analytics/react'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PublicContentProvider } from '@/cms/PublicContentProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { RouteFallback } from '@/components/ui/RouteFallback'
 import { HomePage } from '@/pages/HomePage'
+
+const Analytics = lazy(() =>
+  import('@vercel/analytics/react').then((m) => ({ default: m.Analytics })),
+)
 
 const ArtistPage = lazy(() =>
   import('@/pages/ArtistPage').then((m) => ({ default: m.ArtistPage })),
@@ -75,6 +79,14 @@ function PublicApp() {
 }
 
 export default function App() {
+  const [analyticsReady, setAnalyticsReady] = useState(false)
+
+  useEffect(() => {
+    const start = () => setAnalyticsReady(true)
+    const timer = window.setTimeout(start, 1200)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>
@@ -101,7 +113,11 @@ export default function App() {
           }
         />
       </Routes>
-      <Analytics beforeSend={publicPageViewsOnly} />
+      {analyticsReady ? (
+        <Suspense fallback={null}>
+          <Analytics beforeSend={publicPageViewsOnly} />
+        </Suspense>
+      ) : null}
     </BrowserRouter>
   )
 }

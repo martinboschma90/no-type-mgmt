@@ -14,7 +14,7 @@ export type ImageDeliverySize =
 
 const WIDTH: Record<ImageDeliverySize, number> = {
   thumb: 96,
-  card: 560,
+  card: 720,
   team: 400,
   hero: 1100,
   poster: 640,
@@ -23,11 +23,11 @@ const WIDTH: Record<ImageDeliverySize, number> = {
 
 const QUALITY: Record<ImageDeliverySize, number> = {
   thumb: 76,
-  card: 80,
-  team: 80,
-  hero: 84,
-  poster: 78,
-  full: 84,
+  card: 84,
+  team: 82,
+  hero: 86,
+  poster: 82,
+  full: 86,
 }
 
 const OBJECT_PUBLIC =

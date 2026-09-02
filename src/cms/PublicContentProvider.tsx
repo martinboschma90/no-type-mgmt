@@ -58,20 +58,24 @@ export function PublicContentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return
     let cancelled = false
-    void fetchPublicSite()
-      .then((site) => {
-        if (cancelled) return
-        if (site) storageSet(PUBLIC_SITE_STORAGE_KEY, JSON.stringify(site))
-        setContent((prev) => ({
-          ...prev,
-          site: site ?? prev.site,
-        }))
-      })
-      .catch((error) => {
-        console.warn('[public] site hydrate failed', error)
-      })
+    const run = () => {
+      void fetchPublicSite()
+        .then((site) => {
+          if (cancelled) return
+          if (site) storageSet(PUBLIC_SITE_STORAGE_KEY, JSON.stringify(site))
+          setContent((prev) => ({
+            ...prev,
+            site: site ?? prev.site,
+          }))
+        })
+        .catch((error) => {
+          console.warn('[public] site hydrate failed', error)
+        })
+    }
+    const timer = window.setTimeout(run, 200)
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
     }
   }, [])
 

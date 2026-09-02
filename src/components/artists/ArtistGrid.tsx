@@ -19,7 +19,19 @@ export function ArtistGrid({ artists }: ArtistGridProps) {
     >
       {artists.length > 0
         ? artists.map((artist, index) => (
-            <ArtistCard key={artist.id} artist={artist} index={index} />
+            <div
+              key={artist.id}
+              style={
+                index >= 4
+                  ? {
+                      contentVisibility: 'auto',
+                      containIntrinsicSize: 'auto 420px',
+                    }
+                  : undefined
+              }
+            >
+              <ArtistCard artist={artist} index={index} />
+            </div>
           ))
         : Array.from({ length: 8 }, (_, index) => (
             <div

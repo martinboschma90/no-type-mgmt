@@ -280,7 +280,7 @@ export function ArtistReelsCarousel({
                 }
               }}
             >
-              {videos.map((video, index) => (
+              {videos.map((video) => (
                 <div
                   key={video.id}
                   className={

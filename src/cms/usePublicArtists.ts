@@ -27,8 +27,8 @@ export function usePublicArtists() {
     let cancelled = false
 
     void fetchPublicArtistsFromSupabaseCached()
-      .then(({ artists, fromSupabase }) => {
-        if (cancelled || !fromSupabase) return
+      .then(({ artists }) => {
+        if (cancelled || artists.length === 0) return
         const visible = dedupeArtists(visibleArtists(artists))
         setRemoteArtists(visible)
         writeStoredPublicArtists(visible)

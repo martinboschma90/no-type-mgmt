@@ -1,5 +1,3 @@
-import { artists as defaultArtists } from '@/data/artists'
-import { getArtistBySlug } from '@/data/artistDetails'
 import { createDefaultFaqCategories } from '@/data/faq'
 import { withArtDirection } from '@/cms/imageFocus'
 import { normalizeSiteContent } from '@/cms/mappers/site'
@@ -12,7 +10,7 @@ import {
   DEFAULT_ROSTER_GLOW_SECONDARY,
   type RosterGlowPreset,
 } from '@/cms/rosterGlow'
-import { site as defaultSite, team as defaultTeam } from '@/data/site'
+import { site as defaultSite } from '@/data/site'
 import { DEFAULT_WHATSAPP_NUMBER } from '@/data/whatsapp'
 import type { Artist, TeamMember } from '@/types/artist'
 
@@ -154,25 +152,6 @@ export function createDefaultSiteContent(): SiteContent {
       'Answers for promoters, festivals, clubs, brands and event organisers.',
     faqVisible: true,
     faqCategories: createDefaultFaqCategories(),
-  }
-}
-
-export function createDefaultContent(): CmsContent {
-  const artists = defaultArtists.map((artist) => {
-    const full = getArtistBySlug(artist.slug)
-    const base = withArtDirection(full ?? { ...artist })
-    return {
-      ...base,
-      status: 'published' as const,
-      visible: true,
-      publishedAt: base.publishedAt ?? new Date().toISOString(),
-    }
-  })
-
-  return {
-    site: createDefaultSiteContent(),
-    team: defaultTeam.map((member) => ({ ...member })),
-    artists,
   }
 }
 

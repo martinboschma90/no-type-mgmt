@@ -32,7 +32,9 @@ export function parsePublicArtistsPayload(data: unknown): Artist[] | null {
 
   if (Array.isArray(data)) {
     const artists = data.filter(isArtistLike)
-    return artists.length ? visibleArtists(artists) : null
+    return artists.length
+      ? visibleArtists(artists).map(slimPublicRosterArtist)
+      : null
   }
 
   if (typeof data !== 'object') return null
@@ -58,7 +60,28 @@ export function parsePublicArtistsPayload(data: unknown): Artist[] | null {
     }
   }
 
-  return artists.length ? visibleArtists(artists) : null
+  return artists.length
+    ? visibleArtists(artists).map(slimPublicRosterArtist)
+    : null
+}
+
+/** Homepage-only fields — drop videos/bio so the first paint JSON stays small. */
+export function slimPublicRosterArtist(artist: Artist): Artist {
+  return {
+    id: artist.id,
+    slug: artist.slug,
+    name: artist.name,
+    genre: artist.genre,
+    imageUrl: artist.imageUrl ?? '',
+    imageAlt: artist.imageAlt ?? artist.name,
+    imageFocus: artist.imageFocus,
+    imageFocusX: artist.imageFocusX,
+    imageFocusY: artist.imageFocusY,
+    imageScale: artist.imageScale,
+    artDirectionVersion: artist.artDirectionVersion,
+    status: artist.status ?? 'published',
+    visible: artist.visible !== false,
+  }
 }
 
 export function publicArtistsToSlugMap(
@@ -66,7 +89,7 @@ export function publicArtistsToSlugMap(
 ): Record<string, Artist> {
   const map: Record<string, Artist> = {}
   for (const artist of visibleArtists(artists)) {
-    map[artist.slug] = artist
+    map[artist.slug] = slimPublicRosterArtist(artist)
   }
   return map
 }
