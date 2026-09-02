@@ -85,23 +85,33 @@ export function isValidBookingPayload(payload) {
 }
 
 export async function sendBookingEmail({ subject, text, replyTo }) {
+  const inbox = String(
+    process.env.BOOKING_TO_EMAIL || BOOKING_REQUEST_EMAIL,
+  ).trim()
+  const cc = String(replyTo || '').trim()
+  const copy =
+    cc && cc.toLowerCase() !== inbox.toLowerCase() ? [cc] : []
+
   const resendKey = process.env.RESEND_API_KEY
   if (resendKey) {
     const from =
-      process.env.BOOKING_FROM_EMAIL || 'No Type Booking <onboarding@resend.dev>'
+      process.env.BOOKING_FROM_EMAIL || 'NOTYPE MGMT <onboarding@resend.dev>'
+    const body = {
+      from,
+      to: [inbox],
+      subject,
+      text,
+    }
+    if (copy.length) body.cc = copy
+    if (cc) body.reply_to = cc
+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${resendKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from,
-        to: [BOOKING_REQUEST_EMAIL],
-        reply_to: replyTo,
-        subject,
-        text,
-      }),
+      body: JSON.stringify(body),
     })
     if (!response.ok) {
       const detail = await response.text().catch(() => '')
@@ -113,21 +123,25 @@ export async function sendBookingEmail({ subject, text, replyTo }) {
     return { ok: true }
   }
 
+  const form = {
+    _subject: subject,
+    _template: 'table',
+    _captcha: 'false',
+    _replyto: cc || inbox,
+    message: text,
+    from_name: 'NOTYPE booking form',
+  }
+  if (copy.length) form._cc = copy[0]
+
   const response = await fetch(
-    `https://formsubmit.co/ajax/${encodeURIComponent(BOOKING_REQUEST_EMAIL)}`,
+    `https://formsubmit.co/ajax/${encodeURIComponent(inbox)}`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({
-        _subject: subject,
-        _template: 'table',
-        _captcha: 'false',
-        message: text,
-        email: replyTo,
-      }),
+      body: JSON.stringify(form),
     },
   )
   const payload = await response.json().catch(() => null)

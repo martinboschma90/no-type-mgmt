@@ -16,6 +16,7 @@ import {
 import {
   ArtistSelectChip,
   BookingButton,
+  BookingDatePicker,
   BookingField,
   BookingInput,
   BookingSelect,
@@ -354,13 +355,12 @@ export function BookingForm() {
           </BookingSelect>
         </BookingField>
         <BookingField label="Date">
-          <BookingInput
-            type="date"
+          <BookingDatePicker
             value={draft.event.eventDate}
-            onChange={(e) =>
+            onChange={(eventDate) =>
               setDraft((d) => ({
                 ...d,
-                event: { ...d.event, eventDate: e.target.value },
+                event: { ...d.event, eventDate },
               }))
             }
           />

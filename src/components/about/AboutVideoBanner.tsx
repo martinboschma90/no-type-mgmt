@@ -211,7 +211,9 @@ function YoutubeClip({
     }
   }, [endAt, hostId, startAt, videoId])
 
-  const scale = compact ? 'h-[125%] w-[125%]' : 'h-[155%] w-[155%]'
+  const scale = compact
+    ? 'h-full w-[120%] max-w-none'
+    : 'h-[155%] w-[155%] max-w-none'
   return (
     <div
       className={`pointer-events-none absolute left-1/2 top-1/2 z-0 max-w-none -translate-x-1/2 -translate-y-1/2 ${scale} [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0`}
@@ -266,8 +268,11 @@ export function AboutVideoBanner({ url, title }: AboutVideoBannerProps) {
   }, [direct, source, youtubeId])
 
   return (
-    <section className="relative w-full bg-[#121014]" aria-label="About hero">
-      <div className="relative aspect-[21/9] w-full overflow-hidden bg-[#121014]">
+    <section
+      className="relative w-full bg-[#121014] pt-[3.35rem] sm:pt-0"
+      aria-label="About hero"
+    >
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#121014] sm:aspect-[16/9] lg:aspect-[21/9]">
         {allowHeavy && youtubeId ? (
           <YoutubeClip
             videoId={youtubeId}
