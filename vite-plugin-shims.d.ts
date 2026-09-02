@@ -1,0 +1,7 @@
+declare module './api/cms-session.mjs'
+declare module './api/cms-users-lib.mjs'
+declare module './api/booking-stats-lib.mjs'
+declare module './api/rum-lib.mjs'
+declare module './api/site-live.js'
+declare module './api/site-speed.js'
+declare module './api/booking-request-lib.mjs'

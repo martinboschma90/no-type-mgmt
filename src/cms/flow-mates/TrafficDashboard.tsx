@@ -17,6 +17,7 @@ import { useAuth } from '@/cms/auth/AuthProvider'
 import { useCms } from '@/cms/CmsProvider'
 import { fetchBookingRequestsSince } from '@/cms/api/bookingRequests'
 import type { LiveSiteSnapshot } from '@/cms/flow-mates/liveSite'
+import type { MapDot } from '@/cms/flow-mates/WorldTrafficMap'
 import {
   coordsForCity,
   coordsForCountry,
@@ -388,7 +389,7 @@ export function TrafficDashboard({ live }: { live?: LiveSiteSnapshot | null } = 
     return bookingCities.map((row) => ({ city: row.city, country: '', pageviews: row.count }))
   }, [bookingCities, data, live])
   const mapDots = useMemo(() => {
-    const dots = countryCards.flatMap((card) => {
+    const dots: MapDot[] = countryCards.flatMap((card) => {
       const xy = coordsForCountry(card.code)
       if (!xy) return []
       const citiesHere = cityRows
@@ -420,8 +421,8 @@ export function TrafficDashboard({ live }: { live?: LiveSiteSnapshot | null } = 
         artists: row.country
           ? countryCards
               .find((card) => card.code === row.country)
-              ?.artists.map((artist) => artist.name)
-          : undefined,
+              ?.artists.map((artist) => artist.name) ?? []
+          : [],
       })
     }
     return dots

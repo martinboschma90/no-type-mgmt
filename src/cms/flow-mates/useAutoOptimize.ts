@@ -46,6 +46,7 @@ export function useAutoOptimize(live: LiveSiteSnapshot | null): AutoOptimizeStat
     if (startedFor.current === test.id) return
     startedFor.current = test.id
 
+    const testId = test.id
     let cancelled = false
     async function run() {
       setState({ running: true, message: 'Score te laag — video’s optimaliseren…', done: false })
@@ -124,7 +125,7 @@ export function useAutoOptimize(live: LiveSiteSnapshot | null): AutoOptimizeStat
         posters || clips
           ? `${posters} poster${posters === 1 ? '' : 's'}, ${clips} fragment${clips === 1 ? '' : 'en'}`
           : 'geen extra media gemaakt'
-      if (test.id && session?.access_token) {
+      if (testId && session?.access_token) {
         await fetch('/api/site-speed', {
           method: 'POST',
           headers: {
@@ -133,7 +134,7 @@ export function useAutoOptimize(live: LiveSiteSnapshot | null): AutoOptimizeStat
           },
           body: JSON.stringify({
             action: 'optimize-done',
-            id: test.id,
+            id: testId,
             summary,
           }),
         }).catch(() => null)

@@ -14,7 +14,9 @@ export function useLiveSite(origin: string) {
 
   const refreshLive = useCallback(
     async (signal?: AbortSignal) => {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      const headers: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {}
       const params = new URLSearchParams({ origin })
       const response = await fetch(`/api/site-live?${params}`, {
         signal,

@@ -185,7 +185,7 @@ export function CmsLayout() {
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const { savedAt, artistSyncError, siteSyncError, artistSaving, contentSyncStatus } = useCms()
-  const { user, authRequired, signOut, role, displayName, canEdit, canSettings, canManageUsers } =
+  const { user, authRequired, signOut, role, displayName, canEdit, canManageUsers } =
     useAuth()
   const { theme, toggleTheme } = useCmsTheme()
   const panels = useCmsPanels()

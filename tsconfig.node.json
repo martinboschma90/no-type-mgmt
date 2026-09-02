@@ -19,5 +19,13 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "vite-plugin-booking-request.ts", "vite-plugin-public-boot.ts", "api/booking-request-lib.d.mts"]
+  "include": [
+    "vite.config.ts",
+    "vite-plugin-booking-request.ts",
+    "vite-plugin-public-boot.ts",
+    "vite-plugin-cms-users.ts",
+    "vite-plugin-site-live.ts",
+    "vite-plugin-shims.d.ts",
+    "api/booking-request-lib.d.mts"
+  ]
 }

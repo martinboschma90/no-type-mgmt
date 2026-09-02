@@ -10,7 +10,7 @@ export type ManagedUser = {
   createdAt: string | null
 }
 
-async function authHeader() {
+async function authHeader(): Promise<Record<string, string>> {
   if (!supabase) return {}
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token
