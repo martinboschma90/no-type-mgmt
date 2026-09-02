@@ -2,6 +2,15 @@ import type { Artist, ArtistVideo } from '@/types/artist'
 
 export const MAX_ARTIST_VIDEOS = 8
 
+function clampFocus(value: number | undefined) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return 50
+  return Math.min(100, Math.max(0, value))
+}
+
+export function videoObjectPosition(video: Pick<ArtistVideo, 'focusX' | 'focusY'>) {
+  return `${clampFocus(video.focusX)}% ${clampFocus(video.focusY)}%`
+}
+
 export function createBlankArtistVideo(
   partial?: Partial<ArtistVideo>,
 ): ArtistVideo {
@@ -43,6 +52,8 @@ export function normalizeArtistVideos(
       clipDuration: Math.max(2, v.clipDuration ?? 6),
       posterUrl: v.posterUrl?.trim() || undefined,
       title: v.title?.trim() || undefined,
+      focusX: clampFocus(v.focusX),
+      focusY: clampFocus(v.focusY),
     }))
 
   if (fromCollection.length > 0) return fromCollection
@@ -143,6 +154,18 @@ export function parseVideosColumn(value: unknown): ArtistVideo[] {
         : typeof row.clip_duration === 'number'
           ? row.clip_duration
           : 6
+    const focusX =
+      typeof row.focusX === 'number'
+        ? row.focusX
+        : typeof row.focus_x === 'number'
+          ? row.focus_x
+          : 50
+    const focusY =
+      typeof row.focusY === 'number'
+        ? row.focusY
+        : typeof row.focus_y === 'number'
+          ? row.focus_y
+          : 50
     const id =
       typeof row.id === 'string' && row.id ? row.id : `video-${index}`
     out.push({
@@ -154,6 +177,8 @@ export function parseVideosColumn(value: unknown): ArtistVideo[] {
       clipDuration: Math.max(2, clipDuration),
       ...(posterRaw.trim() ? { posterUrl: posterRaw.trim() } : {}),
       ...(titleRaw.trim() ? { title: titleRaw.trim() } : {}),
+      focusX: clampFocus(focusX),
+      focusY: clampFocus(focusY),
     })
     if (out.length >= MAX_ARTIST_VIDEOS) break
   }

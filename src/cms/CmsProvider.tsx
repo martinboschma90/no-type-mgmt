@@ -55,7 +55,7 @@ import {
 } from '@/cms/storageKeys'
 import { useAuth } from '@/cms/auth/AuthProvider'
 import { useLocation } from 'react-router-dom'
-import { dedupeArtists } from '@/cms/dedupeArtists'
+import { mergeRemoteArtists } from '@/cms/dedupeArtists'
 
 function initialContent(): CmsContent {
   const defaults = createDefaultContent()
@@ -130,6 +130,8 @@ export function CmsProvider({ children }: { children: ReactNode }) {
 
   const contentRef = useRef(content)
   contentRef.current = content
+  const dirtyArtistIdsRef = useRef(dirtyArtistIds)
+  dirtyArtistIdsRef.current = dirtyArtistIds
   const artistsHydrated = useRef(false)
   const siteHydrated = useRef(false)
   const cmsStoreHydrated = useRef(false)
@@ -253,7 +255,11 @@ export function CmsProvider({ children }: { children: ReactNode }) {
           team: remoteBlob?.content.team?.length
             ? remoteBlob.content.team
             : contentRef.current.team,
-          artists: dedupeArtists(remoteList),
+          artists: mergeRemoteArtists(
+            contentRef.current.artists,
+            remoteList,
+            dirtyArtistIdsRef.current,
+          ),
         }
         skipCmsPush.current = true
         skipSiteRemoteSync.current = true
@@ -328,18 +334,12 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         artistsHydrated.current = true
         setContent((prev) => ({
           ...prev,
-          artists: dedupeArtists(
+          artists: mergeRemoteArtists(
+            prev.artists,
             artists.map((artist) => withArtDirection(artist)),
+            dirtyArtistIdsRef.current,
           ),
         }))
-        setDirtyArtistIds((prev) => {
-          const remoteIds = new Set(artists.map((artist) => artist.id))
-          const next = new Set<string>()
-          for (const id of prev) {
-            if (!remoteIds.has(id)) next.add(id)
-          }
-          return next
-        })
         setSavedAt(Date.now())
       })
       .catch((error) => {

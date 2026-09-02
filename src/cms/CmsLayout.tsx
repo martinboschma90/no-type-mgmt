@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/cms/auth/AuthProvider'
 import { useCms } from '@/cms/CmsProvider'
+import { useMedia } from '@/cms/media/MediaProvider'
 import {
   ARTIST_EDITOR_TABS,
   artistEditorPath,
@@ -137,6 +138,34 @@ function formatSavedAt(ts: number | null) {
 }
 
 const shellFont = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" } as const
+
+function CmsWorkAlert() {
+  const { artistSyncError, siteSyncError } = useCms()
+  const { uploading } = useMedia()
+  const mediaError =
+    uploading?.stage === 'error' ? uploading.message || 'Mediaverwerking mislukt.' : null
+  const syncParts = [artistSyncError, siteSyncError].filter(Boolean)
+  if (!syncParts.length && !mediaError) return null
+
+  return (
+    <div
+      role="alert"
+      className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900"
+    >
+      <p className="font-semibold">Er is iets misgegaan</p>
+      {syncParts.length ? (
+        <p className="mt-1 leading-relaxed">
+          Opslaan naar de server: {syncParts.join(' · ')}
+        </p>
+      ) : null}
+      {mediaError ? <p className="mt-1 leading-relaxed">{mediaError}</p> : null}
+      <p className="mt-2 text-xs text-red-800/80">
+        Laat dit tabblad open en probeer het opnieuw. Wijzigingen in het CMS
+        zijn lokaal bewaard tot de sync slaagt.
+      </p>
+    </div>
+  )
+}
 
 /** Flow Mates CMS — Frame admin layout, Notype content. */
 export function CmsLayout() {
@@ -397,6 +426,7 @@ export function CmsLayout() {
         }`}
       >
         <div className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <CmsWorkAlert />
           {pagesWorkspace ? <PagesTabBar /> : null}
 
           {panels.mode === 'dashboard' || panels.mode === 'media' || !panels.Page ? (

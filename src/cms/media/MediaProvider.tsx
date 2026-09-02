@@ -9,10 +9,12 @@ import {
 } from 'react'
 import { useAuth } from '@/cms/auth/AuthProvider'
 import {
+  CLIP_JOB_TIMEOUT_MS,
   MAX_LIVE_VIDEO_BYTES,
   MAX_STORED_VIDEO_BYTES,
   convertImageToWebp,
   convertVideoToWebm,
+  enqueueMediaJob,
   isImageFile,
   isVideoFile,
 } from '@/cms/media/convert'
@@ -56,8 +58,11 @@ async function syncAssetToSupabase(
     asset.kind === 'video' &&
     (!asset.mimeType.includes('webm') || asset.size > MAX_STORED_VIDEO_BYTES)
   ) {
-    const converted = await convertVideoToWebm(
-      new File([asset.blob], asset.name, { type: asset.mimeType }),
+    const converted = await enqueueMediaJob(
+      () =>
+        convertVideoToWebm(
+          new File([asset.blob], asset.name, { type: asset.mimeType }),
+        ),
     )
     upload = {
       ...asset,
@@ -172,7 +177,11 @@ export function MediaProvider({ children }: { children: ReactNode }) {
             stage: 'converting',
             message: 'Converting to WebP…',
           })
-          const { blob, width, height } = await convertImageToWebp(file)
+          const { blob, width, height } = await enqueueMediaJob(
+            () => convertImageToWebp(file),
+            30_000,
+            'Afbeelding verwerken duurde te lang.',
+          )
           const id = crypto.randomUUID()
           const meta = {
             id,
@@ -199,15 +208,15 @@ export function MediaProvider({ children }: { children: ReactNode }) {
             stage: 'converting',
             message: 'Preparing video…',
           })
-          const { blob, width, height, duration } = await convertVideoToWebm(
-            file,
-            (ratio) => {
-              setUploading({
-                fileName: file.name,
-                stage: 'converting',
-                message: `Converting to WebM… ${Math.round(ratio * 100)}%`,
-              })
-            },
+          const { blob, width, height, duration } = await enqueueMediaJob(
+            () =>
+              convertVideoToWebm(file, (ratio) => {
+                setUploading({
+                  fileName: file.name,
+                  stage: 'converting',
+                  message: `Converting to WebM… ${Math.round(ratio * 100)}%`,
+                })
+              }),
           )
           if (!Number.isFinite(duration) || duration <= 0) {
             throw new Error(
@@ -277,9 +286,9 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       startTime: number
       duration: number
     }) => {
-      const clipName = `${baseName(name || 'artist-video')}-clip.webm`
+      const pendingName = `${baseName(name || 'artist-video')}-clip`
       setUploading({
-        fileName: clipName,
+        fileName: `${pendingName}.mp4`,
         stage: 'reading',
         message: 'Originele video openen…',
       })
@@ -293,30 +302,41 @@ export function MediaProvider({ children }: { children: ReactNode }) {
         })
 
         setUploading({
-          fileName: clipName,
+          fileName: `${pendingName}.mp4`,
           stage: 'converting',
           message: 'Kort fragment maken…',
         })
-        const converted = await convertVideoToWebm(
-          sourceFile,
-          (ratio) =>
-            setUploading({
-              fileName: clipName,
-              stage: 'converting',
-              message: `Fragment maken… ${Math.round(ratio * 100)}%`,
-            }),
-          { startTime, duration },
+        const converted = await enqueueMediaJob(
+          () =>
+            convertVideoToWebm(
+              sourceFile,
+              (ratio) =>
+                setUploading({
+                  fileName: `${pendingName}.mp4`,
+                  stage: 'converting',
+                  message: `Fragment maken… ${Math.round(ratio * 100)}%`,
+                }),
+              { startTime, duration },
+            ),
+          CLIP_JOB_TIMEOUT_MS,
+          'Fragment maken duurde te lang. Kies een korter stuk.',
         )
         if (converted.blob.size > MAX_LIVE_VIDEO_BYTES) {
           throw new Error('Het live fragment kon niet onder 2 MB worden gebracht.')
         }
+        if (!converted.blob.type.includes('mp4')) {
+          throw new Error(
+            'Fragment als MP4 maken lukt niet in deze browser. Gebruik Chrome of Edge.',
+          )
+        }
 
+        const clipName = `${pendingName}.mp4`
         const id = crypto.randomUUID()
         const meta = {
           id,
           name: clipName,
           kind: 'video' as const,
-          mimeType: converted.blob.type || 'video/webm',
+          mimeType: converted.blob.type || 'video/mp4',
           size: converted.blob.size,
           width: converted.width,
           height: converted.height,
@@ -338,7 +358,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Fragment maken mislukt.'
-        setUploading({ fileName: clipName, stage: 'error', message })
+        setUploading({ fileName: `${pendingName}.mp4`, stage: 'error', message })
         throw error
       }
     },

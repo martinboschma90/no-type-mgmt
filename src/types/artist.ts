@@ -69,6 +69,10 @@ export type ArtistVideo = {
   kind?: 'reel' | 'film'
   /** Optional pill on the film tile (e.g. Live, Studio). */
   label?: string
+  /** object-position X percent (0–100) inside the 9:16 reel crop. */
+  focusX?: number
+  /** object-position Y percent (0–100) inside the 9:16 reel crop. */
+  focusY?: number
 }
 
 /** Landscape film tile under the artist bio (House of Yellow-style row of 3). */

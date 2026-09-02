@@ -97,37 +97,30 @@ export function fetchPublicArtistsFromSupabaseCached(
     return Promise.resolve(publicCached)
   }
 
-  publicInflight = Promise.race([
-    fetchPublicCmsArtistsRow()
-      .then(async (cached) => {
-        if (cached && cached.length > 0) {
-          return { artists: cached, fromSupabase: true } satisfies ArtistsReadResult
-        }
-        return fetchPublicRoster()
-      })
-      .then((result) => {
+  publicInflight = fetchPublicCmsArtistsRow()
+    .then(async (cached) => {
+      if (cached && cached.length > 0) {
+        return { artists: cached, fromSupabase: true } satisfies ArtistsReadResult
+      }
+      return fetchPublicRoster()
+    })
+    .then((result) => {
+      if (result.artists.length > 0 || result.fromSupabase) {
         publicCached = result
         publicCachedAt = Date.now()
-        return result
-      })
-      .catch((error) => {
-        console.warn('Public artists fetch failed', error)
-        return {
-          artists: publicCached?.artists ?? [],
-          fromSupabase: false,
-        } satisfies ArtistsReadResult
-      }),
-    new Promise<ArtistsReadResult>((resolve) => {
-      window.setTimeout(() => {
-        resolve({
-          artists: publicCached?.artists ?? [],
-          fromSupabase: false,
-        })
-      }, 2500)
-    }),
-  ]).finally(() => {
-    publicInflight = null
-  })
+      }
+      return publicCached ?? result
+    })
+    .catch((error) => {
+      console.warn('Public artists fetch failed', error)
+      return {
+        artists: publicCached?.artists ?? readStoredPublicArtists() ?? [],
+        fromSupabase: false,
+      } satisfies ArtistsReadResult
+    })
+    .finally(() => {
+      publicInflight = null
+    })
 
   return publicInflight
 }

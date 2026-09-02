@@ -4,32 +4,16 @@ import { motion } from 'framer-motion'
 import type { Artist, ArtistVideo } from '@/types/artist'
 import { MediaContext } from '@/cms/media/MediaContext'
 import { parseMediaRef } from '@/cms/media/refs'
+import { videoObjectPosition } from '@/cms/artistVideos'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import {
+  pauseVideo,
+  releaseVideo,
+  requestPlay,
+} from '@/components/artists/videoPlayback'
 
 const CINEMA_EASE = [0.22, 1, 0.36, 1] as const
-const MAX_PLAYING = 6
-const playingVideos = new Set<HTMLVideoElement>()
-
-function pauseVideo(element: HTMLVideoElement) {
-  playingVideos.delete(element)
-  element.pause()
-}
-
-function releaseVideo(element: HTMLVideoElement) {
-  pauseVideo(element)
-}
-
-function requestPlay(element: HTMLVideoElement) {
-  if (playingVideos.size >= MAX_PLAYING && !playingVideos.has(element)) {
-    const oldest = playingVideos.values().next().value
-    if (oldest && oldest !== element) pauseVideo(oldest)
-  }
-  playingVideos.add(element)
-  void element.play().catch(() => {
-    playingVideos.delete(element)
-  })
-}
 
 function bindMobilePlayback(element: HTMLVideoElement) {
   element.muted = true
@@ -137,7 +121,8 @@ function VideoTile({
             if (element) bindMobilePlayback(element)
           }}
           src={videoUrl}
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ objectPosition: videoObjectPosition(video) }}
           muted
           autoPlay
           playsInline

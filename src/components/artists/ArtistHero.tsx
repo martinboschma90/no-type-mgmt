@@ -136,14 +136,14 @@ export function ArtistHero({ artist, previewFocus }: ArtistHeroProps) {
           <div className="mt-5 flex max-w-xl flex-col sm:mt-8">
             {bio ? (
               <div>
-                <p
+                <div
                   className={[
-                    'type-body text-[0.95rem] text-ink/80 sm:text-base',
+                    'type-body whitespace-pre-wrap text-[0.95rem] text-ink/80 sm:text-base',
                     bioNeedsToggle && !bioOpen ? 'line-clamp-5 lg:line-clamp-none' : '',
                   ].join(' ')}
                 >
                   {bio}
-                </p>
+                </div>
                 {bioNeedsToggle ? (
                   <button
                     type="button"

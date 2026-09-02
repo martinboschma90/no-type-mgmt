@@ -40,3 +40,27 @@ export function dedupeArtists(artists: Artist[]): Artist[] {
   }
   return [...byName.values()]
 }
+
+/** Remote catalog wins, except for local drafts that have unsaved edits. */
+export function mergeRemoteArtists(
+  local: Artist[],
+  remote: Artist[],
+  dirtyIds: Set<string>,
+): Artist[] {
+  const localById = new Map(local.map((artist) => [artist.id, artist]))
+  const localBySlug = new Map(local.map((artist) => [artist.slug, artist]))
+  const merged: Artist[] = remote.map((artist) => {
+    const draft =
+      localById.get(artist.id) ?? localBySlug.get(artist.slug)
+    if (draft && dirtyIds.has(draft.id)) return draft
+    return artist
+  })
+  for (const artist of local) {
+    if (!dirtyIds.has(artist.id)) continue
+    const exists = merged.some(
+      (item) => item.id === artist.id || item.slug === artist.slug,
+    )
+    if (!exists) merged.push(artist)
+  }
+  return dedupeArtists(merged)
+}

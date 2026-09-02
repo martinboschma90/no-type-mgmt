@@ -1,11 +1,13 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { releaseAllPlayingVideos } from '@/components/artists/videoPlayback'
 
 /** Reset scroll on route change; honour hash targets when present. */
 export function ScrollToTop() {
   const { pathname, hash } = useLocation()
 
   useEffect(() => {
+    releaseAllPlayingVideos()
     if (hash) {
       const id = decodeURIComponent(hash.replace(/^#/, ''))
       const scrollToHash = () => {

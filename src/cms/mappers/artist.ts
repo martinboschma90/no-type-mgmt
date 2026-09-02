@@ -173,6 +173,8 @@ export function artistToColumns(artist: Artist): ArtistUpdate {
           clipDuration: Math.max(2, v.clipDuration ?? 6),
           posterUrl: v.posterUrl?.trim() || '',
           title: v.title?.trim() || '',
+          focusX: typeof v.focusX === 'number' ? v.focusX : 50,
+          focusY: typeof v.focusY === 'number' ? v.focusY : 50,
         })),
       ...(artist.films ?? [])
         .filter((f) => Boolean(f.videoUrl?.trim()))

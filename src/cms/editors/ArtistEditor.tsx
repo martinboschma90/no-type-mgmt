@@ -537,7 +537,8 @@ export function ArtistEditor() {
                 <TextArea
                   label="Bio"
                   value={artist.bio ?? ''}
-                  rows={6}
+                  rows={8}
+                  hint="Regeleinden (Enter) blijven zichtbaar in de preview en op de live pagina."
                   onChange={(bio) => updateArtist(updateKey, (a) => ({ ...a, bio }))}
                 />
                 <TextInput

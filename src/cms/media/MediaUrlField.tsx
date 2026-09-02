@@ -47,7 +47,7 @@ export function MediaUrlField({
       hint={
         hint ??
         (kind === 'video'
-          ? 'Upload stores the video for preview playback. WebM conversion is used when the browser supports it.'
+          ? 'Upload slaat de video op voor preview. Live fragmenten worden MP4 (H.264) voor iPhone.'
           : 'Upload converts to WebP. Stored in the media library.')
       }
     >
@@ -60,7 +60,9 @@ export function MediaUrlField({
                 Mediabibliotheek ·{' '}
                 {matched.mimeType === 'image/webp'
                   ? 'WebP'
-                  : matched.mimeType.includes('webm')
+                  : matched.mimeType.includes('mp4')
+                    ? 'MP4'
+                    : matched.mimeType.includes('webm')
                     ? 'WebM'
                     : 'Video'}
               </p>
@@ -103,7 +105,9 @@ export function MediaUrlField({
             <span className="self-center text-[10px] font-medium text-emerald-600">
               {matched.mimeType === 'image/webp'
                 ? 'WebP'
-                : matched.mimeType.includes('webm')
+                : matched.mimeType.includes('mp4')
+                  ? 'MP4'
+                  : matched.mimeType.includes('webm')
                   ? 'WebM'
                   : 'Video'}
             </span>
@@ -122,7 +126,11 @@ export function MediaUrlField({
           </p>
         ) : null}
 
-        {error ? <p className="text-xs text-red-500">{error}</p> : null}
+        {error || uploading?.stage === 'error' ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[11px] leading-relaxed text-red-800">
+            {error || uploading?.message || 'Upload mislukt.'}
+          </p>
+        ) : null}
 
         {previewUrl && kind !== 'video' ? (
           <div className="overflow-hidden rounded-lg border border-ink/8 bg-ink/5">

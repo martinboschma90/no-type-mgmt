@@ -5,6 +5,8 @@ type Props = {
   /** Isolate this subtree so a crash here does not blank the rest of the app. */
   label?: string
   compact?: boolean
+  /** Change this (e.g. pathname) to recover after navigation. */
+  resetKey?: string
 }
 
 type State = { hasError: boolean }
@@ -18,6 +20,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(): State {
     return { hasError: true }
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    if (this.props.resetKey !== prevProps.resetKey && this.state.hasError) {
+      this.setState({ hasError: false })
+    }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -64,10 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
             <button
               type="button"
-              onClick={() => {
-                this.setState({ hasError: false })
-                window.location.reload()
-              }}
+              onClick={() => this.setState({ hasError: false })}
               style={{
                 appearance: 'none',
                 border: '1px solid #111111',
@@ -79,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 cursor: 'pointer',
               }}
             >
-              Reload
+              Opnieuw
             </button>
           </div>
         </div>

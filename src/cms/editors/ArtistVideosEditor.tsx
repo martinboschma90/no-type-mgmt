@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   MAX_ARTIST_VIDEOS,
   createBlankArtistVideo,
   reorderArtistVideos,
   syncLegacyVideoUrl,
+  videoObjectPosition,
 } from '@/cms/artistVideos'
 import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { EditorSection, TextInput } from '@/cms/fields'
@@ -104,6 +105,16 @@ function VideoMomentField({
   const resolvedClipUrl = useResolvedMediaUrl(video.clipUrl)
   const { assets, createVideoClip } = useMedia()
   const previewRef = useRef<HTMLVideoElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const frameDragRef = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    originX: number
+    originY: number
+    width: number
+    height: number
+  } | null>(null)
   const durationProbeRef = useRef(false)
   const mediaId = parseMediaRef(video.videoUrl)
   const sourceAsset = assets.find(
@@ -125,6 +136,8 @@ function VideoMomentField({
   const clipDuration = Math.max(2, video.clipDuration ?? 6)
   const maxStart = Math.max(0, sourceDuration - clipDuration)
   const clipStart = Math.min(Math.max(0, video.clipStart ?? 0), maxStart)
+  const focusX = video.focusX ?? 50
+  const focusY = video.focusY ?? 50
 
   useEffect(() => {
     if (assetDuration > 0) setSourceDuration(assetDuration)
@@ -203,35 +216,76 @@ function VideoMomentField({
 
   if (!sourceUrl) return null
 
+  const onFramePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+    const rect = stageRef.current?.getBoundingClientRect()
+    if (!rect) return
+    event.preventDefault()
+    event.stopPropagation()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    frameDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: focusX,
+      originY: focusY,
+      width: rect.width,
+      height: rect.height,
+    }
+  }
+
+  const onFramePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = frameDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    event.preventDefault()
+    const dx = event.clientX - drag.startX
+    const dy = event.clientY - drag.startY
+    onChange({
+      focusX: Math.min(100, Math.max(0, drag.originX - (dx / drag.width) * 100)),
+      focusY: Math.min(100, Math.max(0, drag.originY - (dy / drag.height) * 100)),
+    })
+  }
+
+  const onFramePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (frameDragRef.current?.pointerId !== event.pointerId) return
+    frameDragRef.current = null
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    } catch {
+      /* already released */
+    }
+  }
+
   return (
     <div className="grid gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
-      <video
-        ref={previewRef}
-        src={sourceUrl}
-        controls
-        draggable={false}
-        muted
-        playsInline
-        preload="metadata"
-        className="mx-auto aspect-[9/16] w-full max-w-48 rounded-lg bg-neutral-900 object-cover"
-        onPointerDown={(event) => event.stopPropagation()}
-        onDragStart={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-        }}
-        onLoadedMetadata={(event) => readDuration(event.currentTarget)}
-        onLoadedData={(event) => readDuration(event.currentTarget)}
-        onDurationChange={(event) => readDuration(event.currentTarget)}
-        onSeeked={(event) => {
-          if (durationProbeRef.current || sourceDuration <= 0) return
-          const nextStart = Math.min(
-            Math.max(0, event.currentTarget.currentTime),
-            maxStart,
-          )
-          if (Math.abs(nextStart - clipStart) < 0.05) return
-          onChange({ clipStart: nextStart, clipUrl: undefined, clipBytes: undefined })
-        }}
-      />
+      <div className="mx-auto w-full max-w-48">
+        <div
+          ref={stageRef}
+          className="relative cursor-grab overflow-hidden rounded-lg bg-neutral-900 active:cursor-grabbing"
+          style={{ aspectRatio: '9 / 16', touchAction: 'none' }}
+          onPointerDown={onFramePointerDown}
+          onPointerMove={onFramePointerMove}
+          onPointerUp={onFramePointerUp}
+          onPointerCancel={onFramePointerUp}
+        >
+          <video
+            ref={previewRef}
+            src={sourceUrl}
+            draggable={false}
+            muted
+            playsInline
+            preload="metadata"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: videoObjectPosition(video) }}
+            onLoadedMetadata={(event) => readDuration(event.currentTarget)}
+            onLoadedData={(event) => readDuration(event.currentTarget)}
+            onDurationChange={(event) => readDuration(event.currentTarget)}
+          />
+        </div>
+        <p className="mt-1.5 text-center text-[10px] leading-relaxed text-neutral-400">
+          Sleep het beeld in het 9:16-kader tot het onderwerp in het midden staat.
+        </p>
+      </div>
       <div className="min-w-0 self-center">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-semibold text-neutral-800">Getoond fragment</p>
@@ -397,7 +451,11 @@ function VideoMomentField({
             Maak eerst een fragment voor de website
           </span>
         )}
-        {error ? <p className="mt-2 text-[10px] text-red-500">{error}</p> : null}
+        {error ? (
+          <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2 text-[11px] leading-relaxed text-red-800">
+            {error}
+          </p>
+        ) : null}
       </div>
     </div>
   )

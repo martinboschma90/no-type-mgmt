@@ -1,4 +1,5 @@
-/** Browser-side conversion: images → WebP, video → WebM when supported. */
+/** Browser-side conversion: images → WebP, stored video → WebM, live clips → H.264 MP4. */
+import { ArrayBufferTarget, Muxer } from 'mp4-muxer'
 import fixWebmDuration from 'fix-webm-duration'
 import {
   MAX_LIVE_VIDEO_BYTES,
@@ -8,6 +9,46 @@ import {
 export { MAX_LIVE_VIDEO_BYTES, MAX_STORED_VIDEO_BYTES }
 
 const MAX_IMAGE_EDGE = 2400
+const CONVERT_TIMEOUT_MS = 120_000
+const CLIP_TIMEOUT_MS = 90_000
+
+let mediaJobChain: Promise<unknown> = Promise.resolve()
+
+function withTimeout<T>(job: Promise<T>, timeoutMs: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(message))
+    }, timeoutMs)
+    job.then(
+      (value) => {
+        window.clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        window.clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
+export function enqueueMediaJob<T>(
+  job: () => Promise<T>,
+  timeoutMs = CONVERT_TIMEOUT_MS,
+  timeoutMessage = 'Video verwerken duurde te lang. Probeer een korter bestand.',
+) {
+  const run = mediaJobChain.then(
+    () => withTimeout(job(), timeoutMs, timeoutMessage),
+    () => withTimeout(job(), timeoutMs, timeoutMessage),
+  )
+  mediaJobChain = run.then(
+    () => undefined,
+    () => undefined,
+  )
+  return run
+}
+
+export const CLIP_JOB_TIMEOUT_MS = CLIP_TIMEOUT_MS
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -86,19 +127,221 @@ function waitForEvent<T extends EventTarget>(
   })
 }
 
-function pickWebmMime(): string | null {
-  const candidates = [
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm;codecs=vp9',
-    'video/webm;codecs=vp8',
-    'video/webm',
-  ]
+function pickRecorderMime(candidates: string[]): string | null {
   if (typeof MediaRecorder === 'undefined') return null
   for (const type of candidates) {
     if (MediaRecorder.isTypeSupported(type)) return type
   }
   return null
+}
+
+function pickWebmMime(): string | null {
+  return pickRecorderMime([
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+  ])
+}
+
+function pickClipRecorderMime(): string | null {
+  return pickRecorderMime([
+    'video/mp4;codecs=avc1.42E01E',
+    'video/mp4;codecs=avc1.4D401F',
+    'video/mp4',
+  ])
+}
+
+function evenDim(value: number) {
+  const rounded = Math.max(2, Math.round(value))
+  return rounded % 2 === 0 ? rounded : rounded - 1
+}
+
+function clipVideoBitsPerSecond(duration: number) {
+  const liveTargetBytes = 1.7 * 1024 * 1024
+  return Math.max(
+    160_000,
+    Math.min(420_000, Math.floor((liveTargetBytes * 8) / Math.max(duration, 1))),
+  )
+}
+
+async function encodeClipToAvcMp4(
+  video: HTMLVideoElement,
+  options: {
+    clipStart: number
+    clipEnd: number
+    duration: number
+    onProgress?: (ratio: number) => void
+  },
+): Promise<{ blob: Blob; width: number; height: number; duration: number } | null> {
+  if (typeof VideoEncoder === 'undefined' || typeof VideoFrame === 'undefined') {
+    return null
+  }
+
+  const maxEdge = 720
+  const scale = Math.min(
+    1,
+    maxEdge / Math.max(video.videoWidth, video.videoHeight),
+  )
+  const width = evenDim(video.videoWidth * scale)
+  const height = evenDim(video.videoHeight * scale)
+
+  try {
+    const support = await VideoEncoder.isConfigSupported({
+      codec: 'avc1.42001f',
+      width,
+      height,
+      bitrate: clipVideoBitsPerSecond(options.duration),
+      framerate: 24,
+      avc: { format: 'avc' },
+    })
+    if (!support.supported) return null
+  } catch {
+    return null
+  }
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d', { alpha: false })
+  if (!ctx) return null
+
+  const target = new ArrayBufferTarget()
+  const muxer = new Muxer({
+    target,
+    video: { codec: 'avc', width, height, frameRate: 24 },
+    fastStart: 'in-memory',
+    firstTimestampBehavior: 'offset',
+  })
+
+  let encodeError: Error | null = null
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => {
+      try {
+        muxer.addVideoChunk(chunk, meta)
+      } catch (error) {
+        encodeError = error instanceof Error ? error : new Error('MP4 mux failed')
+      }
+    },
+    error: (error) => {
+      encodeError = error
+    },
+  })
+
+  try {
+    encoder.configure({
+      codec: 'avc1.42001f',
+      width,
+      height,
+      bitrate: clipVideoBitsPerSecond(options.duration),
+      framerate: 24,
+      latencyMode: 'quality',
+      avc: { format: 'avc' },
+    })
+  } catch {
+    try {
+      encoder.close()
+    } catch {
+      /* ignore */
+    }
+    return null
+  }
+
+  try {
+    video.playbackRate = 1
+    await video.play()
+    await waitForVideoFrame(video)
+
+    let frameIndex = 0
+    await new Promise<void>((resolve, reject) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        resolve()
+      }
+      const fail = (error: unknown) => {
+        if (settled) return
+        settled = true
+        reject(error instanceof Error ? error : new Error('Clip encode failed'))
+      }
+
+      const tick = () => {
+        if (encodeError) {
+          fail(encodeError)
+          return
+        }
+        if (video.currentTime >= options.clipEnd - 0.02 || video.ended) {
+          finish()
+          return
+        }
+        try {
+          ctx.drawImage(video, 0, 0, width, height)
+          const timestamp = Math.round(
+            (video.currentTime - options.clipStart) * 1_000_000,
+          )
+          const frame = new VideoFrame(canvas, {
+            timestamp: Math.max(0, timestamp),
+            duration: Math.round(1_000_000 / 24),
+          })
+          encoder.encode(frame, { keyFrame: frameIndex % 24 === 0 })
+          frame.close()
+          frameIndex += 1
+        } catch (error) {
+          fail(error)
+          return
+        }
+        options.onProgress?.(
+          Math.min(
+            0.99,
+            (video.currentTime - options.clipStart) /
+              Math.max(options.duration, 0.01),
+          ),
+        )
+        if ('requestVideoFrameCallback' in video) {
+          video.requestVideoFrameCallback(tick)
+        } else {
+          requestAnimationFrame(tick)
+        }
+      }
+
+      if ('requestVideoFrameCallback' in video) {
+        video.requestVideoFrameCallback(tick)
+      } else {
+        requestAnimationFrame(tick)
+      }
+    })
+
+    video.pause()
+    await encoder.flush()
+    encoder.close()
+    muxer.finalize()
+
+    const buffer = target.buffer
+    if (!buffer || buffer.byteLength < 64) return null
+    const blob = new Blob([buffer], { type: 'video/mp4' })
+    if (blob.size > MAX_LIVE_VIDEO_BYTES) {
+      throw new Error(
+        'Het live fragment is nog groter dan 2 MB. Kies een korter fragment.',
+      )
+    }
+    return { blob, width, height, duration: options.duration }
+  } catch (error) {
+    try {
+      if (encoder.state !== 'closed') encoder.close()
+    } catch {
+      /* ignore */
+    }
+    video.pause()
+    if (
+      error instanceof Error &&
+      error.message.includes('groter dan 2 MB')
+    ) {
+      throw error
+    }
+    return null
+  }
 }
 
 /** Returns null when the browser cannot re-encode via captureStream (e.g. Safari). */
@@ -125,8 +368,8 @@ function tryGetReelCapture(video: HTMLVideoElement): {
     1,
     maxEdge / Math.max(video.videoWidth, video.videoHeight),
   )
-  const width = Math.max(2, Math.round(video.videoWidth * scale))
-  const height = Math.max(2, Math.round(video.videoHeight * scale))
+  const width = evenDim(video.videoWidth * scale)
+  const height = evenDim(video.videoHeight * scale)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -212,9 +455,8 @@ async function readVideoMeta(file: File): Promise<{
 }
 
 /**
- * Prefer WebM re-encode when the browser supports captureStream + MediaRecorder.
- * Otherwise keep the original file so CMS/public <video> can play it normally.
- * Never throws for missing captureStream.
+ * Stored uploads: WebM when captureStream + MediaRecorder work.
+ * Live clips: H.264 MP4 via WebCodecs, then MediaRecorder MP4/WebM.
  */
 export async function convertVideoToWebm(
   file: File,
@@ -241,11 +483,6 @@ export async function convertVideoToWebm(
     if (!originalMeta?.duration || !Number.isFinite(originalMeta.duration)) {
       throw new Error('De videoduur kon niet worden gelezen.')
     }
-  }
-
-  const mimeType = pickWebmMime()
-  if (!mimeType) {
-    throw new Error('Deze browser ondersteunt geen WebM-opname.')
   }
 
   const sourceUrl = URL.createObjectURL(file)
@@ -290,6 +527,43 @@ export async function convertVideoToWebm(
     }
   }
 
+  if (clip) {
+    try {
+      const mp4 = await encodeClipToAvcMp4(video, {
+        clipStart,
+        clipEnd,
+        duration,
+        onProgress,
+      })
+      if (mp4) {
+        URL.revokeObjectURL(sourceUrl)
+        onProgress?.(1)
+        return mp4
+      }
+    } catch (error) {
+      URL.revokeObjectURL(sourceUrl)
+      onProgress?.(1)
+      throw error
+    }
+    video.currentTime = clipStart
+    try {
+      await waitForEvent(video, 'seeked')
+    } catch {
+      /* recorder path can still start from the current frame */
+    }
+  }
+
+  const mimeType = clip ? pickClipRecorderMime() : pickWebmMime()
+  if (!mimeType) {
+    URL.revokeObjectURL(sourceUrl)
+    onProgress?.(1)
+    throw new Error(
+      clip
+        ? 'Fragment als MP4 maken lukt niet in deze browser. Gebruik Chrome of Edge.'
+        : 'Deze browser ondersteunt geen WebM-opname.',
+    )
+  }
+
   const reelCapture = clip ? tryGetReelCapture(video) : null
   const stream = reelCapture?.stream ?? tryGetCaptureStream(video)
   const stopCapture = reelCapture?.stop ?? (() => {})
@@ -299,16 +573,19 @@ export async function convertVideoToWebm(
     URL.revokeObjectURL(sourceUrl)
     onProgress?.(1)
     if (clip) {
-      throw new Error('Videofragmenten maken wordt niet ondersteund in deze browser.')
+      throw new Error(
+        'Fragment als MP4 maken lukt niet in deze browser. Gebruik Chrome of Edge.',
+      )
     }
     throw new Error('Deze browser kan de video niet veilig naar WebM omzetten.')
   }
+
+  const recorderMime = mimeType.includes('mp4') ? 'video/mp4' : 'video/webm'
 
   try {
     const chunks: BlobPart[] = []
     const audioBitsPerSecond = clip ? 0 : 128_000
     const storedTargetBytes = 45 * 1024 * 1024
-    const liveTargetBytes = 1.7 * 1024 * 1024
     const storedVideoBitsPerSecond = Math.max(
       80_000,
       Math.min(
@@ -319,16 +596,11 @@ export async function convertVideoToWebm(
         ),
       ),
     )
-    const clipVideoBitsPerSecond = Math.max(
-      160_000,
-      Math.min(
-        420_000,
-        Math.floor((liveTargetBytes * 8) / Math.max(duration, 1)),
-      ),
-    )
     const recorder = new MediaRecorder(stream, {
       mimeType,
-      videoBitsPerSecond: clip ? clipVideoBitsPerSecond : storedVideoBitsPerSecond,
+      videoBitsPerSecond: clip
+        ? clipVideoBitsPerSecond(duration)
+        : storedVideoBitsPerSecond,
       audioBitsPerSecond,
     })
 
@@ -338,9 +610,9 @@ export async function convertVideoToWebm(
 
     const stopped = new Promise<Blob>((resolve, reject) => {
       recorder.onstop = () => {
-        resolve(new Blob(chunks, { type: 'video/webm' }))
+        resolve(new Blob(chunks, { type: recorderMime }))
       }
-      recorder.onerror = () => reject(new Error('WebM recording failed'))
+      recorder.onerror = () => reject(new Error('Video recording failed'))
     })
 
     video.playbackRate = 1
@@ -395,20 +667,28 @@ export async function convertVideoToWebm(
     URL.revokeObjectURL(sourceUrl)
 
     const recordedBlob = await stopped
-    const blob = await fixWebmDuration(
-      recordedBlob,
-      Math.max(1, duration) * 1000,
-      { logger: false },
-    )
+    const blob =
+      recorderMime === 'video/webm'
+        ? await fixWebmDuration(
+            recordedBlob,
+            Math.max(1, duration) * 1000,
+            { logger: false },
+          )
+        : recordedBlob
     onProgress?.(1)
     if (blob.size < 64) {
-      throw new Error('De WebM-omzetting leverde geen geldige video op.')
+      throw new Error('De video-omzetting leverde geen geldige video op.')
     }
     if (blob.size > maxOutputBytes) {
       throw new Error(
         clip
           ? 'Het live fragment is nog groter dan 2 MB. Kies een korter fragment.'
           : 'De gecomprimeerde video is nog groter dan 50 MB.',
+      )
+    }
+    if (clip && !blob.type.includes('mp4')) {
+      throw new Error(
+        'Fragment als MP4 maken lukt niet in deze browser. Gebruik Chrome of Edge.',
       )
     }
     return { blob, width: outputWidth, height: outputHeight, duration }

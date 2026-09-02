@@ -37,7 +37,7 @@ export function ArtistVideoSlide({
 }: ArtistVideoSlideProps) {
   const sourceVideos = normalizeArtistVideos(artist)
   const clipKey = sourceVideos
-    .map((video) => `${video.id}:${video.clipUrl ?? ''}:${video.clipBytes ?? ''}`)
+    .map((video) => `${video.id}:${video.clipUrl ?? ''}:${video.clipBytes ?? ''}:${video.focusX ?? 50}:${video.focusY ?? 50}`)
     .join('|')
   const previewVideos = useMemo(
     () => sourceVideos,
@@ -45,8 +45,10 @@ export function ArtistVideoSlide({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [clipKey],
   )
-  const [liveVideos, setLiveVideos] = useState(
-    previewMode ? previewVideos : [],
+  const [liveVideos, setLiveVideos] = useState(() =>
+    previewMode
+      ? previewVideos
+      : previewVideos.filter((video) => Boolean(video.clipUrl)),
   )
 
   useEffect(() => {
@@ -57,13 +59,15 @@ export function ArtistVideoSlide({
 
     const withClip = previewVideos.filter((video) => Boolean(video.clipUrl))
     let cancelled = false
+    setLiveVideos(withClip)
 
     void Promise.all(
       withClip.map(async (video) => {
         if (isLiveVideoSizeAllowed(video.clipBytes ?? 0)) return video
+        if ((video.clipBytes ?? 0) > 0) return null
         const size = await readClipBytes(video.clipUrl ?? '')
-        if (size != null && isLiveVideoSizeAllowed(size)) return video
-        return null
+        if (size == null) return video
+        return isLiveVideoSizeAllowed(size) ? video : null
       }),
     ).then((rows) => {
       if (cancelled) return
@@ -76,7 +80,6 @@ export function ArtistVideoSlide({
   }, [previewMode, previewVideos])
 
   if (!artistHasVideos(artist) && !showEmptyState) return null
-  if (!previewMode && liveVideos.length === 0 && !showEmptyState) return null
 
   return (
     <ArtistReelsCarousel

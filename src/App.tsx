@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Analytics, type BeforeSendEvent } from '@vercel/analytics/react'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
@@ -39,6 +39,21 @@ function AdminToCms() {
   return <Navigate to={`/cms${rest}${search}`} replace />
 }
 
+function RouteErrorBoundary({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  const { pathname } = useLocation()
+  return (
+    <ErrorBoundary label={label} resetKey={pathname}>
+      {children}
+    </ErrorBoundary>
+  )
+}
+
 function PublicApp() {
   return (
     <PublicContentProvider>
@@ -70,19 +85,19 @@ export default function App() {
         <Route
           path="/cms/*"
           element={
-            <ErrorBoundary label="cms">
+            <RouteErrorBoundary label="cms">
               <Suspense fallback={<RouteFallback />}>
                 <CmsApp />
               </Suspense>
-            </ErrorBoundary>
+            </RouteErrorBoundary>
           }
         />
         <Route
           path="*"
           element={
-            <ErrorBoundary label="public">
+            <RouteErrorBoundary label="public">
               <PublicApp />
-            </ErrorBoundary>
+            </RouteErrorBoundary>
           }
         />
       </Routes>

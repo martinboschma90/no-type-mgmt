@@ -29,6 +29,37 @@ export function SettingsEditor() {
       </EditorSection>
 
       <EditorSection
+        title="Live website"
+        description="Welke URL de publieke site nu is."
+        defaultOpen
+      >
+        <p className="type-body text-sm text-ink/70">
+          Vercel-project <span className="font-medium text-neutral-900">no-type-mgmt</span> is
+          gekoppeld aan{' '}
+          <a
+            className="font-medium text-neutral-900 underline"
+            href="https://no-type-mgmt.vercel.app"
+            target="_blank"
+            rel="noreferrer"
+          >
+            no-type-mgmt.vercel.app
+          </a>{' '}
+          én aan <span className="font-medium text-neutral-900">notype-mgmt.com</span>.
+          DNS wijst nog naar Mijndomein (
+          <span className="font-mono text-xs">nsn1.mijndomein.nl</span>), niet naar
+          Vercel. Daardoor zie je op .com de oude site.
+        </p>
+        <p className="type-body mt-3 text-sm text-ink/70">
+          Bij Mijndomein: nameservers zetten op{' '}
+          <span className="font-mono text-xs">ns1.vercel-dns.com</span> en{' '}
+          <span className="font-mono text-xs">ns2.vercel-dns.com</span>, of een A-record{' '}
+          <span className="font-mono text-xs">notype-mgmt.com → 76.76.21.21</span>.
+          E-mail op dat domein blijft werken zolang MX-records niet overschreven
+          worden — bij nameserver-wissel MX bij Vercel/Mijndomein nalopen.
+        </p>
+      </EditorSection>
+
+      <EditorSection
         title="Danger zone"
         description="Destructive actions. These cannot be undone."
         defaultOpen
