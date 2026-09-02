@@ -38,6 +38,28 @@ export async function signOut() {
   return supabase.auth.signOut()
 }
 
+export async function updatePassword(password: string) {
+  if (!supabase) {
+    return { error: new Error('Supabase is not configured') }
+  }
+  return supabase.auth.updateUser({ password })
+}
+
+export async function updateProfile(input: {
+  displayName: string
+  title: string
+}) {
+  if (!supabase) {
+    return { error: new Error('Supabase is not configured') }
+  }
+  return supabase.auth.updateUser({
+    data: {
+      display_name: input.displayName.trim(),
+      title: input.title.trim(),
+    },
+  })
+}
+
 export function onAuthStateChange(
   callback: (event: string, session: Session | null) => void,
 ) {

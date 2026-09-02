@@ -3,16 +3,23 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import { bookingRequestPlugin } from './vite-plugin-booking-request.js'
+import { cmsUsersPlugin } from './vite-plugin-cms-users.ts'
 import { publicBootPlugin } from './vite-plugin-public-boot.ts'
+import { siteLivePlugin } from './vite-plugin-site-live.ts'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  for (const [key, value] of Object.entries(env)) {
+    if (process.env[key] == null || process.env[key] === '') process.env[key] = value
+  }
   return {
     plugins: [
       react(),
       tailwindcss(),
       bookingRequestPlugin(),
+      cmsUsersPlugin(env),
       publicBootPlugin(env),
+      siteLivePlugin(env),
     ],
     resolve: {
       alias: {

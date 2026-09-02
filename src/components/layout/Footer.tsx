@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/Logo'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 import { PillButton } from '@/components/ui/PillButton'
 import { useCms } from '@/cms/CmsContext'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
@@ -73,10 +74,12 @@ export function Footer() {
           {/* Brand */}
           <div>
             {customLogoUrl ? (
-              <img
+              <OptimizedImg
                 src={customLogoUrl}
                 alt={brandName}
+                width={86}
                 height={40}
+                size="thumb"
                 className="block h-10 w-auto max-w-full object-contain"
                 loading="lazy"
                 decoding="async"

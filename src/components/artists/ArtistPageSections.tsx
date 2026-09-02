@@ -1,12 +1,22 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { ArtistHero } from '@/components/artists/ArtistHero'
-import { ArtistVideoSlide } from '@/components/artists/ArtistVideoSlide'
-import { RelatedArtists } from '@/components/artists/RelatedArtists'
 import { isInstagramFeedActive } from '@/cms/artistInstagram'
 import { artistHasVideos } from '@/cms/artistVideos'
 import { normalizeArtistSections } from '@/cms/artistSections'
+import { NearMount } from '@/lib/NearMount'
 import type { ArtistPreviewFocus } from '@/cms/artistEditorTabs'
 import type { Artist } from '@/types/artist'
+
+const ArtistVideoSlide = lazy(() =>
+  import('@/components/artists/ArtistVideoSlide').then((m) => ({
+    default: m.ArtistVideoSlide,
+  })),
+)
+const RelatedArtists = lazy(() =>
+  import('@/components/artists/RelatedArtists').then((m) => ({
+    default: m.RelatedArtists,
+  })),
+)
 const ArtistInstagramCarousel = lazy(() =>
   import('@/components/artists/ArtistInstagramCarousel').then((m) => ({
     default: m.ArtistInstagramCarousel,
@@ -51,35 +61,42 @@ export function ArtistPageSections({
           case 'video': {
             if (!artistHasVideos(artist)) return null
             return (
-              <div key="video">
-                <ArtistVideoSlide
-                  artist={artist}
-                  previewMode={previewMode}
-                />
-              </div>
+              <NearMount key="video" minHeight={520}>
+                <LazySection>
+                  <ArtistVideoSlide
+                    artist={artist}
+                    previewMode={previewMode}
+                  />
+                </LazySection>
+              </NearMount>
             )
           }
           case 'instagram': {
             if (!previewMode && !isInstagramFeedActive(artist)) return null
             return (
-              <LazySection key="instagram">
-                <ArtistInstagramCarousel
-                  artist={artist}
-                  showEmptyState={previewMode}
-                  previewFocus={previewMode ? previewFocus : undefined}
-                />
-              </LazySection>
+              <NearMount key="instagram" minHeight={280}>
+                <LazySection>
+                  <ArtistInstagramCarousel
+                    artist={artist}
+                    showEmptyState={previewMode}
+                    previewFocus={previewMode ? previewFocus : undefined}
+                  />
+                </LazySection>
+              </NearMount>
             )
           }
           case 'tracks':
             return null
           case 'related':
             return (
-              <RelatedArtists
-                key="related"
-                artist={artist}
-                artists={artists}
-              />
+              <NearMount key="related" minHeight={420}>
+                <LazySection>
+                  <RelatedArtists
+                    artist={artist}
+                    artists={artists}
+                  />
+                </LazySection>
+              </NearMount>
             )
           default:
             return null

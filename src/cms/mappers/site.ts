@@ -60,6 +60,23 @@ function asBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback
 }
 
+function asPublicSiteUrl(value: unknown, fallback: string): string {
+  const raw = asString(value, fallback).trim()
+  if (!raw) return fallback
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  try {
+    const parsed = new URL(withProtocol)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return fallback
+    parsed.hash = ''
+    parsed.search = ''
+    const origin = `${parsed.protocol}//${parsed.host}`
+    const path = parsed.pathname.replace(/\/+$/, '')
+    return `${origin}${path === '/' ? '' : path}`
+  } catch {
+    return fallback
+  }
+}
+
 function asRosterColumns(value: unknown, fallback: 3 | 4): 3 | 4 {
   if (value === 3 || value === '3') return 3
   if (value === 4 || value === '4') return 4
@@ -276,6 +293,12 @@ export function normalizeSiteContent(raw: unknown): SiteContent {
     faqIntro: asString(row.faqIntro, defaults.faqIntro),
     faqVisible: asBoolean(row.faqVisible, defaults.faqVisible),
     faqCategories: asFaqCategories(row.faqCategories, defaults.faqCategories),
+    publicSiteUrl: asPublicSiteUrl(
+      row.publicSiteUrl,
+      defaults.publicSiteUrl,
+    ),
+    metaDescription: asString(row.metaDescription, defaults.metaDescription),
+    searchIndexing: asBoolean(row.searchIndexing, defaults.searchIndexing),
   }
 }
 

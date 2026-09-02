@@ -102,6 +102,12 @@ export type SiteContent = {
   faqVisible: boolean
   /** Ordered FAQ categories (tabs) with questions. */
   faqCategories: FaqCategory[]
+  /** Canonical public site origin, e.g. https://www.notype-mgmt.com */
+  publicSiteUrl: string
+  /** Search / social meta description. */
+  metaDescription: string
+  /** When false, public pages send noindex. */
+  searchIndexing: boolean
 }
 
 export type CmsContent = {
@@ -152,6 +158,10 @@ export function createDefaultSiteContent(): SiteContent {
       'Answers for promoters, festivals, clubs, brands and event organisers.',
     faqVisible: true,
     faqCategories: createDefaultFaqCategories(),
+    publicSiteUrl: 'https://www.notype-mgmt.com',
+    metaDescription:
+      'NOTYPE is full-service artist management for crossover dance and pop talent who refuse a single lane. No templates — Benelux, Europe, the UK and Oceania.',
+    searchIndexing: true,
   }
 }
 

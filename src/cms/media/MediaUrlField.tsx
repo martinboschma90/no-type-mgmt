@@ -6,6 +6,7 @@ import { MediaLibrary } from '@/cms/media/MediaLibrary'
 import { isImageFile, isVideoFile } from '@/cms/media/convert'
 import { parseMediaRef, toMediaRef } from '@/cms/media/refs'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 
 type MediaUrlFieldProps = {
   label: string
@@ -134,7 +135,12 @@ export function MediaUrlField({
 
         {previewUrl && kind !== 'video' ? (
           <div className="overflow-hidden rounded-lg border border-ink/8 bg-ink/5">
-            <img src={previewUrl} alt="" className="h-28 w-full object-cover" />
+            <OptimizedImg
+              src={previewUrl}
+              alt=""
+              size="thumb"
+              className="h-28 w-full object-cover"
+            />
           </div>
         ) : null}
         {previewUrl && kind === 'video' ? (

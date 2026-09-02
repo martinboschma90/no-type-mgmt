@@ -26,6 +26,10 @@ function canPlayInThisBrowser(url?: string) {
 
 function VideoTile({ video }: { video: ArtistVideo }) {
   const media = useContext(MediaContext)
+  const tileRef = useRef<HTMLElement>(null)
+  const [inView, setInView] = useState(false)
+  const inViewRef = useRef(false)
+  const [armed, setArmed] = useState(false)
   const sourcePlayable = canPlayInThisBrowser(video.videoUrl)
   const clipPlayable = canPlayInThisBrowser(video.clipUrl)
   const [useOriginal, setUseOriginal] = useState(sourcePlayable)
@@ -51,15 +55,43 @@ function VideoTile({ video }: { video: ArtistVideo }) {
   }, [sourcePlayable, video.videoUrl])
 
   useEffect(() => {
+    const node = tileRef.current
+    if (!node) return
+    if (!window.IntersectionObserver) {
+      setInView(true)
+      setArmed(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inViewRef.current = entry.isIntersecting
+        setInView(entry.isIntersecting)
+        if (entry.isIntersecting) setArmed(true)
+      },
+      { rootMargin: '160px', threshold: 0.2 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
     const element = videoRef.current
-    if (!element || !videoUrl) return
+    if (!element || !videoUrl || !armed) return
     bindMobilePlayback(element)
-    requestPlay(element)
-    return () => releaseVideo(element)
+    if (inView) requestPlay(element)
+    else pauseVideo(element)
+  }, [armed, inView, videoUrl])
+
+  useEffect(() => {
+    return () => {
+      const element = videoRef.current
+      if (element) releaseVideo(element)
+    }
   }, [videoUrl])
 
   return (
     <article
+      ref={tileRef}
       className="relative w-full overflow-hidden rounded-[1.35rem] bg-[#121014] shadow-2xl"
       style={{ aspectRatio: '9 / 16' }}
       onPointerUp={() => {
@@ -67,7 +99,7 @@ function VideoTile({ video }: { video: ArtistVideo }) {
         if (element) requestPlay(element)
       }}
     >
-      {videoUrl ? (
+      {videoUrl && armed ? (
         <video
           key={videoUrl}
           ref={(element) => {
@@ -77,10 +109,10 @@ function VideoTile({ video }: { video: ArtistVideo }) {
           className="absolute inset-0 h-full w-full object-cover"
           style={{ objectPosition: videoObjectPosition(video) }}
           muted
-          autoPlay
+          autoPlay={inView}
           playsInline
           loop={usingGeneratedClip}
-          preload="auto"
+          preload="metadata"
           onLoadedMetadata={(event) => {
             const element = event.currentTarget
             bindMobilePlayback(element)
@@ -95,13 +127,17 @@ function VideoTile({ video }: { video: ArtistVideo }) {
                 Math.max(0, element.duration - 0.1),
               )
             }
-            requestPlay(element)
+            if (inViewRef.current) requestPlay(element)
           }}
-          onLoadedData={(event) => requestPlay(event.currentTarget)}
-          onCanPlay={(event) => requestPlay(event.currentTarget)}
+          onLoadedData={(event) => {
+            if (inViewRef.current) requestPlay(event.currentTarget)
+          }}
+          onCanPlay={(event) => {
+            if (inViewRef.current) requestPlay(event.currentTarget)
+          }}
           onPlaying={(event) => bindMobilePlayback(event.currentTarget)}
           onPause={(event) => {
-            if (event.currentTarget.ended) return
+            if (!inViewRef.current || event.currentTarget.ended) return
             requestPlay(event.currentTarget)
           }}
           onTimeUpdate={(event) => {
@@ -112,6 +148,7 @@ function VideoTile({ video }: { video: ArtistVideo }) {
             }
             const clipEnd = Math.min(element.duration, clipStart + clipDuration)
             if (element.currentTime >= clipEnd - 0.05) {
+              if (!inViewRef.current) return
               element.currentTime = clipStart
               requestPlay(element)
             }

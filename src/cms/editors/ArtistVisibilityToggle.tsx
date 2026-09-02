@@ -2,6 +2,8 @@ type ArtistVisibilityToggleProps = {
   visible: boolean
   onChange: (visible: boolean) => void
   compact?: boolean
+  onLabel?: string
+  offLabel?: string
 }
 
 /** Toggle public visibility of an artist on roster + artist page. */
@@ -9,6 +11,8 @@ export function ArtistVisibilityToggle({
   visible,
   onChange,
   compact = false,
+  onLabel = 'Live',
+  offLabel = 'Verborgen',
 }: ArtistVisibilityToggleProps) {
   return (
     <button
@@ -43,7 +47,7 @@ export function ArtistVisibilityToggle({
         />
       </span>
       <span>
-        {visible ? 'Live' : 'Verborgen'}
+        {visible ? onLabel : offLabel}
       </span>
     </button>
   )

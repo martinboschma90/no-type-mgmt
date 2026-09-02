@@ -10,6 +10,7 @@ import {
   Search,
   Settings,
   Sun,
+  UserPlus,
   Users,
   X,
 } from 'lucide-react'
@@ -33,6 +34,7 @@ import { EditorAccordionScope } from '@/cms/flow-mates/EditorAccordionScope'
 import { useCmsTheme } from '@/cms/flow-mates/CmsTheme'
 import { isPagesWorkspacePath, PagesTabBar } from '@/cms/flow-mates/PagesTabBar'
 import type { CmsPanelProps } from '@/cms/panels/types'
+import { UsersAdmin } from '@/cms/editors/UsersAdmin'
 import { RouteFallback } from '@/components/ui/RouteFallback'
 
 const CmsHomePanel = lazy(() => import('@/cms/panels/home'))
@@ -73,11 +75,22 @@ function useCmsPanels(): {
       Page: null,
     }
   }
+  if (
+    pathname.startsWith('/cms/settings/users') ||
+    pathname.startsWith('/cms/instellingen/gebruikers')
+  ) {
+    return {
+      mode: 'settings',
+      title: 'Gebruikers',
+      subtitle: 'Rollen en uitnodigingen',
+      Page: null,
+    }
+  }
   if (pathname.startsWith('/cms/settings')) {
     return {
       mode: 'settings',
       title: 'Instellingen',
-      subtitle: 'Account · gevaarzone',
+      subtitle: 'Account, website en team',
       Page: CmsSettingsPanel,
     }
   }
@@ -172,7 +185,8 @@ export function CmsLayout() {
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const { savedAt, artistSyncError, siteSyncError, artistSaving, contentSyncStatus } = useCms()
-  const { user, authRequired, signOut } = useAuth()
+  const { user, authRequired, signOut, role, displayName, canEdit, canSettings, canManageUsers } =
+    useAuth()
   const { theme, toggleTheme } = useCmsTheme()
   const panels = useCmsPanels()
   const artistSlug = artistSlugFromPath(pathname)
@@ -187,7 +201,14 @@ export function CmsLayout() {
     setMobileOpen(false)
   }, [pathname])
 
+  const usersPath =
+    pathname.includes('/cms/settings/users') ||
+    pathname.includes('/cms/instellingen/gebruikers')
+
   if (pathname === '/cms' || pathname === '/cms/') {
+    return <Navigate to="/cms/dashboard" replace />
+  }
+  if (!canManageUsers && usersPath) {
     return <Navigate to="/cms/dashboard" replace />
   }
 
@@ -195,6 +216,20 @@ export function CmsLayout() {
     await signOut()
     navigate('/cms/login', { replace: true })
   }
+
+  const navItems = [
+    ...NAV,
+    ...(canManageUsers
+      ? [
+          {
+            to: '/cms/settings/users',
+            label: 'Team',
+            icon: UserPlus,
+            match: 'users' as const,
+          },
+        ]
+      : []),
+  ]
 
   const navLinks = (collapsible: boolean) => (
     <nav className="flex-1 overflow-y-auto px-3 py-5">
@@ -206,7 +241,7 @@ export function CmsLayout() {
         Werkomgeving
       </p>
       <ul className="space-y-0.5">
-        {NAV.map((n) => {
+        {navItems.map((n) => {
           const active =
             n.match === 'pages'
               ? pagesWorkspace
@@ -214,7 +249,11 @@ export function CmsLayout() {
                 ? panels.mode === 'artists'
                 : n.match === 'dashboard'
                   ? panels.mode === 'dashboard'
-                  : pathname.startsWith(n.to)
+                  : n.match === 'users'
+                    ? usersPath
+                    : n.match === 'settings'
+                      ? pathname.startsWith('/cms/settings') && !usersPath
+                      : pathname.startsWith(n.to)
           const Icon = n.icon
           return (
             <li key={n.to}>
@@ -366,7 +405,30 @@ export function CmsLayout() {
   )
 
   return (
-    <div className="cms-layout min-h-svh text-neutral-900" style={shellFont}>
+    <div
+      className="cms-layout min-h-svh text-neutral-900"
+      style={shellFont}
+      data-cms-readonly={canEdit ? undefined : 'true'}
+    >
+      <div className="fixed top-4 right-4 z-40 hidden items-center gap-3 rounded-xl border border-neutral-200 bg-white/95 px-3 py-2 shadow-sm lg:flex">
+        <div className="min-w-0 text-right">
+          <p className="max-w-[12rem] truncate text-xs font-semibold text-neutral-900">
+            {displayName || user?.email || 'CMS'}
+          </p>
+          <span className="mt-0.5 inline-flex rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600">
+            {role === 'admin' ? 'Admin' : role === 'editor' ? 'Editor' : 'Viewer'}
+          </span>
+        </div>
+        {authRequired ? (
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="rounded-md border border-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-600 hover:bg-neutral-100"
+          >
+            Uitloggen
+          </button>
+        ) : null}
+      </div>
       <FlowMatesCommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <aside className="group/sidebar peer/sidebar fixed inset-y-0 left-0 z-30 hidden w-16 flex-col overflow-hidden border-r border-neutral-200/80 bg-white shadow-sm transition-[width,box-shadow] duration-300 ease-out hover:w-64 hover:shadow-xl lg:flex">
@@ -431,7 +493,7 @@ export function CmsLayout() {
           <CmsWorkAlert />
           {pagesWorkspace ? <PagesTabBar /> : null}
 
-          {panels.mode === 'dashboard' || panels.mode === 'media' || !panels.Page ? (
+          {panels.mode === 'dashboard' || panels.mode === 'media' || panels.mode === 'settings' || usersPath || !panels.Page ? (
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-neutral-200/70 pb-6">
             <div className="min-w-0">
               <h1
@@ -452,16 +514,22 @@ export function CmsLayout() {
           </div>
           ) : null}
 
-          {panels.mode === 'dashboard' ? (
+          {usersPath ? (
+            <UsersAdmin />
+          ) : panels.mode === 'dashboard' ? (
             <DashboardHome />
           ) : panels.Page ? (
-            panels.mode === 'media' ? (
+            panels.mode === 'media' || panels.mode === 'settings' ? (
               <div className="cms-editor-pane min-w-0">
                 <EditorTopBar
                   mode="auto-save"
                   saving={artistSaving || contentSyncStatus === 'pending'}
                   lastSavedAt={savedAt ? new Date(savedAt) : null}
-                  hint="Media wordt automatisch opgeslagen"
+                  hint={
+                    panels.mode === 'settings'
+                      ? 'Wijzigingen worden automatisch opgeslagen'
+                      : 'Media wordt automatisch opgeslagen'
+                  }
                   extraInfo={
                     artistSyncError || siteSyncError ? (
                       <span className="text-rose-600">

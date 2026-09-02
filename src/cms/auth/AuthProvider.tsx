@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import {
   getSession,
   isSupabaseConfigured,
@@ -16,13 +17,18 @@ import {
   signOut as authSignOut,
 } from '@/lib/auth'
 
+export type CmsRole = 'admin' | 'editor' | 'viewer'
+
 type AuthContextValue = {
-  /** True after first session resolution. */
   ready: boolean
   session: Session | null
   user: User | null
-  /** Supabase env present — auth is required for CMS when true. */
   authRequired: boolean
+  role: CmsRole
+  displayName: string
+  canEdit: boolean
+  canSettings: boolean
+  canManageUsers: boolean
   signIn: (
     email: string,
     password: string,
@@ -32,14 +38,45 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function asRole(value: unknown): CmsRole {
+  if (value === 'admin' || value === 'editor' || value === 'viewer') return value
+  return 'viewer'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!isSupabaseConfigured)
   const [session, setSession] = useState<Session | null>(null)
+  const [role, setRole] = useState<CmsRole>(isSupabaseConfigured ? 'viewer' : 'admin')
+  const [displayName, setDisplayName] = useState('')
+
+  const loadRole = useCallback(async (user: User | null) => {
+    if (!isSupabaseConfigured || !supabase || !user) {
+      setRole('admin')
+      setDisplayName('Lokaal')
+      return
+    }
+    const { data } = await supabase.rpc('cms_ensure_role')
+    const owner =
+      (user.email ?? '').trim().toLowerCase() === 'martin@viraal.media'
+    const nextRole = owner ? 'admin' : asRole(data)
+    setRole(nextRole)
+    const { data: row } = await supabase
+      .from('user_roles')
+      .select('display_name,email,role')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    setDisplayName(
+      String(row?.display_name || user.user_metadata?.display_name || user.email || ''),
+    )
+    if (owner) setRole('admin')
+    else if (row?.role) setRole(asRole(row.role))
+  }, [])
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setReady(true)
       setSession(null)
+      setRole('admin')
       return
     }
 
@@ -49,9 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 2500)
 
     void getSession()
-      .then((next) => {
+      .then(async (next) => {
         if (cancelled) return
         setSession(next)
+        await loadRole(next?.user ?? null)
         setReady(true)
       })
       .catch(() => {
@@ -63,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data } = onAuthStateChange((_event, next) => {
       setSession(next)
+      void loadRole(next?.user ?? null)
       setReady(true)
     })
 
@@ -71,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer)
       data.subscription.unsubscribe()
     }
-  }, [])
+  }, [loadRole])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await signInWithPassword(email.trim(), password)
@@ -87,6 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: error.message }
     }
     setSession(null)
+    setRole('viewer')
+    setDisplayName('')
     return { error: null }
   }, [])
 
@@ -96,10 +137,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       authRequired: isSupabaseConfigured,
+      role: isSupabaseConfigured ? role : 'admin',
+      displayName:
+        displayName || session?.user?.email || (isSupabaseConfigured ? '' : 'Lokaal'),
+      canEdit: !isSupabaseConfigured || role === 'admin' || role === 'editor',
+      canSettings: !isSupabaseConfigured || role === 'admin',
+      canManageUsers: !isSupabaseConfigured || role === 'admin',
       signIn,
       signOut,
     }),
-    [ready, session, signIn, signOut],
+    [displayName, ready, role, session, signIn, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

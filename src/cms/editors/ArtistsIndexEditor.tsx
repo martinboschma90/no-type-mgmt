@@ -18,6 +18,7 @@ import { artistHasVideos } from '@/cms/artistVideos'
 import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 import type { Artist } from '@/types/artist'
 
 function artistHasBio(artist: Artist) {
@@ -76,9 +77,10 @@ function ArtistCard({
       >
         <div className="relative aspect-[4/5] overflow-hidden bg-neutral-100">
           {imageUrl ? (
-            <img
+            <OptimizedImg
               src={imageUrl}
               alt=""
+              size="card"
               className="absolute inset-0 h-full w-full object-cover"
               style={frame}
             />

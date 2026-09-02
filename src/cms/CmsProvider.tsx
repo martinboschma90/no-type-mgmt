@@ -9,7 +9,7 @@ import {
   type SetStateAction,
 } from 'react'
 import type { Artist } from '@/types/artist'
-import { CmsContext, type CmsContextValue, type ContentSyncStatus } from '@/cms/CmsContext'
+import { useAuth } from '@/cms/auth/AuthProvider'
 import {
   loadStoredContent,
   loadStoredContentUpdatedAt,
@@ -53,9 +53,13 @@ import {
   PUBLIC_SITE_STORAGE_KEY,
   PUBLIC_TEAM_STORAGE_KEY,
 } from '@/cms/storageKeys'
-import { useAuth } from '@/cms/auth/AuthProvider'
 import { useLocation } from 'react-router-dom'
 import { mergeRemoteArtists } from '@/cms/dedupeArtists'
+import {
+  CmsContext,
+  type CmsContextValue,
+  type ContentSyncStatus,
+} from '@/cms/CmsContext'
 
 function initialContent(): CmsContent {
   const defaults = createDefaultContent()
@@ -111,7 +115,7 @@ function clearDirty(
 export function CmsProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const isCmsRoute = pathname.startsWith('/cms')
-  const { ready: authReady, session, authRequired } = useAuth()
+  const { ready: authReady, session, authRequired, canEdit } = useAuth()
   const canWriteRemote = authReady && (!authRequired || Boolean(session))
   const [content, setContent] = useState<CmsContent>(initialContent)
   const [savedAt, setSavedAt] = useState<number | null>(() =>
@@ -504,18 +508,20 @@ export function CmsProvider({ children }: { children: ReactNode }) {
   const saveArtist = useCallback(
     async (slug: string) => {
       const artist = findBySlug(slug)
+      if (!canEdit) return { error: 'Geen schrijfrechten.' }
       if (!artist) return { error: 'Artist not found' }
       setArtistSaving(true)
       const result = await persistArtistNow(artist)
       setArtistSaving(false)
       return { error: result.error }
     },
-    [findBySlug, persistArtistNow],
+    [canEdit, findBySlug, persistArtistNow],
   )
 
   const publishArtist = useCallback(
     async (slug: string) => {
       const current = findBySlug(slug)
+      if (!canEdit) return { error: 'Geen schrijfrechten.' }
       if (!current) return { error: 'Artist not found' }
 
       if (artistHasLocalMediaRefs(current)) {
@@ -539,12 +545,13 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       setArtistSaving(false)
       return { error: result.error }
     },
-    [findBySlug, persistArtistNow, reportArtistError],
+    [canEdit, findBySlug, persistArtistNow, reportArtistError],
   )
 
   const unpublishArtist = useCallback(
     async (slug: string) => {
       const current = findBySlug(slug)
+      if (!canEdit) return { error: 'Geen schrijfrechten.' }
       if (!current) return { error: 'Artist not found' }
 
       const draft = applyArtistStatus(current, 'draft')
@@ -561,7 +568,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       setArtistSaving(false)
       return { error: result.error }
     },
-    [findBySlug, persistArtistNow],
+    [canEdit, findBySlug, persistArtistNow],
   )
 
   const value = useMemo<CmsContextValue>(
@@ -574,12 +581,15 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       dirtyArtistIds,
       artistSaving,
       setSite: (updater) => {
+        if (!canEdit) return
         setContent((prev) => ({ ...prev, site: updater(prev.site) }))
       },
       setTeam: (updater) => {
+        if (!canEdit) return
         setContent((prev) => ({ ...prev, team: updater(prev.team) }))
       },
       setArtists: (updater) => {
+        if (!canEdit) return
         setContent((prev) => {
           const nextArtists = updater(prev.artists)
           const prevById = new Map(prev.artists.map((a) => [a.id, a]))
@@ -593,6 +603,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         })
       },
       updateArtist: (slug, updater) => {
+        if (!canEdit) return
         setContent((prev) => {
           let updatedId: string | null = null
           const nextArtists = prev.artists.map((artist) => {
@@ -608,6 +619,12 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         })
       },
       addArtist: (name) => {
+        if (!canEdit) {
+          return (
+            contentRef.current.artists[0] ??
+            createBlankArtist(name, contentRef.current.artists.map((a) => a.slug))
+          )
+        }
         const created = createBlankArtist(
           name,
           contentRef.current.artists.map((a) => a.slug),
@@ -644,6 +661,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
         return created
       },
       removeArtist: (slug) => {
+        if (!canEdit) return
         const existing = contentRef.current.artists.find((a) => a.slug === slug)
         setContent((prev) => ({
           ...prev,
@@ -669,6 +687,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       publishArtist,
       unpublishArtist,
       resetContent: () => {
+        if (!canEdit) return
         const next = createDefaultContent()
         skipSiteRemoteSync.current = true
         setContent(next)
@@ -723,6 +742,7 @@ export function CmsProvider({ children }: { children: ReactNode }) {
       siteSyncError,
       dirtyArtistIds,
       artistSaving,
+      canEdit,
       persistLocal,
       reportArtistError,
       clearArtistError,

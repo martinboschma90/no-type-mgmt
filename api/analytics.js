@@ -1,3 +1,5 @@
+import { json, verifyCmsUser } from './cms-session.mjs'
+
 const VERCEL_ANALYTICS_URL =
   'https://api.vercel.com/v1/query/web-analytics/visits'
 
@@ -6,7 +8,7 @@ export default async function handler(req, res) {
     return json(res, 405, { error: 'Method not allowed' })
   }
 
-  const authorized = await verifyCmsSession(req)
+  const authorized = await verifyCmsUser(req)
   if (!authorized) {
     return json(res, 401, { error: 'Niet ingelogd of sessie verlopen.' })
   }
@@ -30,7 +32,7 @@ export default async function handler(req, res) {
   previousSince.setUTCDate(previousSince.getUTCDate() - days)
 
   try {
-    const [totals, previous, trend, pages, artists, referrers, countries, devices, countryArtists] =
+    const [totals, previous, trend, pages, artists, referrers, countries, cities, devices, countryArtists] =
       await Promise.all([
         queryVercel('count', { since, until }),
         queryVercel('count', { since: previousSince, until: previousUntil }),
@@ -39,7 +41,7 @@ export default async function handler(req, res) {
           since,
           until,
           by: 'requestPath',
-          limit: 20,
+          limit: 30,
         }),
         queryVercel('aggregate', {
           since,
@@ -55,6 +57,7 @@ export default async function handler(req, res) {
           limit: 8,
         }),
         queryVercel('aggregate', { since, until, by: 'country', limit: 8 }),
+        queryPlaces({ since, until }),
         queryVercel('aggregate', {
           since,
           until,
@@ -83,7 +86,10 @@ export default async function handler(req, res) {
       pages: pages.data,
       artists: artists.data,
       referrers: referrers.data,
+      channels: summarizeChannels(referrers.data),
       countries: countries.data,
+      cities: cities.data,
+      citiesSource: cities.source,
       devices: devices.data,
       countryArtists: countryArtists.data,
     })
@@ -133,36 +139,60 @@ async function queryVercel(endpoint, options) {
   return payload
 }
 
-async function verifyCmsSession(req) {
-  const authorization = req.headers.authorization
-  const supabaseUrl =
-    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-  const supabaseAnonKey =
-    process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
-
-  if (!authorization?.startsWith('Bearer ') || !supabaseUrl || !supabaseAnonKey) {
-    return false
+async function queryPlaces({ since, until }) {
+  const attempts = [
+    { by: 'city', source: 'city' },
+    { by: ['country', 'city'], source: 'city' },
+    { by: 'region', source: 'region' },
+  ]
+  for (const attempt of attempts) {
+    try {
+      const result = await queryVercel('aggregate', {
+        since,
+        until,
+        by: attempt.by,
+        limit: 12,
+      })
+      const data = Array.isArray(result?.data) ? result.data : []
+      const usable = data.filter(
+        (row) =>
+          String(row?.city || '').trim() || String(row?.region || '').trim(),
+      )
+      if (usable.length) return { data: usable, source: attempt.source }
+    } catch {
+      // Vercel Web Analytics ondersteunt city vaak niet; probeer de volgende dimensie.
+    }
   }
+  return { data: [], source: null }
+}
 
-  try {
-    const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: {
-        Authorization: authorization,
-        apikey: supabaseAnonKey,
-      },
-    })
-    return response.ok
-  } catch {
-    return false
+function summarizeChannels(rows) {
+  const counts = { organic: 0, direct: 0, social: 0, referral: 0 }
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const host = String(row?.referrerHostname || '').toLowerCase()
+    const views = Number(row?.pageviews) || 0
+    counts[classifyReferrer(host)] += views
   }
+  return counts
+}
+
+function classifyReferrer(host) {
+  if (!host) return 'direct'
+  if (
+    /google\.|bing\.|duckduckgo\.|yahoo\.|ecosia\.|baidu\.|search\.brave/.test(host)
+  ) {
+    return 'organic'
+  }
+  if (
+    /instagram\.|facebook\.|fb\.com|t\.co$|twitter\.|x\.com|tiktok\.|linkedin\.|youtube\.|youtu\.be|pinterest\./.test(
+      host,
+    )
+  ) {
+    return 'social'
+  }
+  return 'referral'
 }
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
-}
-
-function json(res, status, payload) {
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json; charset=utf-8')
-  res.end(JSON.stringify(payload))
 }

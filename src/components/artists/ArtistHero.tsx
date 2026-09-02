@@ -9,6 +9,7 @@ import { portraitImageStyle } from '@/cms/imageFocus'
 import { useArtistImageUrl } from '@/cms/media/useArtistImageUrl'
 import { OptimizedImg } from '@/components/ui/OptimizedImg'
 import { isMusicEmbedActive } from '@/cms/artistMusic'
+import { NearMount } from '@/lib/NearMount'
 import {
   artistBookingWhatsAppMessage,
   buildWhatsAppUrl,
@@ -158,7 +159,9 @@ export function ArtistHero({ artist, previewFocus }: ArtistHeroProps) {
 
             {isMusicEmbedActive(artist.music) || Boolean(artist.tracks?.length) ? (
               <div className={bio ? 'mt-6 sm:mt-7' : ''}>
-                <MusicPlayer artist={artist} />
+                <NearMount minHeight={180}>
+                  <MusicPlayer artist={artist} />
+                </NearMount>
               </div>
             ) : null}
           </div>

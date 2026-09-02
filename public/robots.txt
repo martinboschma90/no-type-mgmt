@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /cms
+Disallow: /cms/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+
+Host: https://www.notype-mgmt.com
+Sitemap: https://www.notype-mgmt.com/sitemap.xml

@@ -33,11 +33,11 @@ export function AboutEditor() {
           hint="Used for accessibility; the logo remains the visual mark."
           onChange={(aboutTitle) => setSite((s) => ({ ...s, aboutTitle }))}
         />
-        <TextInput
+        <MediaUrlField
           label="Header video"
+          kind="video"
           value={site.aboutHeroVideoUrl}
-          placeholder="YouTube- of video-URL"
-          hint="YouTube-URL. Tijd in de link (bijv. &t=14m11s) is het startpunt; daarna max. 20 seconden in loop. Leeg = geen banner."
+          hint="Eigen MP4/WebM (mediabibliotheek) laadt sneller en toont geen YouTube-pauzeknop. YouTube kan, met starttijd in de URL (bijv. &t=14m11s) en max. 20s loop."
           onChange={(aboutHeroVideoUrl) =>
             setSite((s) => ({ ...s, aboutHeroVideoUrl }))
           }

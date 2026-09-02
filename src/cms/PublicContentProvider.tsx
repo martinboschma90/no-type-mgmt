@@ -82,17 +82,20 @@ export function PublicContentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured || pathname !== '/about') return
     let cancelled = false
-    void fetchPublicTeam()
-      .then((team) => {
-        if (cancelled || !team || team.length === 0) return
-        storageSet(PUBLIC_TEAM_STORAGE_KEY, JSON.stringify(team))
-        setContent((prev) => ({ ...prev, team }))
-      })
-      .catch((error) => {
-        console.warn('[public] team hydrate failed', error)
-      })
+    const timer = window.setTimeout(() => {
+      void fetchPublicTeam()
+        .then((team) => {
+          if (cancelled || !team || team.length === 0) return
+          storageSet(PUBLIC_TEAM_STORAGE_KEY, JSON.stringify(team))
+          setContent((prev) => ({ ...prev, team }))
+        })
+        .catch((error) => {
+          console.warn('[public] team hydrate failed', error)
+        })
+    }, 1400)
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
     }
   }, [pathname])
 

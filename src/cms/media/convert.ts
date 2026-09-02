@@ -415,6 +415,48 @@ function tryGetReelCapture(video: HTMLVideoElement): {
   }
 }
 
+export async function captureVideoPoster(
+  sourceUrl: string,
+  atTime = 0.45,
+): Promise<{ blob: Blob; width: number; height: number }> {
+  const video = document.createElement('video')
+  video.crossOrigin = 'anonymous'
+  video.muted = true
+  video.playsInline = true
+  video.preload = 'auto'
+  video.src = sourceUrl
+  await waitForEvent(video, 'loadeddata')
+  const duration = Number.isFinite(video.duration) ? video.duration : 0
+  const seek =
+    duration > 0
+      ? Math.min(Math.max(0.15, atTime), Math.max(0.15, duration - 0.12))
+      : Math.max(0, atTime)
+  if (seek > 0) {
+    video.currentTime = seek
+    await waitForEvent(video, 'seeked')
+  }
+  await waitForVideoFrame(video)
+  const maxEdge = 1080
+  let width = video.videoWidth || 1080
+  let height = video.videoHeight || 1920
+  const longest = Math.max(width, height)
+  if (longest > maxEdge) {
+    const scale = maxEdge / longest
+    width = Math.round(width * scale)
+    height = Math.round(height * scale)
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas unavailable')
+  ctx.drawImage(video, 0, 0, width, height)
+  video.removeAttribute('src')
+  video.load()
+  const blob = await canvasToWebp(canvas, 0.82)
+  return { blob, width, height }
+}
+
 function waitForVideoFrame(video: HTMLVideoElement): Promise<void> {
   return new Promise((resolve) => {
     if ('requestVideoFrameCallback' in video) {

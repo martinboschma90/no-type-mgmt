@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { Artist } from '@/types/artist'
 import {
   isMusicEmbedActive,
@@ -182,13 +182,24 @@ function DeferredIframe({
   src: string
   className?: string
 }) {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setReady(true), 400)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  if (!ready) {
+    return <div className={className} aria-hidden />
+  }
+
   return (
     <iframe
       title={title}
       src={src}
       className={className}
       allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-      loading="eager"
+      loading="lazy"
       referrerPolicy="strict-origin-when-cross-origin"
     />
   )

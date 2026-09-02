@@ -12,6 +12,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { useMedia } from '@/cms/media/MediaProvider'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 import type { MediaAsset, MediaKind } from '@/cms/media/types'
 
 function formatBytes(size: number) {
@@ -438,9 +439,10 @@ function AssetGrid({
               disabled={!onSelect}
             >
               {asset.kind === 'image' ? (
-                <img
+                <OptimizedImg
                   src={asset.url}
                   alt={asset.name}
+                  size="thumb"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
                 />
               ) : (

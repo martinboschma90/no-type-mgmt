@@ -1,8 +1,10 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { BrandMark } from '@/components/ui/BrandMark'
+import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 
 /** Hero loop: start in the URL, then at most this many seconds. */
 const YOUTUBE_CLIP_SECONDS = 20
+const YT_PLAYING = 1
 
 type YtPlayer = {
   mute: () => void
@@ -16,6 +18,8 @@ type YtPlayerCtor = new (
   element: HTMLElement | string,
   options: {
     videoId: string
+    width?: string
+    height?: string
     playerVars?: Record<string, number | string>
     events?: {
       onReady?: (event: { target: YtPlayer }) => void
@@ -26,7 +30,7 @@ type YtPlayerCtor = new (
 
 declare global {
   interface Window {
-    YT?: { Player: YtPlayerCtor; PlayerState?: { ENDED: number } }
+    YT?: { Player: YtPlayerCtor; PlayerState?: { ENDED: number; PLAYING: number } }
     onYouTubeIframeAPIReady?: () => void
   }
 }
@@ -84,7 +88,29 @@ function youtubeStartSeconds(url: string) {
 }
 
 function isDirectVideo(url: string) {
-  return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url)
+  return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url) || url.startsWith('blob:')
+}
+
+function thinConnection() {
+  const connection = (
+    navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string }
+    }
+  ).connection
+  if (connection?.saveData) return true
+  const type = connection?.effectiveType
+  return type === 'slow-2g' || type === '2g'
+}
+
+function isNarrowViewport() {
+  return window.matchMedia('(max-width: 767px)').matches
+}
+
+function youtubeThumb(id: string, file: string, format: 'jpg' | 'webp' = 'jpg') {
+  if (format === 'webp') {
+    return `https://i.ytimg.com/vi_webp/${id}/${file}.webp`
+  }
+  return `https://i.ytimg.com/vi/${id}/${file}.jpg`
 }
 
 function loadYoutubeApi() {
@@ -98,14 +124,27 @@ function loadYoutubeApi() {
     if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
       const script = document.createElement('script')
       script.src = 'https://www.youtube.com/iframe_api'
+      script.async = true
       document.head.appendChild(script)
     }
   })
 }
 
-function YoutubeClip({ videoId, startAt }: { videoId: string; startAt: number }) {
+function YoutubeClip({
+  videoId,
+  startAt,
+  onPlaying,
+  compact,
+}: {
+  videoId: string
+  startAt: number
+  onPlaying: () => void
+  compact: boolean
+}) {
   const hostId = useId().replace(/:/g, '')
   const playerRef = useRef<YtPlayer | null>(null)
+  const onPlayingRef = useRef(onPlaying)
+  onPlayingRef.current = onPlaying
   const endAt = startAt + YOUTUBE_CLIP_SECONDS
 
   useEffect(() => {
@@ -114,11 +153,12 @@ function YoutubeClip({ videoId, startAt }: { videoId: string; startAt: number })
 
     void loadYoutubeApi().then(() => {
       if (cancelled || !window.YT?.Player) return
-      const host = document.getElementById(hostId)
-      if (!host) return
+      if (!document.getElementById(hostId)) return
 
       const player = new window.YT.Player(hostId, {
         videoId,
+        width: '100%',
+        height: '100%',
         playerVars: {
           autoplay: 1,
           mute: 1,
@@ -130,6 +170,7 @@ function YoutubeClip({ videoId, startAt }: { videoId: string; startAt: number })
           playsinline: 1,
           iv_load_policy: 3,
           cc_load_policy: 0,
+          enablejsapi: 1,
           start: startAt,
           end: endAt,
           origin: window.location.origin,
@@ -141,6 +182,7 @@ function YoutubeClip({ videoId, startAt }: { videoId: string; startAt: number })
             event.target.playVideo()
           },
           onStateChange: (event) => {
+            if (event.data === YT_PLAYING) onPlayingRef.current()
             if (event.data === (window.YT?.PlayerState?.ENDED ?? 0)) {
               event.target.seekTo(startAt, true)
               event.target.playVideo()
@@ -158,7 +200,7 @@ function YoutubeClip({ videoId, startAt }: { videoId: string; startAt: number })
         } catch {
           /* player not ready */
         }
-      }, 200)
+      }, 400)
     })
 
     return () => {
@@ -169,8 +211,11 @@ function YoutubeClip({ videoId, startAt }: { videoId: string; startAt: number })
     }
   }, [endAt, hostId, startAt, videoId])
 
+  const scale = compact ? 'h-[125%] w-[125%]' : 'h-[155%] w-[155%]'
   return (
-    <div className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[135%] max-w-none -translate-x-1/2 -translate-y-1/2 [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0">
+    <div
+      className={`pointer-events-none absolute left-1/2 top-1/2 z-0 max-w-none -translate-x-1/2 -translate-y-1/2 ${scale} [&>iframe]:h-full [&>iframe]:w-full [&>iframe]:border-0`}
+    >
       <div id={hostId} />
     </div>
   )
@@ -182,39 +227,103 @@ type AboutVideoBannerProps = {
 }
 
 export function AboutVideoBanner({ url, title }: AboutVideoBannerProps) {
-  const source = url?.trim() ?? ''
+  const source = useResolvedMediaUrl(url)
   const youtubeId = youtubeIdFromUrl(source)
   const start = youtubeStartSeconds(source) ?? 0
+  const direct = Boolean(source && isDirectVideo(source))
+  const [playing, setPlaying] = useState(false)
+  const [allowHeavy, setAllowHeavy] = useState(false)
+  const [compact, setCompact] = useState(true)
+
+  useEffect(() => {
+    setCompact(isNarrowViewport())
+    setPlaying(false)
+    setAllowHeavy(false)
+    if (!youtubeId && !direct) return
+    if (thinConnection()) return
+
+    let idleId = 0
+    let timeoutId = 0
+    const kick = () => {
+      const wait = isNarrowViewport() ? 900 : 250
+      const startHeavy = () => setAllowHeavy(true)
+      const ric = (
+        window as Window & {
+          requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+        }
+      ).requestIdleCallback
+      if (ric) idleId = ric(startHeavy, { timeout: wait })
+      else timeoutId = window.setTimeout(startHeavy, wait)
+    }
+    timeoutId = window.setTimeout(kick, isNarrowViewport() ? 80 : 0)
+    return () => {
+      window.clearTimeout(timeoutId)
+      const cancel = (
+        window as Window & { cancelIdleCallback?: (id: number) => void }
+      ).cancelIdleCallback
+      if (idleId && cancel) cancel(idleId)
+    }
+  }, [direct, source, youtubeId])
 
   return (
     <section className="relative w-full bg-[#121014]" aria-label="About hero">
-      <div className="relative aspect-[21/9] w-full overflow-hidden">
-        {youtubeId ? (
-          <YoutubeClip videoId={youtubeId} startAt={start} />
-        ) : source && isDirectVideo(source) ? (
+      <div className="relative aspect-[21/9] w-full overflow-hidden bg-[#121014]">
+        {allowHeavy && youtubeId ? (
+          <YoutubeClip
+            videoId={youtubeId}
+            startAt={start}
+            compact={compact}
+            onPlaying={() => setPlaying(true)}
+          />
+        ) : null}
+
+        {allowHeavy && source && direct ? (
           <video
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
             src={source}
             autoPlay
             muted
             loop
             playsInline
-            preload="auto"
+            preload={compact ? 'metadata' : 'auto'}
             controls={false}
             disablePictureInPicture
-          />
-        ) : source ? (
-          <iframe
-            title="About video"
-            src={source}
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[135%] max-w-none -translate-x-1/2 -translate-y-1/2 border-0"
-            allow="autoplay; encrypted-media"
-            tabIndex={-1}
+            onPlaying={() => setPlaying(true)}
           />
         ) : null}
-        <div className="absolute inset-0" aria-hidden />
+
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--body-bg)] to-transparent"
+          className={[
+            'pointer-events-none absolute inset-0 z-[1] bg-[#121014] transition-opacity duration-500',
+            playing ? 'opacity-0' : 'opacity-100',
+          ].join(' ')}
+          aria-hidden
+        >
+          {youtubeId ? (
+            <picture>
+              <source
+                type="image/webp"
+                srcSet={`${youtubeThumb(youtubeId, 'mqdefault', 'webp')} 320w, ${youtubeThumb(youtubeId, 'hqdefault', 'webp')} 480w, ${youtubeThumb(youtubeId, 'sddefault', 'webp')} 640w`}
+                sizes="100vw"
+              />
+              <img
+                src={youtubeThumb(youtubeId, compact ? 'sddefault' : 'hqdefault')}
+                srcSet={`${youtubeThumb(youtubeId, 'mqdefault')} 320w, ${youtubeThumb(youtubeId, 'hqdefault')} 480w, ${youtubeThumb(youtubeId, 'sddefault')} 640w`}
+                sizes="100vw"
+                alt=""
+                width={640}
+                height={360}
+                decoding="async"
+                fetchPriority="high"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </picture>
+          ) : null}
+          <div className="absolute inset-0 bg-[#121014]/20" />
+        </div>
+
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-16 bg-gradient-to-t from-[var(--body-bg)] to-transparent"
           aria-hidden
         />
       </div>
@@ -223,7 +332,7 @@ export function AboutVideoBanner({ url, title }: AboutVideoBannerProps) {
         <div className="opacity-[0.85]">
           <BrandMark
             duration={52}
-            className="h-[88px] w-[88px] sm:h-[112px] sm:w-[112px] lg:h-[132px] lg:w-[132px]"
+            className="h-[72px] w-[72px] sm:h-[112px] sm:w-[112px] lg:h-[132px] lg:w-[132px]"
           />
         </div>
       </div>

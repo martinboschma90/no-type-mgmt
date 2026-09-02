@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { AuthProvider } from '@/cms/auth/AuthProvider'
 import { CmsProvider } from '@/cms/CmsProvider'
@@ -13,11 +13,25 @@ const CmsShell = lazy(() =>
   import('@/cms/CmsShell').then((m) => ({ default: m.CmsShell })),
 )
 
+function CmsNoIndex() {
+  useEffect(() => {
+    const robots = document.createElement('meta')
+    robots.name = 'robots'
+    robots.content = 'noindex, nofollow, noarchive'
+    document.head.appendChild(robots)
+    return () => {
+      robots.remove()
+    }
+  }, [])
+  return null
+}
+
 export default function CmsApp() {
   return (
     <CmsThemeProvider>
       <AuthProvider>
         <CmsProvider>
+          <CmsNoIndex />
           <ScrollToTop />
           <Suspense fallback={<RouteFallback />}>
             <Routes>

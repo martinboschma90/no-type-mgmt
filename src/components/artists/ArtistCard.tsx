@@ -21,7 +21,8 @@ export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
   const { content } = useCms()
   const imageUrl = useArtistImageUrl(artist)
   const frame = portraitImageStyle(artist)
-  const priority = index < 2
+  const aboveFold = index < 4
+  const isLcp = index === 0
   const href = `/artists/${artist.slug}`
   const glowStyle = {
     ['--artist-card-glow' as string]: rosterGlowGradient(
@@ -53,9 +54,9 @@ export function ArtistCard({ artist, index = 0 }: ArtistCardProps) {
                 size="card"
                 srcSetSizes={['poster', 'card', 'hero']}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                loading={priority ? 'eager' : 'lazy'}
-                fetchPriority={priority ? 'high' : 'low'}
-                decoding="async"
+                priority={isLcp}
+                loading={aboveFold ? 'eager' : 'lazy'}
+                fetchPriority={isLcp ? 'high' : aboveFold ? 'auto' : 'low'}
                 draggable={false}
               />
             </div>

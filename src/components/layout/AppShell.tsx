@@ -9,6 +9,7 @@ import {
 import { Navbar } from '@/components/layout/Navbar'
 import { GradientOverlay } from '@/components/layout/GradientOverlay'
 import { StickyContactBar } from '@/components/layout/StickyContactBar'
+import { prefetchRoute } from '@/lib/prefetchRoute'
 
 const Footer = lazy(() =>
   import('@/components/layout/Footer').then((m) => ({ default: m.Footer })),
@@ -67,9 +68,17 @@ export function AppShell({
           menuOpen={menuOpen}
           onMenuToggle={() => {
             setMenuReady(true)
+            prefetchRoute('/about')
+            prefetchRoute('/contact')
+            prefetchRoute('/booking')
+            prefetchRoute('/faq')
             setMenuOpen((v) => !v)
           }}
-          onMenuIntent={() => setMenuReady(true)}
+          onMenuIntent={() => {
+            setMenuReady(true)
+            prefetchRoute('/about')
+            prefetchRoute('/contact')
+          }}
           variant={navVariant}
         />
         {menuReady ? (

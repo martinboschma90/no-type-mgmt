@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportRumError } from '@/lib/siteRum'
 
 type Props = {
   children: ReactNode
@@ -30,6 +31,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(this.props.label || 'App render error', error, info.componentStack)
+    if (this.props.label !== 'cms' && this.props.label !== 'traffic') {
+      reportRumError(error)
+    }
   }
 
   render() {

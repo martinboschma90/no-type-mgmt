@@ -10,6 +10,8 @@ type LogoProps = {
   height?: number
   title?: string
   fetchPriority?: 'high' | 'low' | 'auto'
+  loading?: 'lazy' | 'eager'
+  decoding?: 'async' | 'sync' | 'auto'
 }
 
 const ASSETS = {
@@ -48,6 +50,8 @@ export function Logo({
   height,
   title = 'NOTYPE MGMT',
   fetchPriority,
+  loading,
+  decoding = 'async',
 }: LogoProps) {
   const { theme } = useTheme()
   const resolved =
@@ -79,7 +83,8 @@ export function Logo({
           : { objectFit: 'contain' }
       }
       draggable={false}
-      decoding="async"
+      loading={fetchPriority === 'high' ? 'eager' : loading}
+      decoding={fetchPriority === 'high' ? 'sync' : decoding}
       fetchPriority={fetchPriority}
       onError={() =>
         setFallback((current) =>

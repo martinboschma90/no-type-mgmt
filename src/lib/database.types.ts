@@ -226,9 +226,64 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_requests: {
+        Row: {
+          id: string
+          submitted_at: string
+          country: string
+          artists: Json
+        }
+        Insert: {
+          id?: string
+          submitted_at?: string
+          country?: string
+          artists?: Json
+        }
+        Update: {
+          id?: string
+          submitted_at?: string
+          country?: string
+          artists?: Json
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          user_id: string
+          email: string
+          display_name: string
+          role: 'admin' | 'editor' | 'viewer'
+          status: 'active' | 'invited'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          email?: string
+          display_name?: string
+          role: 'admin' | 'editor' | 'viewer'
+          status?: 'active' | 'invited'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          email?: string
+          display_name?: string
+          role?: 'admin' | 'editor' | 'viewer'
+          status?: 'active' | 'invited'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      cms_ensure_role: { Args: Record<PropertyKey, never>; Returns: string }
+      cms_role: { Args: Record<PropertyKey, never>; Returns: string }
+      cms_is_editor: { Args: Record<PropertyKey, never>; Returns: boolean }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

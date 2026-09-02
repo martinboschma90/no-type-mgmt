@@ -1,4 +1,5 @@
 import { useMedia } from '@/cms/media/MediaProvider'
+import { OptimizedImg } from '@/components/ui/OptimizedImg'
 import { PreviewFrame } from '@/cms/previews/PreviewFrame'
 
 export function MediaPreview() {
@@ -29,9 +30,10 @@ export function MediaPreview() {
                 className="overflow-hidden rounded-xl border border-ink/8 bg-cream-dark/40"
               >
                 {asset.kind === 'image' ? (
-                  <img
+                  <OptimizedImg
                     src={asset.url}
                     alt={asset.name}
+                    size="thumb"
                     className="aspect-square w-full object-cover"
                   />
                 ) : (

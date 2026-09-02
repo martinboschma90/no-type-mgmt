@@ -1,8 +1,13 @@
+import { lazy, Suspense } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { SectionRow } from '@/components/ui/SectionRow'
-import { TeamSection } from '@/components/about/TeamSection'
 import { AboutVideoBanner } from '@/components/about/AboutVideoBanner'
+import { NearMount } from '@/lib/NearMount'
 import { useCms } from '@/cms/CmsContext'
+
+const TeamSection = lazy(() =>
+  import('@/components/about/TeamSection').then((m) => ({ default: m.TeamSection })),
+)
 
 export function AboutPage() {
   const { content } = useCms()
@@ -37,7 +42,13 @@ export function AboutPage() {
         </div>
       </div>
 
-      {site.teamVisible !== false ? <TeamSection members={team} /> : null}
+      {site.teamVisible !== false ? (
+        <NearMount minHeight={360}>
+          <Suspense fallback={null}>
+            <TeamSection members={team} />
+          </Suspense>
+        </NearMount>
+      ) : null}
     </AppShell>
   )
 }

@@ -18,6 +18,8 @@ type OptimizedImgProps = Omit<
   sizes?: string
   loading?: 'lazy' | 'eager'
   fetchPriority?: 'high' | 'low' | 'auto'
+  /** Same idea as Next.js Image `priority`: eager + fetchpriority=high. */
+  priority?: boolean
   style?: CSSProperties
 }
 
@@ -34,6 +36,7 @@ export function OptimizedImg({
   alt,
   loading = 'lazy',
   fetchPriority,
+  priority = false,
   decoding = 'async',
   width,
   height,
@@ -49,6 +52,9 @@ export function OptimizedImg({
       ? optimizedImageSrcSet(src, srcSetSizes)
       : undefined
   const intrinsic = imageDeliveryDimensions(size)
+  const isPriority = priority || fetchPriority === 'high'
+  const loadMode = isPriority ? 'eager' : loading
+  const decodeMode = isPriority ? 'sync' : decoding
 
   return (
     <img
@@ -59,9 +65,9 @@ export function OptimizedImg({
       alt={alt}
       width={width ?? intrinsic.width}
       height={height ?? intrinsic.height}
-      loading={loading}
-      decoding={decoding}
-      fetchPriority={fetchPriority}
+      loading={loadMode}
+      decoding={decodeMode}
+      fetchPriority={isPriority ? 'high' : fetchPriority}
       onError={(e) => {
         if (!failed && deliverySrc !== fallback) {
           setFailed(true)

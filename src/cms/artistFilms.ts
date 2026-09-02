@@ -103,5 +103,5 @@ export function vimeoVideoId(url: string): string | null {
 
 export function youtubePosterUrl(url: string): string | null {
   const id = youtubeVideoId(url)
-  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null
+  return id ? `https://i.ytimg.com/vi_webp/${id}/hqdefault.webp` : null
 }

@@ -1,7 +1,21 @@
 {
+  "crons": [
+    {
+      "path": "/api/site-speed",
+      "schedule": "0 6 1,15 * *"
+    }
+  ],
+  "functions": {
+    "api/site-live.js": {
+      "maxDuration": 30
+    },
+    "api/site-speed.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
-      "source": "/((?!api/|assets/).*)",
+      "source": "/((?!api/|assets/|robots\\.txt|sitemap\\.xml).*)",
       "destination": "/index.html"
     }
   ],

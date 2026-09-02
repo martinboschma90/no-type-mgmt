@@ -14,7 +14,7 @@ export function BrandMark({ className = '', duration = 52 }: BrandMarkProps) {
         className="brand-mark-spin origin-center cursor-default"
         style={{ animationDuration: `${duration}s` }}
       >
-        <Logo variant="seal" className={className} title="" />
+        <Logo variant="seal" className={className} title="" fetchPriority="low" />
       </div>
     </div>
   )

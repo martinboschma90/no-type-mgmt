@@ -70,6 +70,79 @@ export function isValidBookingPayload(payload) {
     (o) => o && String(o.artistId || '') && String(o.offer || '').trim(),
   )
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c.email || '').trim())
+  const withinLimits = [
+    c.companyName,
+    c.contactPerson,
+    c.email,
+    c.phone,
+    c.website,
+    c.instagram,
+    e.eventName,
+    e.additionalInfo,
+  ].every((value) => String(value || '').length < 2000)
 
-  return requiredCompany && requiredEvent && offersOk && emailOk
+  return requiredCompany && requiredEvent && offersOk && emailOk && withinLimits
+}
+
+export async function sendBookingEmail({ subject, text, replyTo }) {
+  const resendKey = process.env.RESEND_API_KEY
+  if (resendKey) {
+    const from =
+      process.env.BOOKING_FROM_EMAIL || 'No Type Booking <onboarding@resend.dev>'
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: [BOOKING_REQUEST_EMAIL],
+        reply_to: replyTo,
+        subject,
+        text,
+      }),
+    })
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '')
+      return {
+        ok: false,
+        error: `Email provider error (${response.status})${detail ? `: ${detail}` : ''}`,
+      }
+    }
+    return { ok: true }
+  }
+
+  const response = await fetch(
+    `https://formsubmit.co/ajax/${encodeURIComponent(BOOKING_REQUEST_EMAIL)}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        _subject: subject,
+        _template: 'table',
+        _captcha: 'false',
+        message: text,
+        email: replyTo,
+      }),
+    },
+  )
+  const payload = await response.json().catch(() => null)
+  const success =
+    response.ok &&
+    payload &&
+    payload.success !== false &&
+    payload.success !== 'false'
+  if (!success) {
+    return {
+      ok: false,
+      error:
+        payload?.message ||
+        'Could not deliver booking email. Add RESEND_API_KEY for inbox delivery.',
+    }
+  }
+  return { ok: true }
 }

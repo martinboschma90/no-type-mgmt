@@ -36,6 +36,8 @@ function InstagramTile({ post }: { post: InstagramEmbed }) {
         <img
           src={thumb}
           alt=""
+          width={320}
+          height={320}
           className="h-full w-full object-cover"
           loading="lazy"
           decoding="async"

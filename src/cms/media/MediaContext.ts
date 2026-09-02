@@ -13,6 +13,11 @@ export type MediaContextValue = {
     startTime: number
     duration: number
   }) => Promise<MediaAsset>
+  createVideoPoster: (options: {
+    sourceUrl: string
+    name: string
+    atTime?: number
+  }) => Promise<MediaAsset>
   removeAsset: (id: string) => Promise<void>
   clearAll: () => Promise<void>
   getAssetUrl: (id: string) => string | undefined

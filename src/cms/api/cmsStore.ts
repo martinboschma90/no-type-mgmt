@@ -7,7 +7,7 @@ import {
 import type { CmsContent } from '@/cms/content'
 import { visibleArtists } from '@/cms/artistVisibility'
 import { withArtDirection } from '@/cms/imageFocus'
-import { isArtistUuid, coerceArtist } from '@/cms/mappers/artist'
+import { coerceArtist } from '@/cms/mappers/artist'
 import type { Json } from '@/lib/database.types'
 import type { Artist } from '@/types/artist'
 
@@ -109,14 +109,13 @@ export async function upsertCmsArtist(
   if (!isSupabaseConfigured || !supabase) {
     return { error: 'Supabase is not configured' }
   }
-  const row: { slug: string; data: Json; id?: string } = {
+  const payload = {
     slug: artist.slug,
     data: asJson(artist),
   }
-  if (isArtistUuid(artist.id)) row.id = artist.id
   const { error } = await supabase
     .from('cms_artists')
-    .upsert(row, { onConflict: 'slug' })
+    .upsert(payload, { onConflict: 'slug' })
   return { error: error?.message ?? null }
 }
 
@@ -141,8 +140,15 @@ export async function replaceCmsArtists(
     .select('slug')
   if (listError) return { error: listError.message }
 
-  const keep = new Set(artists.map((a) => a.slug))
+  const unique = new Map<string, Artist>()
   for (const artist of artists) {
+    if (!artist.slug) continue
+    unique.set(artist.slug, artist)
+  }
+  const list = [...unique.values()]
+
+  const keep = new Set(list.map((a) => a.slug))
+  for (const artist of list) {
     const { error } = await upsertCmsArtist(artist)
     if (error) return { error }
   }

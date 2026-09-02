@@ -2,10 +2,12 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { BeforeSendEvent } from '@vercel/analytics/react'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
+import { PublicSeo } from '@/components/layout/PublicSeo'
 import { PublicContentProvider } from '@/cms/PublicContentProvider'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { RouteFallback } from '@/components/ui/RouteFallback'
 import { HomePage } from '@/pages/HomePage'
+import { reportNotFound, startPublicRum } from '@/lib/siteRum'
 
 const Analytics = lazy(() =>
   import('@vercel/analytics/react').then((m) => ({ default: m.Analytics })),
@@ -61,6 +63,7 @@ function RouteErrorBoundary({
 function PublicApp() {
   return (
     <PublicContentProvider>
+      <PublicSeo />
       <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -71,11 +74,19 @@ function PublicApp() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/booking" element={<BookingPage />} />
           <Route path="/faq" element={<FaqPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<UnknownPublicPath />} />
         </Routes>
       </Suspense>
     </PublicContentProvider>
   )
+}
+
+function UnknownPublicPath() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    reportNotFound(pathname)
+  }, [pathname])
+  return <Navigate to="/" replace />
 }
 
 export default function App() {
@@ -87,9 +98,12 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [])
 
+  useEffect(() => startPublicRum(), [])
+
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Navigate to="/cms/login" replace />} />
         <Route
           path="/admin/*"
           element={<AdminToCms />}

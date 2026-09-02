@@ -63,8 +63,8 @@ export function BookingEditor() {
           {BOOKING_REQUEST_EMAIL}
         </p>
         <p className="type-body text-xs text-ink/40">
-          Single-page form: artists, company/event details, and offers. Configure
-          RESEND_API_KEY for reliable delivery (FormSubmit fallback otherwise).
+          Aanvragen landen in het CMS-dashboard. Voor mail naar deze inbox zet je
+          RESEND_API_KEY in Vercel (en lokaal in .env.local).
         </p>
       </EditorSection>
     </>

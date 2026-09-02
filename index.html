@@ -10,6 +10,8 @@
       name="description"
       content="NOTYPE MGMT — premium artist management for crossover dance & pop."
     />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link rel="canonical" href="https://www.notype-mgmt.com/" />
     <style>
       html, body {
         margin: 0;
@@ -23,7 +25,7 @@
       }
       #root { min-height: 100vh; }
     </style>
-    <link rel="preload" as="image" href="/brand/notype-wordmark.svg" type="image/svg+xml" />
+    <link rel="preload" as="image" href="/brand/notype-wordmark.svg" type="image/svg+xml" fetchpriority="high" />
     <title>NOTYPE MGMT</title>
     <script>
       (function () {
@@ -36,10 +38,10 @@
         }
       })()
     </script>
+    <!--public-boot-->
   </head>
   <body>
     <div id="root"></div>
-    <!--public-boot-->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

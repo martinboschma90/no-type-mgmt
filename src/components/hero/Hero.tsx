@@ -18,6 +18,8 @@ export function Hero() {
               variant="auto"
               className="h-[clamp(2.75rem,7vw,5.25rem)] w-auto"
               fetchPriority="high"
+              loading="eager"
+              decoding="sync"
             />
           </h1>
           <p className="type-label mt-8 max-w-[18rem] whitespace-pre-line text-ink/50 sm:mt-10">

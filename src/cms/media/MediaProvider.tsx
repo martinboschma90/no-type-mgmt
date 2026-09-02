@@ -14,6 +14,7 @@ import {
   MAX_STORED_VIDEO_BYTES,
   convertImageToWebp,
   convertVideoToWebm,
+  captureVideoPoster,
   enqueueMediaJob,
   isImageFile,
   isVideoFile,
@@ -367,6 +368,60 @@ export function MediaProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const createVideoPoster = useCallback(
+    async ({
+      sourceUrl,
+      name,
+      atTime,
+    }: {
+      sourceUrl: string
+      name: string
+      atTime?: number
+    }) => {
+      const pendingName = `${baseName(name || 'artist-video')}-poster`
+      setUploading({
+        fileName: `${pendingName}.webp`,
+        stage: 'converting',
+        message: 'Poster uit video maken…',
+      })
+      try {
+        const captured = await enqueueMediaJob(
+          () => captureVideoPoster(sourceUrl, atTime),
+          30_000,
+          'Poster maken duurde te lang.',
+        )
+        const id = crypto.randomUUID()
+        const meta = {
+          id,
+          name: `${pendingName}.webp`,
+          kind: 'image' as const,
+          mimeType: 'image/webp' as const,
+          size: captured.blob.size,
+          width: captured.width,
+          height: captured.height,
+          createdAt: Date.now(),
+          blob: captured.blob,
+        }
+        setUploading({ fileName: meta.name, stage: 'saving', message: 'Opslaan…' })
+        await idbPutAsset(meta)
+        const publicUrl = await syncAssetToSupabase(meta)
+        if (publicUrl) syncedIds.current.add(id)
+        const asset = toAsset({ ...meta, publicUrl: publicUrl ?? undefined })
+        if (publicUrl) await idbPutAsset({ ...meta, publicUrl })
+        setAssets((previous) => [asset, ...previous])
+        setUploading({ fileName: meta.name, stage: 'done' })
+        window.setTimeout(() => setUploading(null), 1200)
+        return asset
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Poster maken mislukt.'
+        setUploading({ fileName: `${pendingName}.webp`, stage: 'error', message })
+        throw error
+      }
+    },
+    [],
+  )
+
   const removeAsset = useCallback(async (id: string) => {
     await idbDeleteAsset(id)
     syncedIds.current.delete(id)
@@ -407,6 +462,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       uploading,
       uploadFiles,
       createVideoClip,
+      createVideoPoster,
       removeAsset,
       clearAll,
       getAssetUrl,
@@ -419,6 +475,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
       uploading,
       uploadFiles,
       createVideoClip,
+      createVideoPoster,
       removeAsset,
       clearAll,
       getAssetUrl,

@@ -12,7 +12,25 @@ export function HomePage() {
   const heroVisible = content.site.homeHeroVisible !== false
 
   useEffect(() => {
-    const timer = window.setTimeout(() => prefetchRoute('/artists/_'), 800)
+    const warm = () => {
+      prefetchRoute('/artists/_')
+      prefetchRoute('/about')
+      prefetchRoute('/contact')
+      prefetchRoute('/booking')
+    }
+    const idle = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+      }
+    ).requestIdleCallback
+    if (idle) {
+      const id = idle(warm, { timeout: 700 })
+      return () =>
+        (
+          window as Window & { cancelIdleCallback?: (id: number) => void }
+        ).cancelIdleCallback?.(id)
+    }
+    const timer = window.setTimeout(warm, 500)
     return () => window.clearTimeout(timer)
   }, [])
 

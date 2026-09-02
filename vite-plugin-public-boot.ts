@@ -31,6 +31,7 @@ export function publicBootPlugin(env: Record<string, string>): Plugin {
     }
     function preloadRosterImages(cached) {
       if (!cached) return;
+      if (location.pathname !== '/' && location.pathname !== '') return;
       var list = Array.isArray(cached)
         ? cached
         : Object.keys(cached).map(function (k) { return cached[k]; });
@@ -41,6 +42,7 @@ export function publicBootPlugin(env: Record<string, string>): Plugin {
         link.rel = 'preload';
         link.as = 'image';
         link.href = href;
+        link.setAttribute('fetchpriority', i === 0 ? 'high' : 'low');
         document.head.appendChild(link);
       }
     }
@@ -61,6 +63,19 @@ export function publicBootPlugin(env: Record<string, string>): Plugin {
         return load(STORAGE_KEY_V2).then(function (legacy) { return legacy || readCache(); });
       }).catch(function () { return readCache(); });
     }
+    function preloadAboutThumb() {
+      if (location.pathname.indexOf('/about') !== 0) return
+      var link = document.createElement('link')
+      link.rel = 'preload'
+      link.as = 'image'
+      link.href = 'https://i.ytimg.com/vi/xXt3erMFs8w/sddefault.jpg'
+      document.head.appendChild(link)
+      var yt = document.createElement('link')
+      yt.rel = 'preconnect'
+      yt.href = 'https://i.ytimg.com'
+      document.head.appendChild(yt)
+    }
+    preloadAboutThumb();
     var cached = readCache();
     preloadRosterImages(cached);
     window.__NOTYPE_BOOT__ = { cached: cached, promise: fetchArtists() };
