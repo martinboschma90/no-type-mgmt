@@ -55,18 +55,18 @@ export async function submitBookingRequest(
       body: JSON.stringify(payload),
     })
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null
+      const data = (await res.json().catch(() => null)) as {
+        error?: string
+        emailed?: boolean
+      } | null
       return { ok: false, error: data?.error || `Submit failed (${res.status})` }
+    }
+    const data = (await res.json().catch(() => null)) as { emailed?: boolean } | null
+    if (data && data.emailed === false) {
+      return { ok: false, error: 'Request was saved, but email could not be sent.' }
     }
     return { ok: true }
   } catch {
     return { ok: false, error: 'Network error while submitting request.' }
   }
-}
-
-/** Last-resort client fallback if API is unavailable. */
-export function openBookingMailto(payload: BookingRequestPayload) {
-  const subject = encodeURIComponent(formatBookingEmailSubject(payload))
-  const body = encodeURIComponent(formatBookingEmailBody(payload))
-  window.location.href = `mailto:${BOOKING_REQUEST_EMAIL}?subject=${subject}&body=${body}`
 }

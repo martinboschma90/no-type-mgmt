@@ -13,6 +13,16 @@ export function allowedOrigin(origin) {
   return ''
 }
 
+export function isSiteHost(host) {
+  const value = String(host || '').split(':')[0].toLowerCase()
+  return (
+    value === 'notype-mgmt.com' ||
+    value === 'www.notype-mgmt.com' ||
+    value.endsWith('.vercel.app') ||
+    value === 'localhost'
+  )
+}
+
 export function setCors(res, origin) {
   const allowed = allowedOrigin(origin)
   if (allowed) {

@@ -54,16 +54,16 @@ export function bookingRequestPlugin(): Plugin {
 
           const stored = await recordBookingRequest(payload).catch(() => false)
           const sent = await sendBookingEmail({ subject, text, replyTo })
-          if (!stored && !sent.ok) {
+          if (!sent.ok) {
             res.statusCode = 502
             res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ error: sent.error }))
+            res.end(JSON.stringify({ error: sent.error, stored: Boolean(stored) }))
             return
           }
 
           res.statusCode = 200
           res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ ok: true, emailed: Boolean(sent.ok) }))
+          res.end(JSON.stringify({ ok: true, emailed: true }))
         } catch (error) {
           res.statusCode = 500
           res.setHeader('Content-Type', 'application/json')

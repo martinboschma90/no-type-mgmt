@@ -105,7 +105,7 @@ export async function sendBookingEmail({ subject, text, replyTo }) {
     if (copy.length) body.cc = copy
     if (cc) body.reply_to = cc
 
-    const response = await fetch('https://api.resend.com/emails', {
+    let response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${resendKey}`,
@@ -113,6 +113,32 @@ export async function sendBookingEmail({ subject, text, replyTo }) {
       },
       body: JSON.stringify(body),
     })
+    if (!response.ok && copy.length) {
+      delete body.cc
+      response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+      if (response.ok) {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from,
+            to: copy,
+            subject: `Copy: ${subject}`,
+            text: `This is a copy of the booking request sent to NOTYPE MGMT.\n\n${text}`,
+          }),
+        }).catch(() => null)
+      }
+    }
     if (!response.ok) {
       const detail = await response.text().catch(() => '')
       return {

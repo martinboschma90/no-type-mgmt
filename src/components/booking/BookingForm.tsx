@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { usePublicArtists } from '@/cms/usePublicArtists'
 import {
-  openBookingMailto,
   submitBookingRequest,
 } from '@/data/booking'
 import {
@@ -160,10 +159,7 @@ export function BookingForm() {
       return
     }
 
-    openBookingMailto(payload)
-    setError(
-      `${result.error} Your email app was opened as a backup — please send the message if it appears.`,
-    )
+    setError(result.error || 'Could not send your request. Please try again.')
     setSubmitting(false)
   }
 

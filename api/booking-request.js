@@ -5,7 +5,7 @@ import {
   sendBookingEmail,
 } from './booking-request-lib.mjs'
 import { recordBookingRequest } from './booking-stats-lib.mjs'
-import { json, rateLimit, setCors, allowedOrigin } from './http-security.mjs'
+import { json, rateLimit, setCors, allowedOrigin, isSiteHost } from './http-security.mjs'
 
 export default async function handler(req, res) {
   const origin = req.headers.origin
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     return
   }
 
-  if (!allowedOrigin(origin)) {
+  if (!allowedOrigin(origin) && !isSiteHost(req.headers.host)) {
     json(res, 403, { error: 'Forbidden' })
     return
   }
@@ -47,14 +47,15 @@ export default async function handler(req, res) {
 
     const stored = await recordBookingRequest(payload).catch(() => false)
     const sent = await sendBookingEmail({ subject, text, replyTo })
-    if (!stored && !sent.ok) {
+    if (!sent.ok) {
       json(res, 502, {
         error: sent.error || 'Could not send booking request.',
+        stored: Boolean(stored),
       })
       return
     }
 
-    json(res, 200, { ok: true, emailed: Boolean(sent.ok) })
+    json(res, 200, { ok: true, emailed: true })
   } catch {
     json(res, 500, { error: 'Failed to submit booking request.' })
   }
