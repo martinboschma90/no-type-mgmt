@@ -36,13 +36,8 @@ export function ArtistPageSections({
   return (
     <>
       {sections.map((section) => {
-        const hiddenOnLive = !section.visible
-        if (
-          hiddenOnLive &&
-          !(previewMode && (section.id === 'video' || section.id === 'instagram'))
-        ) {
-          return null
-        }
+        const hidden = !section.visible
+        if (hidden) return null
 
         switch (section.id) {
           case 'hero':
@@ -54,16 +49,14 @@ export function ArtistPageSections({
               />
             )
           case 'video': {
-            if (!previewMode && !artistHasVideos(artist)) return null
-            const slide = (
-              <ArtistVideoSlide
-                artist={artist}
-                previewMode={previewMode}
-                showEmptyState={previewMode}
-              />
-            )
+            if (!artistHasVideos(artist)) return null
             return (
-              <div key="video">{slide}</div>
+              <div key="video">
+                <ArtistVideoSlide
+                  artist={artist}
+                  previewMode={previewMode}
+                />
+              </div>
             )
           }
           case 'instagram': {

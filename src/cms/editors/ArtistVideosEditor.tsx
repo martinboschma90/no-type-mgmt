@@ -6,14 +6,16 @@ import {
   syncLegacyVideoUrl,
   videoObjectPosition,
 } from '@/cms/artistVideos'
-import { ArtistVisibilityToggle } from '@/cms/editors/ArtistVisibilityToggle'
 import { EditorSection, TextInput } from '@/cms/fields'
 import { MediaUrlField } from '@/cms/media/MediaUrlField'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 import { useMedia } from '@/cms/media/MediaProvider'
 import { parseMediaRef, toMediaRef } from '@/cms/media/refs'
 import type { ArtistVideo } from '@/types/artist'
-import { isLiveVideoSizeAllowed } from '@/cms/media/videoLimits'
+import {
+  isLiveVideoSizeAllowed,
+  liveVideoMaxMegabytes,
+} from '@/cms/media/videoLimits'
 
 function formatTime(seconds: number) {
   const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
@@ -40,10 +42,10 @@ function formatMegabytes(bytes: number) {
 
 function videoPerformanceScore(bytes: number) {
   const megabytes = bytes / (1024 * 1024)
-  if (megabytes <= 0.35) return 100
+  if (megabytes <= 2) return 100
   return Math.max(
     1,
-    Math.min(100, Math.round(100 - ((megabytes - 0.35) / 1.65) * 30)),
+    Math.min(100, Math.round(100 - ((megabytes - 2) / 6) * 30)),
   )
 }
 
@@ -413,8 +415,8 @@ function VideoMomentField({
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {liveSize && !isLiveVideoSizeAllowed(liveSize) ? (
               <span className="text-[10px] font-medium text-red-600">
-                Te groot voor live ({formatMegabytes(liveSize)}). Max 2 MB —
-                maak het fragment opnieuw.
+                Te groot voor live ({formatMegabytes(liveSize)}). Max{' '}
+                {liveVideoMaxMegabytes()} MB — maak het fragment opnieuw.
               </span>
             ) : (
               <span className="text-[10px] font-medium text-emerald-600">
@@ -497,25 +499,9 @@ export function ArtistVideosEditor({
       description="Elke upload is één slide. Voeg per video een nieuwe slide toe (maximaal acht)."
       defaultOpen
       badge={`${videos.length}/${MAX_ARTIST_VIDEOS}`}
+      visible={sectionVisible}
+      onVisibleChange={(next) => onSectionVisibleChange?.(next)}
     >
-      {onSectionVisibleChange ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink/8 bg-ink/[0.03] px-3.5 py-3">
-          <div>
-            <p className="type-label text-[0.65rem] tracking-[0.14em] text-ink/45 uppercase">
-              Shows sectie
-            </p>
-            <p className="type-body mt-1 text-xs text-ink/45">
-              {sectionVisible
-                ? 'Zichtbaar op de artiestenpagina'
-                : 'Verborgen — shows blijven bewaard'}
-            </p>
-          </div>
-          <ArtistVisibilityToggle
-            visible={sectionVisible}
-            onChange={onSectionVisibleChange}
-          />
-        </div>
-      ) : null}
       <ul className="space-y-3">
         {videos.map((video, index) => {
           const isDragging = dragIndex === index

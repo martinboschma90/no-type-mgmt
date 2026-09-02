@@ -39,8 +39,8 @@ export function RelatedArtists({
   }
 
   return (
-    <section className="mx-auto max-w-[1400px] px-4 pb-20 pt-8 sm:px-6 lg:px-8">
-      <div className="mb-5 flex items-end justify-between gap-4">
+    <section className="mx-auto max-w-[1400px] px-4 pb-24 pt-16 sm:px-6 lg:px-8 lg:pt-24">
+      <div className="mb-10 flex items-end justify-between gap-4">
         <div>
           <p className="type-label text-[0.6rem] tracking-[0.18em] text-ink/40 uppercase">
             Discover
@@ -72,7 +72,7 @@ export function RelatedArtists({
       </div>
       <div
         ref={trackRef}
-        className="grid snap-x snap-mandatory grid-flow-col auto-cols-[76%] gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] sm:auto-cols-[46%] sm:gap-4 lg:auto-cols-[calc((100%-3rem)/4)] [&::-webkit-scrollbar]:hidden"
+        className="grid snap-x snap-mandatory grid-flow-col auto-cols-[76%] gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] sm:auto-cols-[46%] sm:gap-4 lg:auto-cols-[calc((100%-3rem)/4)] lg:gap-4 [&::-webkit-scrollbar]:hidden"
       >
         {related.map((candidate, index) => (
           <div

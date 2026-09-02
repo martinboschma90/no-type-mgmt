@@ -66,6 +66,8 @@ export type SiteContent = {
   about: string[]
   /** Optional About media URLs (CMS); public layout unchanged when empty. */
   aboutImages: string[]
+  /** Header video on About (YouTube or mp4/webm). */
+  aboutHeroVideoUrl: string
   photoCredits: string
   legalLinks: LegalLink[]
   /** Optional custom footer logo URL; empty keeps the brand Logo component. */
@@ -130,6 +132,8 @@ export function createDefaultSiteContent(): SiteContent {
     aboutTitle: 'About NOTYPE',
     about: [...defaultSite.about],
     aboutImages: [],
+    aboutHeroVideoUrl:
+      'https://www.youtube.com/watch?v=xXt3erMFs8w&t=14m11s',
     photoCredits: defaultSite.photoCredits,
     legalLinks: defaultSite.legalLinks.map((link) => ({ ...link })),
     logoUrl: '',

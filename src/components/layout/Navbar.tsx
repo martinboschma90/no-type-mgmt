@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/Logo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
@@ -13,22 +13,30 @@ export function Navbar({
   menuOpen,
   onMenuToggle,
   onMenuIntent,
-  variant = 'hero',
 }: NavbarProps) {
+  const { pathname } = useLocation()
+  const showBack = pathname !== '/'
+
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-50">
       <div className="mx-auto flex max-w-[1600px] items-start justify-between px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
-        <div className="pointer-events-auto min-h-11">
-          {variant === 'mark' && (
-            <Link to="/" aria-label="NOTYPE MGMT — home">
-              <Logo variant="seal" height={44} />
-            </Link>
-          )}
-          {variant === 'wordmark' && (
-            <Link to="/" aria-label="NOTYPE MGMT — home">
-              <Logo variant="auto" height={32} />
-            </Link>
-          )}
+        <div className="pointer-events-auto flex min-h-11 items-center gap-2.5 sm:gap-3">
+          {showBack ? (
+            <>
+              <Link
+                to="/"
+                aria-label="Back to home"
+                className="type-ui inline-flex h-11 items-center gap-1.5 rounded-full px-3.5 text-[0.65rem] tracking-[0.12em] text-ink uppercase transition-colors active:scale-95 sm:px-4"
+                style={{ backgroundColor: 'var(--nav-chip)' }}
+              >
+                <span aria-hidden>←</span>
+                Home
+              </Link>
+              <Link to="/" aria-label="NOTYPE MGMT — home">
+                <Logo variant="auto" height={32} />
+              </Link>
+            </>
+          ) : null}
         </div>
 
         <div className="pointer-events-auto flex items-center gap-2 sm:gap-3">

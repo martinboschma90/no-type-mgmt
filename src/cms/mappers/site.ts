@@ -15,6 +15,18 @@ function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
 }
 
+function asAboutHeroVideoUrl(value: unknown, fallback: string): string {
+  const next = asString(value, fallback).trim()
+  if (
+    !next ||
+    next.includes('mUBXO4PbLLw') ||
+    next.includes('oi6JtAJocdw')
+  ) {
+    return fallback
+  }
+  return next
+}
+
 /** Replace legacy brand labels with NOTYPE MGMT defaults. */
 function migrateBrandLabel(value: string, fallback: string): string {
   const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -194,6 +206,7 @@ export function normalizeSiteContent(raw: unknown): SiteContent {
       },
       about: [...defaults.about],
       aboutImages: [...defaults.aboutImages],
+      aboutHeroVideoUrl: defaults.aboutHeroVideoUrl,
       legalLinks: defaults.legalLinks.map((l) => ({ ...l })),
       faqCategories: cloneFaqCategories(defaults.faqCategories),
     }
@@ -224,6 +237,10 @@ export function normalizeSiteContent(raw: unknown): SiteContent {
     about: about.length ? about : [...defaults.about],
     aboutTitle: asString(row.aboutTitle, defaults.aboutTitle),
     aboutImages: aboutImages.length ? aboutImages : [...defaults.aboutImages],
+    aboutHeroVideoUrl: asAboutHeroVideoUrl(
+      row.aboutHeroVideoUrl,
+      defaults.aboutHeroVideoUrl,
+    ),
     photoCredits: asString(row.photoCredits, defaults.photoCredits),
     legalLinks,
     logoUrl: asString(row.logoUrl, defaults.logoUrl),

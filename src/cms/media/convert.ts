@@ -4,9 +4,13 @@ import fixWebmDuration from 'fix-webm-duration'
 import {
   MAX_LIVE_VIDEO_BYTES,
   MAX_STORED_VIDEO_BYTES,
+  liveClipTooLargeMessage,
 } from '@/cms/media/videoLimits'
 
 export { MAX_LIVE_VIDEO_BYTES, MAX_STORED_VIDEO_BYTES }
+
+const CLIP_MAX_EDGE = 1920
+const CLIP_FRAME_RATE = 30
 
 const MAX_IMAGE_EDGE = 2400
 const CONVERT_TIMEOUT_MS = 120_000
@@ -159,11 +163,22 @@ function evenDim(value: number) {
 }
 
 function clipVideoBitsPerSecond(duration: number) {
-  const liveTargetBytes = 1.7 * 1024 * 1024
+  const liveTargetBytes = 6.5 * 1024 * 1024
   return Math.max(
-    160_000,
-    Math.min(420_000, Math.floor((liveTargetBytes * 8) / Math.max(duration, 1))),
+    1_500_000,
+    Math.min(5_000_000, Math.floor((liveTargetBytes * 8) / Math.max(duration, 1))),
   )
+}
+
+function clipScaleForVideo(videoWidth: number, videoHeight: number) {
+  const scale = Math.min(
+    1,
+    CLIP_MAX_EDGE / Math.max(videoWidth, videoHeight),
+  )
+  return {
+    width: evenDim(videoWidth * scale),
+    height: evenDim(videoHeight * scale),
+  }
 }
 
 async function encodeClipToAvcMp4(
@@ -179,24 +194,30 @@ async function encodeClipToAvcMp4(
     return null
   }
 
-  const maxEdge = 720
-  const scale = Math.min(
-    1,
-    maxEdge / Math.max(video.videoWidth, video.videoHeight),
+  const { width, height } = clipScaleForVideo(
+    video.videoWidth,
+    video.videoHeight,
   )
-  const width = evenDim(video.videoWidth * scale)
-  const height = evenDim(video.videoHeight * scale)
+  const bitrate = clipVideoBitsPerSecond(options.duration)
+  const codecCandidates = ['avc1.4D401F', 'avc1.42001F'] as const
+  let codec: (typeof codecCandidates)[number] | null = null
 
   try {
-    const support = await VideoEncoder.isConfigSupported({
-      codec: 'avc1.42001f',
-      width,
-      height,
-      bitrate: clipVideoBitsPerSecond(options.duration),
-      framerate: 24,
-      avc: { format: 'avc' },
-    })
-    if (!support.supported) return null
+    for (const candidate of codecCandidates) {
+      const support = await VideoEncoder.isConfigSupported({
+        codec: candidate,
+        width,
+        height,
+        bitrate,
+        framerate: CLIP_FRAME_RATE,
+        avc: { format: 'avc' },
+      })
+      if (support.supported) {
+        codec = candidate
+        break
+      }
+    }
+    if (!codec) return null
   } catch {
     return null
   }
@@ -210,7 +231,7 @@ async function encodeClipToAvcMp4(
   const target = new ArrayBufferTarget()
   const muxer = new Muxer({
     target,
-    video: { codec: 'avc', width, height, frameRate: 24 },
+    video: { codec: 'avc', width, height, frameRate: CLIP_FRAME_RATE },
     fastStart: 'in-memory',
     firstTimestampBehavior: 'offset',
   })
@@ -231,11 +252,11 @@ async function encodeClipToAvcMp4(
 
   try {
     encoder.configure({
-      codec: 'avc1.42001f',
+      codec,
       width,
       height,
-      bitrate: clipVideoBitsPerSecond(options.duration),
-      framerate: 24,
+      bitrate,
+      framerate: CLIP_FRAME_RATE,
       latencyMode: 'quality',
       avc: { format: 'avc' },
     })
@@ -283,9 +304,11 @@ async function encodeClipToAvcMp4(
           )
           const frame = new VideoFrame(canvas, {
             timestamp: Math.max(0, timestamp),
-            duration: Math.round(1_000_000 / 24),
+            duration: Math.round(1_000_000 / CLIP_FRAME_RATE),
           })
-          encoder.encode(frame, { keyFrame: frameIndex % 24 === 0 })
+          encoder.encode(frame, {
+            keyFrame: frameIndex % CLIP_FRAME_RATE === 0,
+          })
           frame.close()
           frameIndex += 1
         } catch (error) {
@@ -322,9 +345,7 @@ async function encodeClipToAvcMp4(
     if (!buffer || buffer.byteLength < 64) return null
     const blob = new Blob([buffer], { type: 'video/mp4' })
     if (blob.size > MAX_LIVE_VIDEO_BYTES) {
-      throw new Error(
-        'Het live fragment is nog groter dan 2 MB. Kies een korter fragment.',
-      )
+      throw new Error(liveClipTooLargeMessage())
     }
     return { blob, width, height, duration: options.duration }
   } catch (error) {
@@ -336,7 +357,7 @@ async function encodeClipToAvcMp4(
     video.pause()
     if (
       error instanceof Error &&
-      error.message.includes('groter dan 2 MB')
+      error.message.includes('groter dan')
     ) {
       throw error
     }
@@ -363,13 +384,10 @@ function tryGetReelCapture(video: HTMLVideoElement): {
   height: number
   stop: () => void
 } | null {
-  const maxEdge = 720
-  const scale = Math.min(
-    1,
-    maxEdge / Math.max(video.videoWidth, video.videoHeight),
+  const { width, height } = clipScaleForVideo(
+    video.videoWidth,
+    video.videoHeight,
   )
-  const width = evenDim(video.videoWidth * scale)
-  const height = evenDim(video.videoHeight * scale)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -384,8 +402,8 @@ function tryGetReelCapture(video: HTMLVideoElement): {
     }
   }
   draw()
-  const timer = window.setInterval(draw, 1000 / 24)
-  const stream = canvas.captureStream(24)
+  const timer = window.setInterval(draw, 1000 / CLIP_FRAME_RATE)
+  const stream = canvas.captureStream(CLIP_FRAME_RATE)
 
   return {
     stream,
@@ -682,7 +700,7 @@ export async function convertVideoToWebm(
     if (blob.size > maxOutputBytes) {
       throw new Error(
         clip
-          ? 'Het live fragment is nog groter dan 2 MB. Kies een korter fragment.'
+          ? liveClipTooLargeMessage()
           : 'De gecomprimeerde video is nog groter dan 50 MB.',
       )
     }

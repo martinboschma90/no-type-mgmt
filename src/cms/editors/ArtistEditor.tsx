@@ -233,6 +233,7 @@ export function ArtistEditor() {
   }
 
   const musicSectionVisible = isArtistSectionVisible(artist, 'tracks')
+  const videoSectionVisible = isArtistSectionVisible(artist, 'video')
   const instagramFeed = artist.instagramFeed ?? DEFAULT_INSTAGRAM_FEED
   const instagramPosts = padInstagramPosts(instagramFeed.posts)
   const instagramSocialUrl =
@@ -339,11 +340,17 @@ export function ArtistEditor() {
       {editorTab === 'content' ? (
         <ArtistVideosEditor
         videos={editableVideos}
+        sectionVisible={videoSectionVisible}
+        onSectionVisibleChange={(visible) =>
+          updateArtist(updateKey, (a) => ({
+            ...a,
+            sections: setArtistSectionVisible(a.sections, 'video', visible),
+          }))
+        }
         onChange={(videos) =>
           updateArtist(updateKey, (a) => ({
             ...a,
             ...withSyncedVideos(videos),
-            sections: setArtistSectionVisible(a.sections, 'video', true),
           }))
         }
       />

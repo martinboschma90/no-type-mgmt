@@ -33,6 +33,15 @@ export function AboutEditor() {
           hint="Used for accessibility; the logo remains the visual mark."
           onChange={(aboutTitle) => setSite((s) => ({ ...s, aboutTitle }))}
         />
+        <TextInput
+          label="Header video"
+          value={site.aboutHeroVideoUrl}
+          placeholder="YouTube- of video-URL"
+          hint="YouTube-URL. Tijd in de link (bijv. &t=14m11s) is het startpunt; daarna max. 20 seconden in loop. Leeg = geen banner."
+          onChange={(aboutHeroVideoUrl) =>
+            setSite((s) => ({ ...s, aboutHeroVideoUrl }))
+          }
+        />
         <TextArea
           label="Intro tekst"
           value={intro}

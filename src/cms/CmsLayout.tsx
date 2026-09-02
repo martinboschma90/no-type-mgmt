@@ -320,6 +320,8 @@ export function CmsLayout() {
       </p>
       <a
         href="/"
+        target="_blank"
+        rel="noopener noreferrer"
         className={`mt-3 flex items-center justify-center gap-1.5 overflow-hidden rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 ${
           collapsible ? 'w-10 group-hover/sidebar:w-full' : 'w-full'
         }`}

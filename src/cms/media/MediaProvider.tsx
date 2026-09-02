@@ -322,7 +322,9 @@ export function MediaProvider({ children }: { children: ReactNode }) {
           'Fragment maken duurde te lang. Kies een korter stuk.',
         )
         if (converted.blob.size > MAX_LIVE_VIDEO_BYTES) {
-          throw new Error('Het live fragment kon niet onder 2 MB worden gebracht.')
+          throw new Error(
+            `Het live fragment kon niet onder ${Math.round(MAX_LIVE_VIDEO_BYTES / (1024 * 1024))} MB worden gebracht.`,
+          )
         }
         if (!converted.blob.type.includes('mp4')) {
           throw new Error(

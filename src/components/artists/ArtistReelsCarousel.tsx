@@ -8,6 +8,10 @@ import { videoObjectPosition } from '@/cms/artistVideos'
 import { useResolvedMediaUrl } from '@/cms/media/useResolvedMediaUrl'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import {
+  bindMobilePlayback,
+  browserCanPlayWebm,
+  guessVideoSourceType,
+  mediaLooksWebm,
   pauseVideo,
   releaseVideo,
   requestPlay,
@@ -15,123 +19,77 @@ import {
 
 const CINEMA_EASE = [0.22, 1, 0.36, 1] as const
 
-function bindMobilePlayback(element: HTMLVideoElement) {
-  element.muted = true
-  element.defaultMuted = true
-  element.playsInline = true
-  element.setAttribute('muted', '')
-  element.setAttribute('playsinline', '')
-  element.setAttribute('webkit-playsinline', '')
+function canPlayInThisBrowser(url?: string) {
+  if (!url) return false
+  return !(mediaLooksWebm(url) && !browserCanPlayWebm())
 }
 
-function tileIsOnScreen(node: HTMLElement) {
-  const rect = node.getBoundingClientRect()
-  return (
-    rect.bottom > 40 &&
-    rect.top < window.innerHeight - 40 &&
-    rect.right > 20 &&
-    rect.left < window.innerWidth - 20
-  )
-}
-
-function VideoTile({
-  video,
-  allowSourceFallback,
-  eager = false,
-}: {
-  video: ArtistVideo
-  allowSourceFallback: boolean
-  eager?: boolean
-}) {
+function VideoTile({ video }: { video: ArtistVideo }) {
   const media = useContext(MediaContext)
-  const [preferClip, setPreferClip] = useState(Boolean(video.clipUrl))
+  const sourcePlayable = canPlayInThisBrowser(video.videoUrl)
+  const clipPlayable = canPlayInThisBrowser(video.clipUrl)
+  const [useOriginal, setUseOriginal] = useState(sourcePlayable)
   const sourceRef =
-    preferClip && video.clipUrl ? video.clipUrl : video.videoUrl
-  const resolvedUrl = useResolvedMediaUrl(sourceRef)
-  const articleRef = useRef<HTMLElement>(null)
+    useOriginal && video.videoUrl ? video.videoUrl : video.clipUrl
+  const resolvedUrl = useResolvedMediaUrl(
+    sourceRef,
+    useOriginal ? video.clipUrl : video.videoUrl,
+  )
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [shouldLoad, setShouldLoad] = useState(eager)
-  const [active, setActive] = useState(eager)
   const mediaId = parseMediaRef(sourceRef)
   const localUrl = media?.assets.find(
     (item) => item.id === mediaId || item.publicUrl === sourceRef,
   )?.url
   const videoUrl = localUrl || resolvedUrl
-  const usingGeneratedClip = preferClip && Boolean(video.clipUrl)
+  const usingGeneratedClip = !useOriginal && Boolean(video.clipUrl)
   const clipStart = usingGeneratedClip ? 0 : Math.max(0, video.clipStart ?? 0)
   const clipDuration = Math.max(2, video.clipDuration ?? 6)
+  const sourceType = videoUrl ? guessVideoSourceType(videoUrl) : undefined
 
   useEffect(() => {
-    setPreferClip(Boolean(video.clipUrl))
-  }, [video.clipUrl])
-
-  useEffect(() => {
-    const node = articleRef.current
-    if (!node || !videoUrl) return
-
-    const sync = (visible: boolean) => {
-      if (visible) setShouldLoad(true)
-      setActive(visible)
-    }
-
-    if (eager || tileIsOnScreen(node)) sync(true)
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        sync(entry.isIntersecting || entry.intersectionRatio > 0)
-      },
-      { root: null, rootMargin: '280px 80px', threshold: 0 },
-    )
-    observer.observe(node)
-
-    const fallback = window.setTimeout(() => {
-      if (tileIsOnScreen(node)) sync(true)
-    }, 200)
-
-    return () => {
-      observer.disconnect()
-      window.clearTimeout(fallback)
-      const element = videoRef.current
-      if (element) releaseVideo(element)
-    }
-  }, [eager, videoUrl])
+    setUseOriginal(sourcePlayable)
+  }, [sourcePlayable, video.videoUrl])
 
   useEffect(() => {
     const element = videoRef.current
-    if (!element) return
+    if (!element || !videoUrl) return
     bindMobilePlayback(element)
-    if (!active) {
-      pauseVideo(element)
-    } else if (element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      requestPlay(element)
-    }
-  }, [active, shouldLoad, videoUrl])
+    requestPlay(element)
+    return () => releaseVideo(element)
+  }, [videoUrl])
 
   return (
     <article
-      ref={articleRef}
       className="relative w-full overflow-hidden rounded-[1.35rem] bg-[#121014] shadow-2xl"
       style={{ aspectRatio: '9 / 16' }}
+      onPointerUp={() => {
+        const element = videoRef.current
+        if (element) requestPlay(element)
+      }}
     >
-      {shouldLoad && videoUrl ? (
+      {videoUrl ? (
         <video
           key={videoUrl}
           ref={(element) => {
             videoRef.current = element
             if (element) bindMobilePlayback(element)
           }}
-          src={videoUrl}
           className="absolute inset-0 h-full w-full object-cover"
           style={{ objectPosition: videoObjectPosition(video) }}
           muted
           autoPlay
           playsInline
-          loop
+          loop={usingGeneratedClip}
           preload="auto"
           onLoadedMetadata={(event) => {
             const element = event.currentTarget
             bindMobilePlayback(element)
-            if (clipStart > 0.08 && Number.isFinite(element.duration)) {
+            if (
+              !usingGeneratedClip &&
+              clipStart > 0.08 &&
+              Number.isFinite(element.duration) &&
+              element.duration > 0.2
+            ) {
               element.currentTime = Math.min(
                 clipStart,
                 Math.max(0, element.duration - 0.1),
@@ -141,10 +99,19 @@ function VideoTile({
           }}
           onLoadedData={(event) => requestPlay(event.currentTarget)}
           onCanPlay={(event) => requestPlay(event.currentTarget)}
+          onPlaying={(event) => bindMobilePlayback(event.currentTarget)}
+          onPause={(event) => {
+            if (event.currentTarget.ended) return
+            requestPlay(event.currentTarget)
+          }}
           onTimeUpdate={(event) => {
+            if (usingGeneratedClip) return
             const element = event.currentTarget
+            if (!Number.isFinite(element.duration) || element.duration < 0.2) {
+              return
+            }
             const clipEnd = Math.min(element.duration, clipStart + clipDuration)
-            if (element.currentTime >= clipEnd) {
+            if (element.currentTime >= clipEnd - 0.05) {
               element.currentTime = clipStart
               requestPlay(element)
             }
@@ -152,11 +119,13 @@ function VideoTile({
           onError={() => {
             const element = videoRef.current
             if (element) pauseVideo(element)
-            if (preferClip && video.clipUrl && allowSourceFallback) {
-              setPreferClip(false)
+            if (useOriginal && clipPlayable) {
+              setUseOriginal(false)
             }
           }}
-        />
+        >
+          <source src={videoUrl} type={sourceType} />
+        </video>
       ) : null}
     </article>
   )
@@ -320,11 +289,7 @@ export function ArtistReelsCarousel({
                       : 'w-full min-w-0 shrink-0'
                   }
                 >
-                  <VideoTile
-                    video={video}
-                    allowSourceFallback
-                    eager={index < 2}
-                  />
+                  <VideoTile video={video} />
                 </div>
               ))}
             </div>

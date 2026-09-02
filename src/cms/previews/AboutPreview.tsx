@@ -1,8 +1,7 @@
-import { motion } from 'framer-motion'
-import { TeamSection } from '@/components/about/TeamSection'
+import { AboutVideoBanner } from '@/components/about/AboutVideoBanner'
 import { AppShell } from '@/components/layout/AppShell'
-import { Logo } from '@/components/ui/Logo'
 import { SectionRow } from '@/components/ui/SectionRow'
+import { TeamSection } from '@/components/about/TeamSection'
 import { useCms } from '@/cms/CmsProvider'
 import { PreviewFrame } from '@/cms/previews/PreviewFrame'
 
@@ -13,19 +12,12 @@ export function AboutPreview() {
   return (
     <PreviewFrame label="About">
       <AppShell navVariant="wordmark">
-      <div className="px-4 pb-6 pt-24 sm:px-6 sm:pt-28 lg:px-8">
+      <AboutVideoBanner
+        url={site.aboutHeroVideoUrl}
+        title={site.aboutTitle || 'About NOTYPE'}
+      />
+      <div className="px-4 pb-6 pt-10 sm:px-6 sm:pt-12 lg:px-8">
         <div className="mx-auto max-w-[1200px]">
-          <motion.div
-            className="mb-10"
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h1 className="m-0">
-              <span className="sr-only">{site.aboutTitle || 'About NOTYPE'}</span>
-              <Logo variant="auto" className="h-[clamp(2.5rem,7vw,4.5rem)] w-auto" />
-            </h1>
-          </motion.div>
-
           <SectionRow label="About us">
             <div className="type-body space-y-4 text-[0.95rem] text-ink/85">
               {site.about.map((paragraph, index) => (
