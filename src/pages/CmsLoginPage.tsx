@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/cms/auth/AuthProvider'
 
 const controlClass =
-  'w-full rounded-lg border border-white/10 bg-white/5 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-emerald-500'
+  'w-full rounded-lg border border-white/12 bg-white/8 px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/40'
 
 export function CmsLoginPage() {
   const { ready, session, authRequired, signIn } = useAuth()
@@ -45,20 +45,37 @@ export function CmsLoginPage() {
     <div
       data-cms
       data-cms-theme="dark"
-      className="relative flex min-h-svh items-center justify-center bg-[#090909] px-4"
+      className="relative flex min-h-svh items-center justify-center overflow-hidden bg-[#071315] px-4"
       style={{ fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-[-12%] opacity-[0.78] blur-[78px]"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 5%, rgb(7 171 166 / 0.95) 0, transparent 39%), radial-gradient(circle at 72% 66%, rgb(100 161 118 / 0.55) 0, transparent 30%), radial-gradient(circle at 40% 64%, rgb(244 183 153 / 0.76) 0, transparent 28%), radial-gradient(circle at 50% 51%, rgb(255 239 211 / 0.64) 0, transparent 31%)',
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, transparent 28%, rgb(2 14 14 / 0.58) 100%), linear-gradient(180deg, rgb(1 13 16 / 0.15), transparent 48%, rgb(2 16 13 / 0.48))',
+        }}
+      />
+
       <div className="relative z-10 w-full max-w-sm">
         <div className="mb-8 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/40">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/55">
             Flow Mates
           </p>
           <p className="mt-1 text-2xl font-semibold tracking-tight text-white">CMS</p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#111] p-6 shadow-2xl shadow-black/40">
-          <h1 className="mb-1 text-lg font-semibold text-white">Welkom terug</h1>
-          <p className="mb-5 text-sm text-white/45">Log in met e-mail en wachtwoord · Notype</p>
+        <div className="rounded-2xl border border-white/12 bg-[#111718]/85 p-6 shadow-2xl shadow-black/35 backdrop-blur-xl">
+          <h1 className="mb-1 text-lg font-semibold text-white">Welkom in Flow Mates CMS</h1>
+          <p className="mb-5 text-sm text-white/50">Log in om verder te gaan · Notype</p>
 
           <form className="space-y-3" onSubmit={onSubmit}>
             <label className="block">
@@ -93,7 +110,7 @@ export function CmsLoginPage() {
             <button
               type="submit"
               disabled={loading || !email.trim() || !password}
-              className="mt-1 w-full rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-neutral-950 hover:bg-emerald-400 disabled:opacity-40"
+              className="mt-1 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-neutral-950 hover:bg-white/90 disabled:opacity-40"
             >
               {loading ? 'Bezig…' : 'Inloggen'}
             </button>
